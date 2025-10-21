@@ -1,37 +1,54 @@
-# 依赖
-node_modules/
-venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
 .Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
 
-# 环境变量
+# Environment variables
 .env
 .env.local
 .env.*.local
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-.DS_Store
+*~
 
-# 构建输出
-dist/
-build/
+# Logs
+logs/
 *.log
 
-# 测试
-coverage/
-.pytest_cache/
+# Database
+*.db
+*.sqlite3
 
-# 其他
-*.bak
-.cache/
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
 
-# 注意：上下文文件应该被追踪，不要添加到 .gitignore
-# .claudecontext
-# .clinerules
-# AI_START_HERE.md
+# Docker
+.dockerignore
 
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+**/private_key.txt
+**/api_keys.txt
+
+# Backups
+backups/
+*.sql
+*.sql.gz
