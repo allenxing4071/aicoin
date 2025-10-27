@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     
     # LLM API Keys
     DEEPSEEK_API_KEY: Optional[str] = None
+    QWEN_API_KEY: Optional[str] = None
+    GROK_API_KEY: Optional[str] = None
     CLAUDE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     

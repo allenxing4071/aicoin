@@ -17,7 +17,10 @@
     "axios": "^1.6.2",
     "recharts": "^2.10.3",
     "lightweight-charts": "^4.1.1",
-    "date-fns": "^2.30.0"
+    "date-fns": "^2.30.0",
+    "socket.io-client": "^4.7.2",
+    "lucide-react": "^0.294.0",
+    "react-hot-toast": "^2.4.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",

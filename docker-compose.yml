@@ -41,11 +41,13 @@ services:
       DATABASE_URL: postgresql://admin:${DB_PASSWORD:-changeme123}@postgres:5432/aicoin
       REDIS_URL: redis://redis:6379
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       HYPERLIQUID_WALLET_ADDRESS: ${HYPERLIQUID_WALLET_ADDRESS:-}
       HYPERLIQUID_PRIVATE_KEY: ${HYPERLIQUID_PRIVATE_KEY:-}
-      HYPERLIQUID_TESTNET: ${HYPERLIQUID_TESTNET:-true}
+      HYPERLIQUID_TESTNET: ${HYPERLIQUID_TESTNET:-false}
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
       TRADING_ENABLED: ${TRADING_ENABLED:-false}
     depends_on:

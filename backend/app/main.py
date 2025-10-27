@@ -7,7 +7,13 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.redis_client import redis_client
-from app.api.v1 import trading, market, account, performance
+from app.api.v1 import trading as v1_trading, market, account, performance
+from app.api import websocket, market_data
+from app.api import trading as hyperliquid_trading
+from app.services.hyperliquid_market_data import HyperliquidMarketData
+from app.services.hyperliquid_trading import HyperliquidTradingService
+from app.services.ai_trading_orchestrator import AITradingOrchestrator
+from app.websocket.manager import websocket_manager
 
 # Configure logging
 logging.basicConfig(
@@ -26,6 +32,11 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Global services
+market_data_service = None
+trading_service = None
+ai_orchestrator = None
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -37,9 +48,9 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(
-    trading.router,
+    v1_trading.router,
     prefix=f"{settings.API_V1_PREFIX}/trading",
-    tags=["Trading"]
+    tags=["Trading - AI Decision"]
 )
 app.include_router(
     market.router,
@@ -57,10 +68,27 @@ app.include_router(
     tags=["Performance"]
 )
 
+# Include new API routers
+app.include_router(
+    websocket.router,
+    tags=["WebSocket"]
+)
+app.include_router(
+    market_data.router,
+    prefix=f"{settings.API_V1_PREFIX}/market-data",
+    tags=["Market Data - Real-time"]
+)
+app.include_router(
+    hyperliquid_trading.router,
+    prefix=f"{settings.API_V1_PREFIX}/hyperliquid",
+    tags=["Hyperliquid Trading"]
+)
+
 
 @app.on_event("startup")
 async def startup_event():
     """Application startup"""
+    global market_data_service, trading_service, ai_orchestrator
     logger.info("Starting AIcoin Trading System...")
     
     # Initialize database
@@ -77,6 +105,44 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Redis connection failed: {e}")
     
+    # Initialize Hyperliquid market data service
+    try:
+        market_data_service = HyperliquidMarketData(redis_client, testnet=True)
+        await market_data_service.start()
+        # Set the global service instance
+        market_data.set_market_data_service(market_data_service)
+        logger.info("Hyperliquid market data service started")
+    except Exception as e:
+        logger.error(f"Market data service initialization failed: {e}")
+    
+    # Initialize Hyperliquid trading service
+    try:
+        trading_service = HyperliquidTradingService(redis_client, testnet=True)
+        await trading_service.initialize()
+        # Set the global service instance
+        hyperliquid_trading.set_trading_service(trading_service)
+        logger.info("Hyperliquid trading service initialized")
+    except Exception as e:
+        logger.error(f"Trading service initialization failed: {e}")
+    
+    # Initialize AI trading orchestrator
+    try:
+        if market_data_service and trading_service:
+            ai_orchestrator = AITradingOrchestrator(
+                redis_client, trading_service, market_data_service, testnet=True
+            )
+            hyperliquid_trading.set_ai_orchestrator(ai_orchestrator)
+            logger.info("AI trading orchestrator initialized")
+    except Exception as e:
+        logger.error(f"AI orchestrator initialization failed: {e}")
+    
+    # Start WebSocket manager
+    try:
+        await websocket_manager.start_broadcast_service()
+        logger.info("WebSocket manager started")
+    except Exception as e:
+        logger.error(f"WebSocket manager initialization failed: {e}")
+    
     logger.info(f"Application started successfully on {settings.APP_VERSION}")
     logger.info(f"Trading enabled: {settings.TRADING_ENABLED}")
     logger.info(f"Default symbol: {settings.DEFAULT_SYMBOL}")
@@ -85,7 +151,39 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Application shutdown"""
+    global market_data_service, trading_service, ai_orchestrator
     logger.info("Shutting down AIcoin Trading System...")
+    
+    # Stop AI orchestrator
+    if ai_orchestrator:
+        try:
+            await ai_orchestrator.stop_trading()
+            logger.info("AI orchestrator stopped")
+        except Exception as e:
+            logger.error(f"AI orchestrator shutdown failed: {e}")
+    
+    # Stop trading service
+    if trading_service:
+        try:
+            await trading_service.stop()
+            logger.info("Trading service stopped")
+        except Exception as e:
+            logger.error(f"Trading service shutdown failed: {e}")
+    
+    # Stop market data service
+    if market_data_service:
+        try:
+            await market_data_service.stop()
+            logger.info("Market data service stopped")
+        except Exception as e:
+            logger.error(f"Market data service shutdown failed: {e}")
+    
+    # Stop WebSocket manager
+    try:
+        await websocket_manager.stop_broadcast_service()
+        logger.info("WebSocket manager stopped")
+    except Exception as e:
+        logger.error(f"WebSocket manager shutdown failed: {e}")
     
     # Close Redis
     try:
