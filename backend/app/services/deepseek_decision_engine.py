@@ -1,4 +1,4 @@
-"""DeepSeek AI决策引擎"""
+"""DeepSeek AI决策引擎 - 完全自主决策模式"""
 
 import asyncio
 import json
@@ -13,9 +13,9 @@ from app.core.redis_client import RedisClient
 
 
 class DeepSeekDecisionEngine:
-    """DeepSeek AI决策引擎"""
+    """DeepSeek AI决策引擎 - 完全自主决策，无人工限制"""
     
-    def __init__(self, redis_client: RedisClient):
+    def __init__(self, redis_client: RedisClient, initial_capital: float = 10000.0):
         self.redis_client = redis_client
         self.api_key = settings.DEEPSEEK_API_KEY
         self.model_name = "deepseek-chat"
@@ -27,26 +27,38 @@ class DeepSeekDecisionEngine:
             base_url=self.base_url
         )
         
-        # 决策配置
-        self.confidence_threshold = 0.7  # 置信度阈值
-        self.max_position_size = Decimal("1000")  # 最大持仓金额
-        self.risk_tolerance = 0.02  # 风险容忍度 2%
+        # ✅ AI自主管理的资金
+        self.initial_capital = initial_capital
+        self.current_capital = initial_capital
+        
+        # ❌ 移除所有人工限制参数
+        # self.confidence_threshold = 0.7  # 删除
+        # self.max_position_size = Decimal("1000")  # 删除
+        # self.risk_tolerance = 0.02  # 删除
         
         # 决策历史
         self.decision_history = []
         self.total_decisions = 0
         self.successful_decisions = 0
         
-    async def analyze_market_data(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
-        """分析市场数据"""
+    async def analyze_market_data(self, market_data: Dict[str, Any], account_state: Dict[str, Any] = None) -> Dict[str, Any]:
+        """分析市场数据并做出自主交易决策"""
         try:
-            # 构建分析提示
-            prompt = self._build_analysis_prompt(market_data)
+            # 如果没有提供账户状态，使用默认值
+            if account_state is None:
+                account_state = {
+                    'balance': self.current_capital,
+                    'positions': [],
+                    'total_pnl': 0
+                }
+            
+            # 构建AI自主决策提示
+            prompt = self._build_analysis_prompt(market_data, account_state)
             
             # 调用DeepSeek API
             response = await self._call_deepseek_api(prompt)
             
-            # 解析响应
+            # 解析响应 (AI的完全自主决策)
             analysis_result = self._parse_analysis_response(response)
             
             # 记录决策
@@ -56,41 +68,125 @@ class DeepSeekDecisionEngine:
             
         except Exception as e:
             logger.error(f"Failed to analyze market data: {e}")
-            return await self._get_fallback_decision()
+            return self._get_fallback_decision()
     
-    def _build_analysis_prompt(self, market_data: Dict[str, Any]) -> str:
-        """构建分析提示"""
-        prompt = f"""
-你是一个专业的加密货币交易AI，需要分析当前市场数据并做出交易决策。
+    def _build_analysis_prompt(self, market_data: Dict[str, Any], account_state: Dict[str, Any]) -> str:
+        """构建AI自主决策提示 - nof1.ai风格"""
+        
+        # 获取当前持仓信息
+        positions = account_state.get('positions', [])
+        balance = account_state.get('balance', self.current_capital)
+        total_pnl = account_state.get('total_pnl', 0)
+        
+        prompt = f"""You are an autonomous crypto trading AI participating in Alpha Arena, competing against other AI models.
 
-当前市场数据：
-- BTC价格: ${market_data.get('BTC', {}).get('price', 0):,.2f}
-- ETH价格: ${market_data.get('ETH', {}).get('price', 0):,.2f}
-- SOL价格: ${market_data.get('SOL', {}).get('price', 0):,.2f}
-- 市场趋势: {market_data.get('trend', 'neutral')}
-- 波动率: {market_data.get('volatility', 'medium')}
+═══════════════════════════════════════════════════════════
+ACCOUNT STATUS
+═══════════════════════════════════════════════════════════
+Initial Capital: ${self.initial_capital:,.2f}
+Current Balance: ${balance:,.2f}
+Total PnL: ${total_pnl:,.2f} ({(total_pnl/self.initial_capital*100):.2f}%)
+Current Positions: {len(positions)} open position(s)
 
-请分析以下内容：
-1. 市场趋势分析
-2. 技术指标评估
-3. 风险因素识别
-4. 交易建议
+Position Details:
+{self._format_positions(positions)}
 
-请以JSON格式返回分析结果，包含以下字段：
-- analysis: 市场分析总结
-- trend: 趋势判断 (bullish/bearish/neutral)
-- confidence: 置信度 (0-1)
-- recommendation: 交易建议 (buy/sell/hold)
-- target_symbol: 目标交易对
-- position_size: 建议仓位大小 (0-1000)
-- stop_loss: 止损价格
-- take_profit: 止盈价格
-- reasoning: 决策理由
-- risk_level: 风险等级 (low/medium/high)
+═══════════════════════════════════════════════════════════
+MARKET DATA (Real-time from Hyperliquid)
+═══════════════════════════════════════════════════════════
+BTC: ${market_data.get('BTC', {}).get('price', 0):,.2f}
+ETH: ${market_data.get('ETH', {}).get('price', 0):,.2f}
+SOL: ${market_data.get('SOL', {}).get('price', 0):,.2f}
+BNB: ${market_data.get('BNB', {}).get('price', 0):,.2f}
+DOGE: ${market_data.get('DOGE', {}).get('price', 0):,.4f}
+XRP: ${market_data.get('XRP', {}).get('price', 0):,.4f}
 
-请确保返回有效的JSON格式。
+Market Trend: {market_data.get('trend', 'neutral')}
+Volatility: {market_data.get('volatility', 'medium')}
+
+═══════════════════════════════════════════════════════════
+YOUR CAPABILITIES
+═══════════════════════════════════════════════════════════
+✅ Open LONG positions (buy)
+✅ Open SHORT positions (sell)
+✅ Close existing positions
+✅ Hold (do nothing)
+✅ Trade perpetual contracts on Hyperliquid
+✅ YOU decide position sizes (any amount up to your balance)
+✅ YOU decide stop-loss and take-profit levels
+✅ YOU manage your own risk
+
+═══════════════════════════════════════════════════════════
+YOUR OBJECTIVE
+═══════════════════════════════════════════════════════════
+Maximize risk-adjusted returns. You are competing against:
+- Qwen 3 Max
+- Other AI models
+
+Your goal is to generate the highest Sharpe ratio and total returns.
+
+═══════════════════════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════════════════════
+Analyze the current market conditions and your account status.
+Make YOUR OWN trading decision based on YOUR OWN analysis.
+
+YOU are fully autonomous. All decisions are YOURS:
+- Position sizing is YOUR decision
+- Risk management is YOUR responsibility  
+- Entry/exit timing is YOUR choice
+- Stop-loss levels are YOUR decision
+- Take-profit targets are YOUR decision
+
+Think like a professional hedge fund manager. Consider:
+1. Market trend and momentum
+2. Your current positions and exposure
+3. Risk-reward ratio
+4. Portfolio diversification
+5. Market volatility
+6. Your competitive position vs other AIs
+
+═══════════════════════════════════════════════════════════
+RESPOND IN JSON FORMAT
+═══════════════════════════════════════════════════════════
+{{
+  "analysis": "Your detailed market analysis and reasoning (2-3 sentences)",
+  "action": "open_long" | "open_short" | "close_position" | "hold",
+  "symbol": "BTC" | "ETH" | "SOL" | "BNB" | "DOGE" | "XRP",
+  "size_usd": 1000.0,  // YOUR decision on position size in USD
+  "leverage": 1,  // Leverage to use (1-5x)
+  "stop_loss_pct": 0.02,  // YOUR stop-loss percentage (e.g., 0.02 = 2%)
+  "take_profit_pct": 0.05,  // YOUR take-profit percentage (e.g., 0.05 = 5%)
+  "reasoning": "Why you made this specific decision",
+  "risk_assessment": "Your assessment of the risk in this trade",
+  "confidence": 0.75,  // Your confidence level (0-1)
+  "expected_return": 0.03,  // Your expected return percentage
+  "time_horizon": "short" | "medium" | "long"  // Expected holding period
+}}
+
+IMPORTANT: 
+- Be decisive. Don't be overly conservative.
+- You're competing to WIN, not just to preserve capital.
+- Smart risk-taking is rewarded.
+- But also don't be reckless - you can lose everything.
+- Return ONLY valid JSON, no extra text.
 """
         return prompt
+    
+    def _format_positions(self, positions: List[Dict]) -> str:
+        """格式化持仓信息"""
+        if not positions:
+            return "No open positions"
+        
+        formatted = []
+        for i, pos in enumerate(positions, 1):
+            formatted.append(
+                f"  {i}. {pos.get('symbol', 'N/A')} - "
+                f"{pos.get('side', 'N/A')} "
+                f"${pos.get('size_usd', 0):,.2f} "
+                f"(PnL: ${pos.get('pnl', 0):,.2f})"
+            )
+        return "\n".join(formatted)
     
     async def _call_deepseek_api(self, prompt: str) -> str:
         """调用DeepSeek API"""
@@ -118,7 +214,7 @@ class DeepSeekDecisionEngine:
             raise
     
     def _parse_analysis_response(self, response: str) -> Dict[str, Any]:
-        """解析分析响应"""
+        """解析AI自主决策响应"""
         try:
             # 尝试解析JSON
             if response.strip().startswith('{'):
@@ -132,51 +228,63 @@ class DeepSeekDecisionEngine:
                 else:
                     raise ValueError("No valid JSON found in response")
             
-            # 验证必要字段
-            required_fields = ['analysis', 'trend', 'confidence', 'recommendation', 'target_symbol']
+            # 验证必要字段 (新的自主决策格式)
+            required_fields = [
+                'analysis', 'action', 'symbol', 'size_usd', 
+                'leverage', 'stop_loss_pct', 'take_profit_pct',
+                'reasoning', 'risk_assessment', 'confidence', 
+                'expected_return', 'time_horizon'
+            ]
             for field in required_fields:
                 if field not in result:
                     result[field] = self._get_default_value(field)
             
-            # 添加时间戳
+            # 添加元数据
             result['timestamp'] = datetime.now().isoformat()
             result['model'] = 'deepseek-chat'
+            
+            logger.info(f"DeepSeek AI Decision: {result.get('action')} {result.get('symbol')} ${result.get('size_usd')}")
             
             return result
             
         except Exception as e:
-            logger.error(f"Failed to parse analysis response: {e}")
+            logger.error(f"Failed to parse AI decision response: {e}")
+            logger.error(f"Response content: {response[:500]}...")  # 记录前500字符用于调试
             return self._get_fallback_decision()
     
     def _get_default_value(self, field: str) -> Any:
         """获取默认值"""
         defaults = {
-            'analysis': '市场分析暂时不可用',
-            'trend': 'neutral',
+            'analysis': 'Market analysis unavailable',
+            'action': 'hold',
+            'symbol': 'BTC',
+            'size_usd': 0,
+            'leverage': 1,
+            'stop_loss_pct': 0.02,
+            'take_profit_pct': 0.05,
+            'reasoning': 'Conservative approach due to missing data',
+            'risk_assessment': 'Unknown risk level',
             'confidence': 0.5,
-            'recommendation': 'hold',
-            'target_symbol': 'BTC',
-            'position_size': 100,
-            'stop_loss': 0,
-            'take_profit': 0,
-            'reasoning': '基于当前市场数据的保守建议',
-            'risk_level': 'medium'
+            'expected_return': 0,
+            'time_horizon': 'medium'
         }
         return defaults.get(field, None)
     
-    async def _get_fallback_decision(self) -> Dict[str, Any]:
-        """获取备用决策"""
+    def _get_fallback_decision(self) -> Dict[str, Any]:
+        """获取备用决策 - 当API调用失败时"""
         return {
-            'analysis': '市场数据分析暂时不可用，采用保守策略',
-            'trend': 'neutral',
+            'analysis': 'AI service temporarily unavailable. Holding position.',
+            'action': 'hold',
+            'symbol': 'BTC',
+            'size_usd': 0,
+            'leverage': 1,
+            'stop_loss_pct': 0.02,
+            'take_profit_pct': 0.05,
+            'reasoning': 'System error - maintaining current positions',
+            'risk_assessment': 'Cannot assess risk due to service outage',
             'confidence': 0.3,
-            'recommendation': 'hold',
-            'target_symbol': 'BTC',
-            'position_size': 50,
-            'stop_loss': 0,
-            'take_profit': 0,
-            'reasoning': '系统异常，采用保守策略',
-            'risk_level': 'low',
+            'expected_return': 0,
+            'time_horizon': 'short',
             'timestamp': datetime.now().isoformat(),
             'model': 'deepseek-chat',
             'fallback': True
@@ -201,10 +309,11 @@ class DeepSeekDecisionEngine:
             self.decision_history.append(decision_record)
             self.total_decisions += 1
             
-            if decision.get('confidence', 0) >= self.confidence_threshold:
-                self.successful_decisions += 1
+            # AI完全自主决策，所有决策都计入统计
+            # 不根据置信度判断成功与否，由实际交易结果决定
             
-            logger.info(f"DeepSeek decision recorded: {decision_id}")
+            logger.info(f"DeepSeek autonomous decision recorded: {decision_id}")
+            logger.info(f"Action: {decision.get('action')}, Symbol: {decision.get('symbol')}, Size: ${decision.get('size_usd')}")
             
         except Exception as e:
             logger.error(f"Failed to record decision: {e}")
@@ -237,7 +346,8 @@ class DeepSeekDecisionEngine:
                 'total_decisions': self.total_decisions,
                 'successful_decisions': self.successful_decisions,
                 'success_rate': round(success_rate, 2),
-                'confidence_threshold': self.confidence_threshold,
+                'initial_capital': self.initial_capital,
+                'current_capital': self.current_capital,
                 'model_name': self.model_name,
                 'timestamp': datetime.now().isoformat()
             }
@@ -248,61 +358,34 @@ class DeepSeekDecisionEngine:
                 'total_decisions': 0,
                 'successful_decisions': 0,
                 'success_rate': 0,
-                'confidence_threshold': self.confidence_threshold,
+                'initial_capital': self.initial_capital,
+                'current_capital': self.current_capital,
                 'model_name': self.model_name,
                 'timestamp': datetime.now().isoformat()
             }
     
-    async def validate_decision(self, decision: Dict[str, Any]) -> bool:
-        """验证决策"""
+    async def validate_decision(self, decision: Dict[str, Any], current_balance: float) -> bool:
+        """基础安全验证 - 只检查账户安全，不限制AI决策"""
         try:
-            # 检查置信度
-            confidence = decision.get('confidence', 0)
-            if confidence < 0.3:
-                logger.warning(f"Low confidence decision: {confidence}")
+            # ✅ 只检查账户不能透支
+            size_usd = decision.get('size_usd', 0)
+            if size_usd > current_balance:
+                logger.warning(f"Insufficient balance: ${size_usd} > ${current_balance}")
                 return False
             
-            # 检查仓位大小
-            position_size = decision.get('position_size', 0)
-            if position_size > self.max_position_size:
-                logger.warning(f"Position size too large: {position_size}")
+            # ✅ 检查杠杆合理性
+            leverage = decision.get('leverage', 1)
+            if leverage < 1 or leverage > 10:
+                logger.warning(f"Invalid leverage: {leverage}")
                 return False
             
-            # 检查风险等级
-            risk_level = decision.get('risk_level', 'medium')
-            if risk_level == 'high' and confidence < 0.8:
-                logger.warning("High risk decision with low confidence")
-                return False
+            # ❌ 删除所有其他人工限制
+            # 不检查置信度
+            # 不检查仓位大小上限
+            # 不检查风险等级
             
             return True
             
         except Exception as e:
             logger.error(f"Decision validation failed: {e}")
             return False
-    
-    async def optimize_decision(self, decision: Dict[str, Any]) -> Dict[str, Any]:
-        """优化决策"""
-        try:
-            # 根据风险等级调整仓位大小
-            risk_level = decision.get('risk_level', 'medium')
-            base_position = decision.get('position_size', 100)
-            
-            if risk_level == 'low':
-                optimized_position = min(base_position * 1.2, self.max_position_size)
-            elif risk_level == 'high':
-                optimized_position = max(base_position * 0.5, 50)
-            else:
-                optimized_position = base_position
-            
-            decision['position_size'] = optimized_position
-            
-            # 调整置信度
-            if decision.get('confidence', 0) < 0.5:
-                decision['recommendation'] = 'hold'
-                decision['position_size'] = 0
-            
-            return decision
-            
-        except Exception as e:
-            logger.error(f"Decision optimization failed: {e}")
-            return decision

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 interface Model {
   name: string;
@@ -30,12 +31,82 @@ interface TradeListCompleteProps {
   models: Model[];
 }
 
+const API_BASE = 'http://localhost:8000/api/v1';
+
 export default function TradeListComplete({ selectedModel, models }: TradeListCompleteProps) {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    generateMockTrades();
+    fetchRealTrades();
+    // 每30秒更新一次
+    const interval = setInterval(fetchRealTrades, 30000);
+    return () => clearInterval(interval);
   }, [models]);
+
+  const fetchRealTrades = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/trading/trades?limit=100`);
+      
+      if (response.data && response.data.trades) {
+        const realTrades = response.data.trades.map((trade: any, index: number) => {
+          // 找到对应的模型
+          const modelData = models.find(m => m.slug === trade.model) || models[0];
+          
+          return {
+            id: trade.id || index,
+            model: modelData.name,
+            modelIcon: modelData.icon || '🤖',
+            type: trade.side.toLowerCase() === 'buy' ? 'long' as const : 'short' as const,
+            symbol: trade.symbol,
+            price: `$${parseFloat(trade.price).toFixed(4)}`,
+            quantity: parseFloat(trade.size).toFixed(4),
+            notional: `$${(parseFloat(trade.size) * parseFloat(trade.price) / 1000).toFixed(3)}k`,
+            holdingTime: formatHoldingTime(trade.timestamp),
+            pnl: parseFloat(trade.pnl || 0),
+            timestamp: formatTimestamp(trade.timestamp)
+          };
+        });
+        
+        setTrades(realTrades);
+        setLoading(false);
+      } else {
+        // 如果API返回空数据，使用演示数据
+        generateMockTrades();
+      }
+    } catch (error) {
+      console.error('Failed to fetch trades, using mock data:', error);
+      generateMockTrades();
+    }
+  };
+
+  const formatHoldingTime = (timestamp: string): string => {
+    try {
+      const tradeTime = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - tradeTime.getTime();
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours}H ${minutes}M`;
+    } catch {
+      return '0H 0M';
+    }
+  };
+
+  const formatTimestamp = (timestamp: string): string => {
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-US', { 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    } catch {
+      return '';
+    }
+  };
 
   const generateMockTrades = () => {
     const symbols = ['DOGE!', 'ETH!', 'SOL!', 'XRP!', 'BTC!', 'BNB!'];

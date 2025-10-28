@@ -25,7 +25,9 @@ def get_trading_service() -> HyperliquidTradingService:
     """获取交易服务实例"""
     global trading_service
     if trading_service is None:
-        trading_service = HyperliquidTradingService(redis_client, testnet=True)
+        from app.core.config import settings
+        testnet = settings.HYPERLIQUID_TESTNET if hasattr(settings, 'HYPERLIQUID_TESTNET') else False
+        trading_service = HyperliquidTradingService(redis_client, testnet=testnet)
     return trading_service
 
 
@@ -33,10 +35,12 @@ def get_ai_orchestrator() -> AITradingOrchestrator:
     """获取AI编排器实例"""
     global ai_orchestrator, trading_service, market_data_service
     if ai_orchestrator is None:
+        from app.core.config import settings
+        testnet = settings.HYPERLIQUID_TESTNET if hasattr(settings, 'HYPERLIQUID_TESTNET') else False
         if trading_service is None:
-            trading_service = HyperliquidTradingService(redis_client, testnet=True)
+            trading_service = HyperliquidTradingService(redis_client, testnet=testnet)
         if market_data_service is None:
-            market_data_service = HyperliquidMarketData(redis_client, testnet=True)
+            market_data_service = HyperliquidMarketData(redis_client, testnet=testnet)
         ai_orchestrator = AITradingOrchestrator(
             redis_client, trading_service, market_data_service, testnet=True
         )
@@ -68,6 +72,47 @@ async def get_account_info(service: HyperliquidTradingService = Depends(get_trad
     except Exception as e:
         logger.error(f"Failed to get account info: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch account info")
+
+
+@router.get("/account/history")
+async def get_account_history(
+    limit: int = 100,
+    model: Optional[str] = None
+):
+    """获取账户历史记录"""
+    try:
+        history = []
+        
+        # 从Redis获取账户历史记录
+        cache_keys = [
+            "account:history:deepseek-chat-v3.1",
+            "account:history:qwen3-max"
+        ]
+        
+        for key in cache_keys:
+            model_name = key.split(":")[-1]
+            
+            # 如果指定了模型，只返回该模型的数据
+            if model and model_name != model:
+                continue
+                
+            data = await redis_client.get(key)
+            if data:
+                if isinstance(data, list):
+                    history.extend(data)
+                else:
+                    history.append(data)
+        
+        # 按时间排序并限制数量
+        history.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        history = history[:limit]
+        
+        return history
+        
+    except Exception as e:
+        logger.error(f"Failed to get account history: {e}")
+        # 返回空数组而不是错误，让前端显示初始状态
+        return []
 
 
 @router.get("/positions")

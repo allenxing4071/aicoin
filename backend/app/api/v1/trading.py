@@ -117,7 +117,8 @@ async def trigger_ai_decision(
 @router.get("/trades", response_model=TradeList)
 async def get_trades(
     symbol: str = None,
-    limit: int = 20,
+    model: str = None,
+    limit: int = 100,
     offset: int = 0,
     db: AsyncSession = Depends(get_db)
 ):
@@ -126,7 +127,8 @@ async def get_trades(
     
     Args:
         symbol: 交易品种 (可选)
-        limit: 返回数量
+        model: AI模型名称 (可选, deepseek-chat-v3.1 或 qwen3-max)
+        limit: 返回数量 (默认100)
         offset: 偏移量
         db: 数据库会话
         
@@ -140,6 +142,9 @@ async def get_trades(
         if symbol:
             query = query.where(Trade.symbol == symbol)
         
+        if model:
+            query = query.where(Trade.model == model)
+        
         query = query.order_by(Trade.timestamp.desc()).limit(limit).offset(offset)
         
         # 执行查询
@@ -150,6 +155,8 @@ async def get_trades(
         count_query = select(func.count(Trade.id))
         if symbol:
             count_query = count_query.where(Trade.symbol == symbol)
+        if model:
+            count_query = count_query.where(Trade.model == model)
         
         total_result = await db.execute(count_query)
         total = total_result.scalar()
@@ -196,5 +203,53 @@ async def get_trade(
         raise
     except Exception as e:
         logger.error(f"Error fetching trade: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/positions")
+async def get_positions(
+    model: str = None
+):
+    """
+    获取当前持仓
+    
+    Args:
+        model: AI模型名称 (可选, deepseek-chat-v3.1 或 qwen3-max)
+        
+    Returns:
+        当前持仓列表
+    """
+    try:
+        from app.api import trading as hyperliquid_trading
+        
+        trading_service = hyperliquid_trading.get_trading_service()
+        
+        # 从Hyperliquid获取真实持仓
+        positions = await trading_service.get_positions()
+        
+        # 格式化返回数据
+        formatted_positions = []
+        for pos in positions:
+            formatted_positions.append({
+                "symbol": pos.get("symbol", ""),
+                "side": pos.get("side", ""),
+                "size": pos.get("size", 0),
+                "entry_price": pos.get("entry_price", 0),
+                "unrealized_pnl": pos.get("unrealized_pnl", 0),
+                "leverage": pos.get("leverage", 1),
+                "liquidation_price": pos.get("liquidation_price"),
+                # 注意：Hyperliquid的持仓是所有AI共享的，无法按model区分
+                # 前端可以显示为"共享持仓"
+                "model": "shared"  # 所有AI共享同一个钱包
+            })
+        
+        return {
+            "success": True,
+            "positions": formatted_positions,
+            "total": len(formatted_positions)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching positions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

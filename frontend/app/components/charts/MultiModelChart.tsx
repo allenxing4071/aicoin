@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createChart, IChartApi, ISeriesApi, LineStyle } from 'lightweight-charts';
+import axios from 'axios';
 
 interface Model {
   name: string;
+  slug: string;
   value: number;
   change: number;
   color: string;
@@ -16,10 +18,13 @@ interface MultiModelChartProps {
   timeRange?: 'all' | '72h';
 }
 
+const API_BASE = 'http://localhost:8000/api/v1';
+
 export default function MultiModelChart({ models, timeRange = 'all' }: MultiModelChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRefs = useRef<Map<string, ISeriesApi<'Line'>>>(new Map());
+  const [accountHistory, setAccountHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -76,11 +81,8 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
         priceLineVisible: false,
         lastValueVisible: true,
       });
-      seriesRefs.current.set(model.name, series);
+      seriesRefs.current.set(model.slug, series);
     });
-
-    // 生成历史数据
-    generateHistoricalData();
 
     // 响应式调整
     const handleResize = () => {
@@ -94,82 +96,113 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
 
     window.addEventListener('resize', handleResize);
 
-    // 实时更新
-    const interval = setInterval(() => {
-      updateData();
-    }, 5000);
-
     return () => {
       window.removeEventListener('resize', handleResize);
-      clearInterval(interval);
       chart.remove();
     };
   }, [models]);
 
-  const generateHistoricalData = () => {
-    const now = Math.floor(Date.now() / 1000);
-    const daysBack = timeRange === '72h' ? 3 : 15; // 72小时 或 15天历史
-    const pointsPerDay = 24; // 每小时一个点
-    const totalPoints = daysBack * pointsPerDay;
-
-    models.forEach((model) => {
-      const data = [];
-      const startValue = 10000;
-      const endValue = model.value;
-      const totalChange = endValue - startValue;
-
-      for (let i = 0; i < totalPoints; i++) {
-        const time = (now - (totalPoints - i) * 3600) as any;
-        
-        // 使用趋势 + 随机波动
-        const progress = i / totalPoints;
-        const trendValue = startValue + (totalChange * progress);
-        const volatility = 200 * Math.sin(i / 10); // 周期性波动
-        const randomNoise = (Math.random() - 0.5) * 300;
-        
-        let value = trendValue + volatility + randomNoise;
-        
-        // 确保在合理范围内
-        value = Math.max(4000, Math.min(16000, value));
-        
-        data.push({
-          time,
-          value,
-        });
+  // 获取账户历史数据
+  useEffect(() => {
+    const fetchAccountHistory = async () => {
+      try {
+        const response = await axios.get(`${API_BASE}/trading/account/history`);
+        if (response.data && response.data.length > 0) {
+          setAccountHistory(response.data);
+          updateChartData(response.data);
+        } else {
+          // 如果没有历史数据，生成初始数据点
+          generateInitialData();
+        }
+      } catch (error) {
+        console.log('Failed to fetch account history, using initial data');
+        generateInitialData();
       }
+    };
 
-      const series = seriesRefs.current.get(model.name);
+    fetchAccountHistory();
+
+    // 每10秒更新一次
+    const interval = setInterval(fetchAccountHistory, 10000);
+
+    return () => clearInterval(interval);
+  }, [models, timeRange]);
+
+  const generateInitialData = () => {
+    const now = Math.floor(Date.now() / 1000);
+    
+    models.forEach((model) => {
+      const series = seriesRefs.current.get(model.slug);
       if (series) {
-        series.setData(data);
+        // 为每个AI生成初始资金点 ($100)
+        const initialData = [
+          {
+            time: now as any,
+            value: 100, // 初始资金 $100
+          }
+        ];
+        series.setData(initialData);
       }
     });
 
-    // 自动调整可见范围
     if (chartRef.current) {
       chartRef.current.timeScale().fitContent();
     }
   };
 
-  const updateData = () => {
-    const now = Math.floor(Date.now() / 1000) as any;
+  const updateChartData = (history: any[]) => {
+    if (!history || history.length === 0) return;
 
+    // 按模型分组数据
+    const dataByModel = new Map<string, any[]>();
+    
     models.forEach((model) => {
-      const series = seriesRefs.current.get(model.name);
-      if (series) {
-        // 小幅随机波动
-        const change = (Math.random() - 0.48) * 100;
-        const newValue = Math.max(4000, Math.min(16000, model.value + change));
-        
-        series.update({
-          time: now,
-          value: newValue,
+      dataByModel.set(model.slug, []);
+    });
+
+    // 处理历史数据
+    history.forEach((record: any) => {
+      const timestamp = Math.floor(new Date(record.timestamp).getTime() / 1000);
+      
+      if (record.model === 'deepseek-chat-v3.1' && dataByModel.has('deepseek-chat-v3.1')) {
+        dataByModel.get('deepseek-chat-v3.1')!.push({
+          time: timestamp as any,
+          value: parseFloat(record.account_value || record.balance || 100),
+        });
+      } else if (record.model === 'qwen3-max' && dataByModel.has('qwen3-max')) {
+        dataByModel.get('qwen3-max')!.push({
+          time: timestamp as any,
+          value: parseFloat(record.account_value || record.balance || 100),
         });
       }
     });
+
+    // 如果没有历史数据，添加初始点
+    models.forEach((model) => {
+      const data = dataByModel.get(model.slug) || [];
+      if (data.length === 0) {
+        const now = Math.floor(Date.now() / 1000);
+        data.push({
+          time: now as any,
+          value: 100, // 初始资金
+        });
+      }
+      
+      const series = seriesRefs.current.get(model.slug);
+      if (series) {
+        // 按时间排序
+        data.sort((a, b) => a.time - b.time);
+        series.setData(data);
+      }
+    });
+
+    if (chartRef.current) {
+      chartRef.current.timeScale().fitContent();
+    }
   };
 
   return (
-    <div className="relative w-full h-full bg-[#0a0b0d]">
+    <div className="relative w-full h-full bg-white">
       <div ref={chartContainerRef} className="w-full h-full" />
     </div>
   );

@@ -19,6 +19,7 @@ export default function Home() {
   const [apiStatus, setApiStatus] = useState({ status: 'checking', version: '0.0.0' });
   const [accountData, setAccountData] = useState<any>(null);
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
+  const [aiHealth, setAiHealth] = useState<any>(null);
   const [modelsData, setModelsData] = useState<any[]>([
     { name: 'DEEPSEEK CHAT V3.1', slug: 'deepseek-chat-v3.1', value: 100, change: 0, color: '#3b82f6', icon: '🧠' },
     { name: 'QWEN3 MAX', slug: 'qwen3-max', value: 100, change: 0, color: '#ec4899', icon: '🎨' },
@@ -37,10 +38,12 @@ export default function Home() {
     checkApiStatus();
     fetchAccountData();
     fetchModelsData();
+    fetchAiHealth();
     const interval = setInterval(() => {
       checkApiStatus();
       fetchAccountData();
       fetchModelsData();
+      fetchAiHealth();
     }, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -60,6 +63,17 @@ export default function Home() {
       setAccountData(response.data);
     } catch (error) {
       console.log('Using mock data');
+    }
+  };
+
+  const fetchAiHealth = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/ai/health`);
+      if (response.data && response.data.success) {
+        setAiHealth(response.data);
+      }
+    } catch (error) {
+      console.log('Failed to fetch AI health');
     }
   };
 
@@ -360,8 +374,8 @@ export default function Home() {
                   <div className="border-t border-gray-300 pt-4">
                     <h3 className="font-bold text-gray-900 mb-2">🎯 COMPETITION OVERVIEW</h3>
                     <p className="text-gray-700">
-                      Each AI model is given <span className="font-bold text-green-600">$10,000</span> of real capital to trade crypto perpetuals on Hyperliquid.
-                      The goal: maximize risk-adjusted returns through autonomous trading decisions.
+                      Two AI models (DeepSeek & Qwen) are trading with <span className="font-bold text-green-600">$300</span> of real capital on Hyperliquid Mainnet.
+                      The goal: maximize risk-adjusted returns through fully autonomous trading decisions.
                     </p>
                   </div>
 
@@ -382,15 +396,16 @@ export default function Home() {
                   </div>
 
                   <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">📋 COMPETITION RULES</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">📋 SYSTEM CONFIGURATION</h3>
                     <div className="space-y-2 text-gray-700">
-                      <div>├─ <span className="font-semibold">Starting Capital:</span> $10,000 per model</div>
+                      <div>├─ <span className="font-semibold">Starting Capital:</span> $300 (shared wallet)</div>
                       <div>├─ <span className="font-semibold">Market:</span> Crypto perpetuals (BTC, ETH, SOL, BNB, DOGE, XRP)</div>
-                      <div>├─ <span className="font-semibold">Platform:</span> Hyperliquid DEX</div>
-                      <div>├─ <span className="font-semibold">Objective:</span> Maximize risk-adjusted returns</div>
-                      <div>├─ <span className="font-semibold">Transparency:</span> All trades and decisions are public</div>
-                      <div>├─ <span className="font-semibold">Autonomy:</span> AI must handle sizing, timing, and risk management</div>
-                      <div>└─ <span className="font-semibold">Duration:</span> Continuous operation until November 3rd, 2025</div>
+                      <div>├─ <span className="font-semibold">Platform:</span> Hyperliquid Mainnet</div>
+                      <div>├─ <span className="font-semibold">Trading Mode:</span> 100% Autonomous - AI decides everything</div>
+                      <div>├─ <span className="font-semibold">Risk Control:</span> Minimal limits - AI self-manages risk</div>
+                      <div>├─ <span className="font-semibold">Transparency:</span> All trades visible on Hyperliquid</div>
+                      <div>├─ <span className="font-semibold">Decision Interval:</span> 30 seconds per AI model</div>
+                      <div>└─ <span className="font-semibold">Architecture:</span> Inspired by nof1.ai</div>
                     </div>
                   </div>
 
@@ -406,16 +421,15 @@ export default function Home() {
                   </div>
 
                   <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">⚠️ RISK CONTROLS</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">⚠️ AUTONOMOUS AI TRADING</h3>
                     <div className="space-y-2 text-gray-700">
-                      <div>• Max position size: 20% of account</div>
-                      <div>• Max leverage: 20x</div>
-                      <div>• Max open positions: 3 simultaneously</div>
-                      <div>• Min confidence threshold: 60%</div>
-                      <div>• Daily trade limit: 50 trades</div>
-                      <div>• Daily loss limit: 10% of account</div>
-                      <div>• Stop loss: 5% per position</div>
-                      <div>• Take profit: 10% per position</div>
+                      <div>• <span className="font-semibold">Position Sizing:</span> AI decides (any amount up to balance)</div>
+                      <div>• <span className="font-semibold">Leverage:</span> AI decides (Hyperliquid default)</div>
+                      <div>• <span className="font-semibold">Entry/Exit:</span> AI decides timing independently</div>
+                      <div>• <span className="font-semibold">Risk Management:</span> AI self-manages portfolio risk</div>
+                      <div>• <span className="font-semibold">Stop Loss/Take Profit:</span> AI decides targets</div>
+                      <div>• <span className="font-semibold">Trade Frequency:</span> Unlimited (AI optimizes)</div>
+                      <div>• <span className="font-semibold">Philosophy:</span> Full autonomy - minimal human intervention</div>
                     </div>
                   </div>
 
@@ -473,11 +487,13 @@ export default function Home() {
           <span className="text-gray-500">|</span>
           <span>API: {apiStatus.version}</span>
           <span className="text-gray-500">|</span>
-          <span>MODELS: 2/2 ACTIVE</span>
+          <span>ORCHESTRATOR: {aiHealth?.orchestrator_running ? 'RUNNING' : 'STOPPED'}</span>
         </div>
         <div className="flex items-center space-x-4">
-          <span>DEEPSEEK: ✅</span>
-          <span>QWEN: ✅</span>
+          <span>DEEPSEEK: {aiHealth?.models?.['deepseek-chat-v3.1']?.status === 'running' ? '✅' : '⏸️'}</span>
+          <span>QWEN: {aiHealth?.models?.['qwen3-max']?.status === 'running' ? '✅' : '⏸️'}</span>
+          <span className="text-gray-500">|</span>
+          <span>TRADES: {aiHealth?.stats?.total_trades || 0}</span>
           <span className="text-gray-500">|</span>
           <span>{new Date().toLocaleTimeString()}</span>
         </div>

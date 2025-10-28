@@ -20,6 +20,7 @@ class Trade(Base):
     fee = Column(Numeric(18, 8), nullable=True)
     ai_reasoning = Column(Text, nullable=True)  # AI decision reasoning
     confidence = Column(Numeric(3, 2), nullable=True)  # AI confidence score
+    model = Column(String(50), nullable=True, index=True)  # AI model name (deepseek-chat-v3.1, qwen3-max)
     timestamp = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

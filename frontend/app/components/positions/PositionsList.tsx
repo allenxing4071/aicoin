@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface Position {
   id: string;
@@ -21,184 +22,63 @@ interface PositionsListProps {
   selectedModel?: string;
 }
 
+const API_BASE = 'http://localhost:8000/api/v1';
+
+const COIN_ICONS: Record<string, string> = {
+  'BTC': '₿',
+  'ETH': 'Ξ',
+  'SOL': '☀️',
+  'BNB': '🔶',
+  'DOGE': '🐕',
+  'XRP': '🪝'
+};
+
 export default function PositionsList({ selectedModel = 'all' }: PositionsListProps) {
   const [positions, setPositions] = useState<Position[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 生成模拟持仓数据 - 只显示DEEPSEEK和QWEN
-    const mockPositions: Position[] = [
-      {
-        id: '3',
-        model: 'DEEPSEEK CHAT V3.1',
-        modelIcon: '🧠',
-        modelColor: '#3b82f6',
-        side: 'LONG',
-        coin: 'XRP',
-        coinIcon: '🪝',
-        leverage: '10X',
-        notional: 8458,
-        unrealizedPnL: -277.44,
-        totalUnrealizedPnL: 261.01,
-        availableCash: 4805.22,
-      },
-      {
-        id: '4',
-        model: 'DEEPSEEK CHAT V3.1',
-        modelIcon: '🧠',
-        modelColor: '#3b82f6',
-        side: 'LONG',
-        coin: 'DOGE',
-        coinIcon: '🐕',
-        leverage: '10X',
-        notional: 5312,
-        unrealizedPnL: 169.68,
-        totalUnrealizedPnL: 261.01,
-        availableCash: 4805.22,
-      },
-      {
-        id: '5',
-        model: 'DEEPSEEK CHAT V3.1',
-        modelIcon: '🧠',
-        modelColor: '#3b82f6',
-        side: 'LONG',
-        coin: 'BTC',
-        coinIcon: '₿',
-        leverage: '10X',
-        notional: 12968,
-        unrealizedPnL: 87.30,
-        totalUnrealizedPnL: 261.01,
-        availableCash: 4805.22,
-      },
-      {
-        id: '6',
-        model: 'DEEPSEEK CHAT V3.1',
-        modelIcon: '🧠',
-        modelColor: '#3b82f6',
-        side: 'LONG',
-        coin: 'ETH',
-        coinIcon: 'Ξ',
-        leverage: '10X',
-        notional: 11870,
-        unrealizedPnL: 67.64,
-        totalUnrealizedPnL: 261.01,
-        availableCash: 4805.22,
-      },
-      {
-        id: '7',
-        model: 'DEEPSEEK CHAT V3.1',
-        modelIcon: '🧠',
-        modelColor: '#3b82f6',
-        side: 'LONG',
-        coin: 'SOL',
-        coinIcon: '☀️',
-        leverage: '15X',
-        notional: 14981,
-        unrealizedPnL: 26.59,
-        totalUnrealizedPnL: 261.01,
-        availableCash: 4805.22,
-      },
-      {
-        id: '8',
-        model: 'DEEPSEEK CHAT V3.1',
-        modelIcon: '🧠',
-        modelColor: '#3b82f6',
-        side: 'LONG',
-        coin: 'BNB',
-        coinIcon: '🔶',
-        leverage: '10X',
-        notional: 8846,
-        unrealizedPnL: 187.23,
-        totalUnrealizedPnL: 261.01,
-        availableCash: 4805.22,
-      },
-      {
-        id: '19',
-        model: 'QWEN3 MAX',
-        modelIcon: '🎨',
-        modelColor: '#ec4899',
-        side: 'SHORT',
-        coin: 'XRP',
-        coinIcon: '🪝',
-        leverage: '20X',
-        notional: 3592,
-        unrealizedPnL: 16.32,
-        totalUnrealizedPnL: -188.34,
-        availableCash: 1819.47,
-      },
-      {
-        id: '20',
-        model: 'QWEN3 MAX',
-        modelIcon: '🎨',
-        modelColor: '#ec4899',
-        side: 'LONG',
-        coin: 'DOGE',
-        coinIcon: '🐕',
-        leverage: '10X',
-        notional: 1508,
-        unrealizedPnL: 15.45,
-        totalUnrealizedPnL: -188.34,
-        availableCash: 1819.47,
-      },
-      {
-        id: '21',
-        model: 'QWEN3 MAX',
-        modelIcon: '🎨',
-        modelColor: '#ec4899',
-        side: 'SHORT',
-        coin: 'BTC',
-        coinIcon: '₿',
-        leverage: '15X',
-        notional: 3242,
-        unrealizedPnL: -3.01,
-        totalUnrealizedPnL: -188.34,
-        availableCash: 1819.47,
-      },
-      {
-        id: '22',
-        model: 'QWEN3 MAX',
-        modelIcon: '🎨',
-        modelColor: '#ec4899',
-        side: 'LONG',
-        coin: 'ETH',
-        coinIcon: 'Ξ',
-        leverage: '12X',
-        notional: 6526,
-        unrealizedPnL: -83.70,
-        totalUnrealizedPnL: -188.34,
-        availableCash: 1819.47,
-      },
-      {
-        id: '23',
-        model: 'QWEN3 MAX',
-        modelIcon: '🎨',
-        modelColor: '#ec4899',
-        side: 'LONG',
-        coin: 'SOL',
-        coinIcon: '☀️',
-        leverage: '15X',
-        notional: 3814,
-        unrealizedPnL: -98.84,
-        totalUnrealizedPnL: -188.34,
-        availableCash: 1819.47,
-      },
-      {
-        id: '24',
-        model: 'QWEN3 MAX',
-        modelIcon: '🎨',
-        modelColor: '#ec4899',
-        side: 'SHORT',
-        coin: 'BNB',
-        coinIcon: '🔶',
-        leverage: '10X',
-        notional: 3848,
-        unrealizedPnL: -34.55,
-        totalUnrealizedPnL: -188.34,
-        availableCash: 1819.47,
-      },
-    ];
-
-    setPositions(mockPositions);
+    fetchRealPositions();
+    // 每10秒更新一次
+    const interval = setInterval(fetchRealPositions, 10000);
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchRealPositions = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/trading/positions`);
+      
+      if (response.data && response.data.success && response.data.positions) {
+        const realPositions = response.data.positions.map((pos: any, index: number) => ({
+          id: `pos_${index}`,
+          model: 'SHARED WALLET',  // 所有AI共享同一个钱包
+          modelIcon: '🤖',
+          modelColor: '#6b7280',
+          side: (pos.side === 'long' || pos.size > 0) ? 'LONG' as const : 'SHORT' as const,
+          coin: pos.symbol.replace('-PERP', ''),
+          coinIcon: COIN_ICONS[pos.symbol.replace('-PERP', '')] || '💰',
+          leverage: pos.leverage ? `${pos.leverage}X` : '1X',
+          notional: Math.abs(pos.size * pos.entry_price),
+          unrealizedPnL: pos.unrealized_pnl || 0,
+          totalUnrealizedPnL: pos.unrealized_pnl || 0,
+          availableCash: 0  // 从account API获取
+        }));
+        
+        setPositions(realPositions);
+        setLoading(false);
+      } else {
+        // 没有持仓时显示空列表
+        setPositions([]);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Failed to fetch positions:', error);
+      // API失败时显示空列表
+      setPositions([]);
+      setLoading(false);
+    }
+  };
+
 
   // 按模型分组持仓
   const groupedPositions = positions.reduce((acc, position) => {

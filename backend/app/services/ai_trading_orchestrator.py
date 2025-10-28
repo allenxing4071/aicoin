@@ -190,18 +190,30 @@ class AITradingOrchestrator:
             
             # 获取DeepSeek决策
             try:
-                deepseek_decision = await self.deepseek_engine.analyze_market_data(market_data)
-                if await self.deepseek_engine.validate_decision(deepseek_decision):
-                    deepseek_decision = await self.deepseek_engine.optimize_decision(deepseek_decision)
+                # 获取DeepSeek账户状态
+                deepseek_account = await self.trading_service.get_account_state()
+                deepseek_balance = float(deepseek_account.get('marginSummary', {}).get('accountValue', 100))
+                
+                deepseek_decision = await self.deepseek_engine.analyze_market_data(
+                    market_data,
+                    account_state={'balance': deepseek_balance, 'initial_capital': 100}
+                )
+                if await self.deepseek_engine.validate_decision(deepseek_decision, deepseek_balance):
                     decisions.append(deepseek_decision)
             except Exception as e:
                 logger.error(f"DeepSeek decision failed: {e}")
             
             # 获取Qwen决策
             try:
-                qwen_decision = await self.qwen_engine.analyze_market_data(market_data)
-                if await self.qwen_engine.validate_decision(qwen_decision):
-                    qwen_decision = await self.qwen_engine.optimize_decision(qwen_decision)
+                # 获取Qwen账户状态
+                qwen_account = await self.trading_service.get_account_state()
+                qwen_balance = float(qwen_account.get('marginSummary', {}).get('accountValue', 100))
+                
+                qwen_decision = await self.qwen_engine.analyze_market_data(
+                    market_data,
+                    account_state={'balance': qwen_balance, 'initial_capital': 100}
+                )
+                if await self.qwen_engine.validate_decision(qwen_decision, qwen_balance):
                     decisions.append(qwen_decision)
             except Exception as e:
                 logger.error(f"Qwen decision failed: {e}")
@@ -224,9 +236,32 @@ class AITradingOrchestrator:
                     logger.warning("Max concurrent trades reached, skipping new trades")
                     continue
                 
+                # 转换AI决策格式为交易执行格式
+                action = decision.get('action', 'hold')
+                
                 # 检查决策是否应该执行
-                if decision.get('recommendation') == 'hold':
+                if action == 'hold':
                     continue
+                
+                # 将action转换为recommendation
+                if action == 'open_long':
+                    decision['recommendation'] = 'buy'
+                elif action == 'open_short':
+                    decision['recommendation'] = 'sell'
+                elif action == 'close_position':
+                    decision['recommendation'] = 'close'
+                else:
+                    continue
+                
+                # 将symbol转换为target_symbol
+                if 'symbol' in decision and 'target_symbol' not in decision:
+                    decision['target_symbol'] = decision['symbol']
+                
+                # 将size_usd转换为position_size
+                if 'size_usd' in decision and 'position_size' not in decision:
+                    decision['position_size'] = decision['size_usd']
+                
+                logger.info(f"Executing AI decision: {decision.get('model')} - {decision.get('recommendation')} {decision.get('target_symbol')} ${decision.get('position_size')}")
                 
                 # 执行交易
                 await self._execute_trade(decision)
@@ -241,6 +276,7 @@ class AITradingOrchestrator:
             recommendation = decision.get('recommendation', 'hold')
             position_size = decision.get('position_size', 100)
             confidence = decision.get('confidence', 0)
+            model_name = decision.get('model', 'unknown')
             
             if recommendation == 'hold':
                 return
@@ -267,19 +303,77 @@ class AITradingOrchestrator:
                     'side': side,
                     'size': position_size,
                     'decision': decision,
+                    'model': model_name,
                     'timestamp': datetime.now().isoformat()
                 }
                 
                 # 更新统计
                 self.total_trades += 1
                 
-                logger.info(f"Trade executed successfully: {order_id}")
+                # 记录账户历史
+                await self._record_account_history(model_name, decision)
+                
+                logger.info(f"Trade executed successfully: {order_id} by {model_name}")
                 
             else:
                 logger.error(f"Trade execution failed: {trade_result.get('error')}")
                 
         except Exception as e:
             logger.error(f"Failed to execute trade: {e}")
+    
+    async def _record_account_history(self, model: str, decision: Dict[str, Any]):
+        """记录账户历史"""
+        try:
+            # 获取真实的账户状态
+            account_state = await self.trading_service.get_account_state()
+            logger.info(f"DEBUG: account_state = {account_state}")
+            
+            # 从marginSummary中获取账户价值
+            margin_summary = account_state.get('marginSummary', {})
+            current_balance = float(margin_summary.get('accountValue', 100))
+            logger.info(f"DEBUG: current_balance = {current_balance}")
+            
+            # 标准化模型名称（用于API查询）
+            # deepseek-chat -> deepseek-chat-v3.1
+            # qwen-max -> qwen3-max
+            api_model_name = model
+            if model == 'deepseek-chat':
+                api_model_name = 'deepseek-chat-v3.1'
+            elif model == 'qwen-max':
+                api_model_name = 'qwen3-max'
+            
+            history_record = {
+                'timestamp': datetime.now().isoformat(),
+                'model': api_model_name,
+                'account_value': float(current_balance),
+                'balance': float(current_balance),
+                'action': decision.get('recommendation', 'hold'),
+                'symbol': decision.get('target_symbol', ''),
+                'confidence': decision.get('confidence', 0)
+            }
+            
+            # 存储到Redis（使用API模型名称作为key）
+            cache_key = f"account:history:{api_model_name}"
+            
+            # 获取现有历史记录
+            existing_history = await self.redis_client.get(cache_key) or []
+            if not isinstance(existing_history, list):
+                existing_history = [existing_history] if existing_history else []
+            
+            # 添加新记录
+            existing_history.append(history_record)
+            
+            # 保留最近100条记录
+            if len(existing_history) > 100:
+                existing_history = existing_history[-100:]
+            
+            # 保存到Redis（保留24小时）
+            await self.redis_client.set(cache_key, existing_history, expire=86400)
+            
+            logger.info(f"Account history recorded for {model}")
+            
+        except Exception as e:
+            logger.error(f"Failed to record account history: {e}")
     
     async def _monitor_active_trades(self):
         """监控活跃交易"""

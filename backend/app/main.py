@@ -7,7 +7,7 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.redis_client import redis_client
-from app.api.v1 import trading as v1_trading, market, account, performance
+from app.api.v1 import trading as v1_trading, market, account, performance, ai
 from app.api import websocket, market_data
 from app.api import trading as hyperliquid_trading
 from app.services.hyperliquid_market_data import HyperliquidMarketData
@@ -67,6 +67,11 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/performance",
     tags=["Performance"]
 )
+app.include_router(
+    ai.router,
+    prefix=f"{settings.API_V1_PREFIX}/ai",
+    tags=["AI Status"]
+)
 
 # Include new API routers
 app.include_router(
@@ -80,7 +85,7 @@ app.include_router(
 )
 app.include_router(
     hyperliquid_trading.router,
-    prefix=f"{settings.API_V1_PREFIX}/hyperliquid",
+    prefix=f"{settings.API_V1_PREFIX}/trading",
     tags=["Hyperliquid Trading"]
 )
 
@@ -117,11 +122,13 @@ async def startup_event():
     
     # Initialize Hyperliquid trading service
     try:
-        trading_service = HyperliquidTradingService(redis_client, testnet=True)
+        # 从配置读取testnet设置
+        testnet = settings.HYPERLIQUID_TESTNET if hasattr(settings, 'HYPERLIQUID_TESTNET') else False
+        trading_service = HyperliquidTradingService(redis_client, testnet=testnet)
         await trading_service.initialize()
         # Set the global service instance
         hyperliquid_trading.set_trading_service(trading_service)
-        logger.info("Hyperliquid trading service initialized")
+        logger.info(f"Hyperliquid trading service initialized (testnet={testnet})")
     except Exception as e:
         logger.error(f"Trading service initialization failed: {e}")
     
@@ -133,6 +140,10 @@ async def startup_event():
             )
             hyperliquid_trading.set_ai_orchestrator(ai_orchestrator)
             logger.info("AI trading orchestrator initialized")
+            
+            # Start the trading loop
+            await ai_orchestrator.start_trading()
+            logger.info("AI trading orchestrator started - autonomous trading enabled!")
     except Exception as e:
         logger.error(f"AI orchestrator initialization failed: {e}")
     

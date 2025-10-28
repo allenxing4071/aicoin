@@ -29,7 +29,8 @@ class Settings(BaseSettings):
     # Hyperliquid
     HYPERLIQUID_WALLET_ADDRESS: Optional[str] = None
     HYPERLIQUID_PRIVATE_KEY: Optional[str] = None
-    HYPERLIQUID_TESTNET: bool = True
+    HYPERLIQUID_VAULT_ADDRESS: Optional[str] = None  # 主钱包地址(资金来源)
+    HYPERLIQUID_TESTNET: bool = False
     HYPERLIQUID_API_URL: str = "https://api.hyperliquid-testnet.xyz"
     
     # Security

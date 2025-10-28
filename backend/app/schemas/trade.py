@@ -31,6 +31,7 @@ class TradeResponse(TradeBase):
     fee: Optional[Decimal]
     ai_reasoning: Optional[str]
     confidence: Optional[Decimal]
+    model: Optional[str] = None  # AI model name
     timestamp: datetime
     created_at: datetime
     
