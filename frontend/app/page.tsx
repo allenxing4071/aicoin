@@ -58,10 +58,10 @@ export default function Home() {
 
   const fetchAccountData = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/account/status`);
+      const response = await axios.get(`${API_BASE}/account/info`);
       setAccountData(response.data);
     } catch (error) {
-      console.log('Using mock data');
+      console.log('Using mock data for account info');
     }
   };
 
