@@ -82,15 +82,25 @@ class HyperliquidClient:
             raise
     
     async def get_account_balance(self) -> Dict[str, Any]:
-        """获取账户余额"""
+        """获取账户余额 - 从Hyperliquid获取真实数据"""
         try:
-            logger.info("Fetching account balance")
+            logger.info("Fetching account balance from Hyperliquid")
             
-            # TODO: 实现真实API调用
+            # 使用hyperliquid_trading服务获取真实账户状态
+            from app.services.hyperliquid_trading import HyperliquidTradingService
+            from app.core.database import AsyncSessionLocal
+            from app.core.redis_client import redis_client
+            
+            trading_service = HyperliquidTradingService(redis_client, testnet=self.testnet)
+            await trading_service.initialize()
+            
+            account_state = await trading_service.get_account_state()
+            margin_summary = account_state.get('marginSummary', {})
+            
             return {
-                "balance": "10000.00",
-                "equity": "10125.50",
-                "unrealized_pnl": "125.50",
+                "balance": str(margin_summary.get('accountValue', '0')),
+                "equity": str(margin_summary.get('accountValue', '0')),
+                "unrealized_pnl": str(margin_summary.get('totalNtlPos', '0')),
                 "realized_pnl": "0.00"
             }
             
@@ -99,12 +109,19 @@ class HyperliquidClient:
             raise
     
     async def get_positions(self) -> List[Dict[str, Any]]:
-        """获取持仓"""
+        """获取持仓 - 从Hyperliquid获取真实数据"""
         try:
-            logger.info("Fetching positions")
+            logger.info("Fetching positions from Hyperliquid")
             
-            # TODO: 实现真实API调用
-            return []
+            # 使用hyperliquid_trading服务获取真实持仓
+            from app.services.hyperliquid_trading import HyperliquidTradingService
+            from app.core.redis_client import redis_client
+            
+            trading_service = HyperliquidTradingService(redis_client, testnet=self.testnet)
+            await trading_service.initialize()
+            
+            positions = await trading_service.get_positions()
+            return positions
             
         except Exception as e:
             logger.error(f"Error fetching positions: {e}")

@@ -285,8 +285,19 @@ class HyperliquidTradingService:
                         "timestamp": datetime.now().isoformat()
                     }
                 else:
-                    error_msg = result.get("response", {}).get("error", str(result))
+                    # 处理错误响应，response可能是字符串或字典
+                    response_data = result.get("response", "")
+                    if isinstance(response_data, dict):
+                        error_msg = response_data.get("error", str(result))
+                    else:
+                        error_msg = str(response_data)  # response是字符串（如'Multi-sig required'）
+                    
                     logger.error(f"Trade failed: {error_msg}")
+                    
+                    # 特殊处理Multi-sig错误
+                    if "multi-sig" in error_msg.lower():
+                        logger.warning("⚠️  Multi-sig is enabled on your Hyperliquid account. API trading requires disabling multi-sig.")
+                    
                     return {
                         "success": False,
                         "error": error_msg,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import PriceTicker from './components/ticker/PriceTicker';
 import MultiModelChart from './components/charts/MultiModelChart';
@@ -26,8 +26,8 @@ export default function Home() {
     // { name: 'QWEN3 MAX', slug: 'qwen3-max', value: 100, change: 0, color: '#ec4899', icon: '🎨' },
   ]);
 
-  // 模型数据 - 只显示DeepSeek和Qwen3
-  const modelsWithData = modelsData;
+  // 使用useMemo稳定models引用，避免React重新渲染错误
+  const modelsWithData = useMemo(() => modelsData, [JSON.stringify(modelsData)]);
 
   // 使用真实的单一账户余额
   const totalValue = modelsWithData.length > 0 ? modelsWithData[0].value : 0;
@@ -78,29 +78,33 @@ export default function Home() {
 
   const fetchModelsData = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/trading/account/history`);
-      if (response.data && response.data.length > 0) {
-        // 只获取DeepSeek的数据
-        const deepseekRecords = response.data.filter((r: any) => r.model === 'deepseek-chat-v3.1');
-        
-        const deepseekLatest = deepseekRecords[deepseekRecords.length - 1];
+      // 从Hyperliquid获取真实账户余额
+      const accountResponse = await axios.get(`${API_BASE}/account/info`);
+      const realBalance = parseFloat(accountResponse.data.equity || accountResponse.data.balance || 100);
+      
+      // 从历史记录获取初始值计算收益率
+      const historyResponse = await axios.get(`${API_BASE}/trading/account/history`);
+      let deepseekChange = 0;
+      
+      if (historyResponse.data && historyResponse.data.length > 0) {
+        const deepseekRecords = historyResponse.data.filter((r: any) => r.model === 'deepseek-chat-v3.1');
         const deepseekFirst = deepseekRecords[0];
         
-        // 计算收益率
-        const deepseekChange = deepseekFirst ? ((deepseekLatest.account_value - deepseekFirst.account_value) / deepseekFirst.account_value * 100) : 0;
-        
-        setModelsData([
-          { 
-            name: 'DEEPSEEK CHAT V3.1', 
-            slug: 'deepseek-chat-v3.1', 
-            value: deepseekLatest ? deepseekLatest.account_value : 100, 
-            change: deepseekChange, 
-            color: '#3b82f6', 
-            icon: '🧠' 
-          },
-          // Qwen已禁用
-        ]);
+        if (deepseekFirst && deepseekFirst.account_value) {
+          deepseekChange = ((realBalance - deepseekFirst.account_value) / deepseekFirst.account_value * 100);
+        }
       }
+      
+      setModelsData([
+        { 
+          name: 'DEEPSEEK CHAT V3.1', 
+          slug: 'deepseek-chat-v3.1', 
+          value: realBalance,  // 使用Hyperliquid真实余额
+          change: deepseekChange, 
+          color: '#3b82f6', 
+          icon: '🧠' 
+        },
+      ]);
     } catch (error) {
       console.log('Failed to fetch models data, using default');
     }
