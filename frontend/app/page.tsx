@@ -19,23 +19,28 @@ export default function Home() {
   const [apiStatus, setApiStatus] = useState({ status: 'checking', version: '0.0.0' });
   const [accountData, setAccountData] = useState<any>(null);
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
+  const [modelsData, setModelsData] = useState<any[]>([
+    { name: 'DEEPSEEK CHAT V3.1', slug: 'deepseek-chat-v3.1', value: 100, change: 0, color: '#3b82f6', icon: '🧠' },
+    { name: 'QWEN3 MAX', slug: 'qwen3-max', value: 100, change: 0, color: '#ec4899', icon: '🎨' },
+  ]);
 
   // 模型数据 - 只显示DeepSeek和Qwen3
-  const modelsWithData = [
-    { name: 'DEEPSEEK CHAT V3.1', slug: 'deepseek-chat-v3.1', value: 11179.83, change: 11.80, color: '#3b82f6', icon: '🧠' },
-    { name: 'QWEN3 MAX', slug: 'qwen3-max', value: 10391.69, change: 3.92, color: '#ec4899', icon: '🎨' },
-  ];
+  const modelsWithData = modelsData;
 
-  const totalValue = modelsWithData.reduce((sum, m) => sum + m.value, 0);
+  // 使用真实的单一账户余额（不是两个AI的总和）
+  // 因为两个AI操作同一个Hyperliquid钱包
+  const totalValue = modelsWithData.length > 0 ? modelsWithData[0].value : 0;
   const highest = modelsWithData.reduce((prev, current) => (prev.change > current.change) ? prev : current);
   const lowest = modelsWithData.reduce((prev, current) => (prev.change < current.change) ? prev : current);
 
   useEffect(() => {
     checkApiStatus();
     fetchAccountData();
+    fetchModelsData();
     const interval = setInterval(() => {
       checkApiStatus();
       fetchAccountData();
+      fetchModelsData();
     }, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -55,6 +60,48 @@ export default function Home() {
       setAccountData(response.data);
     } catch (error) {
       console.log('Using mock data');
+    }
+  };
+
+  const fetchModelsData = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/trading/account/history`);
+      if (response.data && response.data.length > 0) {
+        // 获取每个模型的最新数据
+        const deepseekRecords = response.data.filter((r: any) => r.model === 'deepseek-chat-v3.1');
+        const qwenRecords = response.data.filter((r: any) => r.model === 'qwen3-max');
+        
+        const deepseekLatest = deepseekRecords[deepseekRecords.length - 1];
+        const qwenLatest = qwenRecords[qwenRecords.length - 1];
+        
+        const deepseekFirst = deepseekRecords[0];
+        const qwenFirst = qwenRecords[0];
+        
+        // 计算收益率
+        const deepseekChange = deepseekFirst ? ((deepseekLatest.account_value - deepseekFirst.account_value) / deepseekFirst.account_value * 100) : 0;
+        const qwenChange = qwenFirst ? ((qwenLatest.account_value - qwenFirst.account_value) / qwenFirst.account_value * 100) : 0;
+        
+        setModelsData([
+          { 
+            name: 'DEEPSEEK CHAT V3.1', 
+            slug: 'deepseek-chat-v3.1', 
+            value: deepseekLatest ? deepseekLatest.account_value : 100, 
+            change: deepseekChange, 
+            color: '#3b82f6', 
+            icon: '🧠' 
+          },
+          { 
+            name: 'QWEN3 MAX', 
+            slug: 'qwen3-max', 
+            value: qwenLatest ? qwenLatest.account_value : 100, 
+            change: qwenChange, 
+            color: '#ec4899', 
+            icon: '🎨' 
+          },
+        ]);
+      }
+    } catch (error) {
+      console.log('Failed to fetch models data, using default');
     }
   };
 
