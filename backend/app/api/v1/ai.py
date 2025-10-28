@@ -52,12 +52,8 @@ async def get_ai_health():
                     "status": "running" if is_running else "stopped",
                     "last_decision_time": deepseek_last_decision,
                     "error": None
-                },
-                "qwen3-max": {
-                    "status": "running" if is_running else "stopped",
-                    "last_decision_time": qwen_last_decision,
-                    "error": None
                 }
+                # Qwen已禁用
             },
             "stats": {
                 "total_trades": total_trades,
