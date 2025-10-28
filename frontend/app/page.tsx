@@ -22,17 +22,16 @@ export default function Home() {
   const [aiHealth, setAiHealth] = useState<any>(null);
   const [modelsData, setModelsData] = useState<any[]>([
     { name: 'DEEPSEEK CHAT V3.1', slug: 'deepseek-chat-v3.1', value: 100, change: 0, color: '#3b82f6', icon: '🧠' },
-    { name: 'QWEN3 MAX', slug: 'qwen3-max', value: 100, change: 0, color: '#ec4899', icon: '🎨' },
+    // Qwen已禁用 - 只使用DeepSeek单一AI模型
+    // { name: 'QWEN3 MAX', slug: 'qwen3-max', value: 100, change: 0, color: '#ec4899', icon: '🎨' },
   ]);
 
   // 模型数据 - 只显示DeepSeek和Qwen3
   const modelsWithData = modelsData;
 
-  // 使用真实的单一账户余额（不是两个AI的总和）
-  // 因为两个AI操作同一个Hyperliquid钱包
+  // 使用真实的单一账户余额
   const totalValue = modelsWithData.length > 0 ? modelsWithData[0].value : 0;
-  const highest = modelsWithData.reduce((prev, current) => (prev.change > current.change) ? prev : current);
-  const lowest = modelsWithData.reduce((prev, current) => (prev.change < current.change) ? prev : current);
+  const currentModel = modelsWithData.length > 0 ? modelsWithData[0] : null;
 
   useEffect(() => {
     checkApiStatus();
@@ -81,19 +80,14 @@ export default function Home() {
     try {
       const response = await axios.get(`${API_BASE}/trading/account/history`);
       if (response.data && response.data.length > 0) {
-        // 获取每个模型的最新数据
+        // 只获取DeepSeek的数据
         const deepseekRecords = response.data.filter((r: any) => r.model === 'deepseek-chat-v3.1');
-        const qwenRecords = response.data.filter((r: any) => r.model === 'qwen3-max');
         
         const deepseekLatest = deepseekRecords[deepseekRecords.length - 1];
-        const qwenLatest = qwenRecords[qwenRecords.length - 1];
-        
         const deepseekFirst = deepseekRecords[0];
-        const qwenFirst = qwenRecords[0];
         
         // 计算收益率
         const deepseekChange = deepseekFirst ? ((deepseekLatest.account_value - deepseekFirst.account_value) / deepseekFirst.account_value * 100) : 0;
-        const qwenChange = qwenFirst ? ((qwenLatest.account_value - qwenFirst.account_value) / qwenFirst.account_value * 100) : 0;
         
         setModelsData([
           { 
@@ -104,14 +98,7 @@ export default function Home() {
             color: '#3b82f6', 
             icon: '🧠' 
           },
-          { 
-            name: 'QWEN3 MAX', 
-            slug: 'qwen3-max', 
-            value: qwenLatest ? qwenLatest.account_value : 100, 
-            change: qwenChange, 
-            color: '#ec4899', 
-            icon: '🎨' 
-          },
+          // Qwen已禁用
         ]);
       }
     } catch (error) {
@@ -197,22 +184,16 @@ export default function Home() {
                 </div>
               </div>
               <div className="flex items-center space-x-6 text-sm">
-                <div>
-                  <span className="text-gray-500">HIGHEST: </span>
-                  <span className="font-mono">{highest.icon} {highest.name.split(' ')[0]}</span>
-                  <span className="text-gray-900 ml-2">${highest.value.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
-                  <span className={`ml-2 ${highest.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {highest.change >= 0 ? '+' : ''}{highest.change.toFixed(2)}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">LOWEST: </span>
-                  <span className="font-mono">{lowest.icon} {lowest.name.split(' ')[0]}</span>
-                  <span className="text-gray-900 ml-2">${lowest.value.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
-                  <span className={`ml-2 ${lowest.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {lowest.change >= 0 ? '+' : ''}{lowest.change.toFixed(2)}%
-                  </span>
-                </div>
+                {currentModel && (
+                  <div>
+                    <span className="text-gray-500">AI MODEL: </span>
+                    <span className="font-mono">{currentModel.icon} {currentModel.name.split(' ')[0]}</span>
+                    <span className="text-gray-900 ml-2">${currentModel.value.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                    <span className={`ml-2 ${currentModel.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentModel.change >= 0 ? '+' : ''}{currentModel.change.toFixed(2)}%
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -372,25 +353,20 @@ export default function Home() {
                   </div>
 
                   <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">🎯 COMPETITION OVERVIEW</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">🎯 SYSTEM OVERVIEW</h3>
                     <p className="text-gray-700">
-                      Two AI models (DeepSeek & Qwen) are trading with <span className="font-bold text-green-600">$300</span> of real capital on Hyperliquid Mainnet.
+                      DeepSeek AI is trading with <span className="font-bold text-green-600">$300</span> of real capital on Hyperliquid Mainnet.
                       The goal: maximize risk-adjusted returns through fully autonomous trading decisions.
                     </p>
                   </div>
 
                   <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">🤖 COMPETING MODELS</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">🤖 AI MODEL</h3>
                     <div className="space-y-2 text-gray-700">
                       <div className="flex items-center space-x-2">
                         <span className="text-lg">🧠</span>
                         <span className="font-semibold">DeepSeek Chat V3.1</span>
                         <span className="text-gray-500">- Advanced reasoning model</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">🎨</span>
-                        <span className="font-semibold">Qwen3 Max</span>
-                        <span className="text-gray-500">- Multimodal AI system</span>
                       </div>
                     </div>
                   </div>
@@ -491,7 +467,6 @@ export default function Home() {
         </div>
         <div className="flex items-center space-x-4">
           <span>DEEPSEEK: {aiHealth?.models?.['deepseek-chat-v3.1']?.status === 'running' ? '✅' : '⏸️'}</span>
-          <span>QWEN: {aiHealth?.models?.['qwen3-max']?.status === 'running' ? '✅' : '⏸️'}</span>
           <span className="text-gray-500">|</span>
           <span>TRADES: {aiHealth?.stats?.total_trades || 0}</span>
           <span className="text-gray-500">|</span>

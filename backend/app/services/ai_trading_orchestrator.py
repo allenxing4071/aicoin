@@ -203,20 +203,19 @@ class AITradingOrchestrator:
             except Exception as e:
                 logger.error(f"DeepSeek decision failed: {e}")
             
-            # 获取Qwen决策
-            try:
-                # 获取Qwen账户状态
-                qwen_account = await self.trading_service.get_account_state()
-                qwen_balance = float(qwen_account.get('marginSummary', {}).get('accountValue', 100))
-                
-                qwen_decision = await self.qwen_engine.analyze_market_data(
-                    market_data,
-                    account_state={'balance': qwen_balance, 'initial_capital': 100}
-                )
-                if await self.qwen_engine.validate_decision(qwen_decision, qwen_balance):
-                    decisions.append(qwen_decision)
-            except Exception as e:
-                logger.error(f"Qwen decision failed: {e}")
+            # Qwen已禁用 - 只使用DeepSeek单一AI模型
+            # try:
+            #     qwen_account = await self.trading_service.get_account_state()
+            #     qwen_balance = float(qwen_account.get('marginSummary', {}).get('accountValue', 100))
+            #     
+            #     qwen_decision = await self.qwen_engine.analyze_market_data(
+            #         market_data,
+            #         account_state={'balance': qwen_balance, 'initial_capital': 100}
+            #     )
+            #     if await self.qwen_engine.validate_decision(qwen_decision, qwen_balance):
+            #         decisions.append(qwen_decision)
+            # except Exception as e:
+            #     logger.error(f"Qwen decision failed: {e}")
             
             return decisions
             
