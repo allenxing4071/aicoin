@@ -54,11 +54,13 @@ class AITradingOrchestrator:
             logger.info("Starting AI trading orchestrator...")
             self.is_running = True
             
-            # 启动决策循环
-            asyncio.create_task(self._decision_loop())
+            # 启动决策循环 - 保存task引用避免被GC
+            self._decision_task = asyncio.create_task(self._decision_loop())
+            logger.info("✅ Decision loop task created")
             
-            # 启动监控循环
-            asyncio.create_task(self._monitoring_loop())
+            # 启动监控循环 - 保存task引用避免被GC
+            self._monitoring_task = asyncio.create_task(self._monitoring_loop())
+            logger.info("✅ Monitoring loop task created")
             
             logger.info("AI trading orchestrator started successfully")
             
@@ -82,22 +84,36 @@ class AITradingOrchestrator:
     
     async def _decision_loop(self):
         """决策循环"""
+        logger.info(f"🔄 决策循环启动 (间隔: {self.decision_interval}秒)")
+        loop_count = 0
+        
         while self.is_running:
             try:
+                loop_count += 1
+                logger.info(f"🔄 开始第 {loop_count} 次决策循环...")
+                
                 # 获取市场数据
+                logger.info("   ├─ 获取市场数据...")
                 market_data = await self._get_market_data()
+                logger.info(f"   ├─ 市场数据获取完成: {len(market_data)} 条")
                 
                 # 获取AI决策
+                logger.info("   ├─ 获取AI决策...")
                 decisions = await self._get_ai_decisions(market_data)
+                logger.info(f"   ├─ AI决策完成: {len(decisions)} 个决策")
                 
                 # 执行交易决策
+                logger.info("   ├─ 执行交易决策...")
                 await self._execute_decisions(decisions)
+                logger.info(f"   └─ 决策执行完成，等待 {self.decision_interval}秒")
                 
                 # 等待下次决策
                 await asyncio.sleep(self.decision_interval)
                 
             except Exception as e:
-                logger.error(f"Error in decision loop: {e}")
+                logger.error(f"❌ Error in decision loop: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
                 await asyncio.sleep(5)  # 错误时短暂等待
     
     async def _monitoring_loop(self):

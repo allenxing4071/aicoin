@@ -232,14 +232,36 @@ class HyperliquidTradingService:
             # 构建订单请求
             is_buy = side.lower() == "buy"
             
-            # 调试日志
+            # 调试日志 - 深入检查账户状态
             logger.info(f"📤 Placing order: symbol={symbol}, side={side}, size={size}, is_buy={is_buy}")
-            logger.info(f"   Exchange object: {self.exchange}")
             logger.info(f"   Exchange.wallet: {self.exchange.wallet.address if hasattr(self.exchange, 'wallet') else 'N/A'}")
             logger.info(f"   Exchange.vault_address: {self.exchange.vault_address if hasattr(self.exchange, 'vault_address') else 'N/A'}")
-            logger.info(f"   Exchange.base_url: {self.exchange.base_url if hasattr(self.exchange, 'base_url') else 'N/A'}")
-            logger.info(f"   Exchange type: {type(self.exchange)}")
-            logger.info(f"   Exchange.__dict__ keys: {list(self.exchange.__dict__.keys()) if hasattr(self.exchange, '__dict__') else 'N/A'}")
+            
+            # 检查账户的详细状态
+            try:
+                from hyperliquid.info import Info
+                info_client = Info(base_url=self.exchange.base_url, skip_ws=True)
+                user_state = info_client.user_state(settings.HYPERLIQUID_WALLET_ADDRESS)
+                
+                logger.info(f"   账户状态检查:")
+                logger.info(f"      withdrawable: {user_state.get('withdrawable')}")
+                
+                # 检查是否有特殊字段
+                special_keys = []
+                for key in user_state.keys():
+                    if 'multi' in key.lower() or 'sig' in key.lower() or 'cross' in key.lower():
+                        special_keys.append(key)
+                
+                if special_keys:
+                    logger.warning(f"      ⚠️ 发现特殊字段: {special_keys}")
+                    for key in special_keys:
+                        logger.warning(f"         {key}: {user_state.get(key)}")
+                        
+                # 打印所有user_state的键
+                logger.info(f"      user_state所有键: {list(user_state.keys())}")
+                
+            except Exception as e:
+                logger.error(f"   检查账户状态失败: {e}")
             
             # 临时测试：将size转换为BTC数量（假设BTC价格约$114000）
             # 这是为了测试是否是订单大小的问题
