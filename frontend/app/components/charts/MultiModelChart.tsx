@@ -160,7 +160,7 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
       dataByModel.set(model.slug, []);
     });
 
-    // 处理历史数据
+    // 处理历史数据 - 只处理DeepSeek
     history.forEach((record: any) => {
       const timestamp = Math.floor(new Date(record.timestamp).getTime() / 1000);
       
@@ -169,12 +169,8 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
           time: timestamp as any,
           value: parseFloat(record.account_value || record.balance || 100),
         });
-      } else if (record.model === 'qwen3-max' && dataByModel.has('qwen3-max')) {
-        dataByModel.get('qwen3-max')!.push({
-          time: timestamp as any,
-          value: parseFloat(record.account_value || record.balance || 100),
-        });
       }
+      // Qwen已禁用
     });
 
     // 如果没有历史数据，添加初始点

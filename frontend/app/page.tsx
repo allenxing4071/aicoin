@@ -141,14 +141,10 @@ export default function Home() {
                   <div className="p-4">
                     <h3 className="text-xs font-bold text-gray-500 mb-3 border-b border-gray-300 pb-2">AI MODELS</h3>
                     <div className="space-y-2">
-                      {/* 只显示DeepSeek和Qwen3两个模型 */}
+                      {/* 只显示DeepSeek模型 */}
                       <a href="/models/deepseek-chat-v3.1" className="flex items-center space-x-3 p-2 hover:bg-gray-100 transition-colors">
                         <span className="text-2xl">🧠</span>
                         <span className="text-sm font-semibold">DEEPSEEK CHAT V3.1</span>
-                      </a>
-                      <a href="/models/qwen3-max" className="flex items-center space-x-3 p-2 hover:bg-gray-100 transition-colors">
-                        <span className="text-2xl">🎨</span>
-                        <span className="text-sm font-semibold">QWEN3 MAX</span>
                       </a>
                     </div>
                   </div>
@@ -430,7 +426,6 @@ export default function Home() {
                       <div>• Inspired by: <a href="https://nof1.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">nof1.ai</a></div>
                       <div>• Hyperliquid: <a href="https://hyperliquid.xyz" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">hyperliquid.xyz</a></div>
                       <div>• DeepSeek: <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.deepseek.com</a></div>
-                      <div>• Qwen: <a href="https://dashscope.aliyun.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">dashscope.aliyun.com</a></div>
                     </div>
                   </div>
 
