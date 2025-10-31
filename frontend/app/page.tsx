@@ -9,11 +9,13 @@ import AIDecisionChat from './components/chat/AIDecisionChat';
 import ModelCard from './components/models/ModelCard';
 import TradingChart from './components/charts/TradingChart';
 import PositionsList from './components/positions/PositionsList';
+import AIStatusPanel from './components/ai/AIStatusPanel';
+import PermissionIndicator from './components/ai/PermissionIndicator';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'chart' | 'trades' | 'chat' | 'positions' | 'readme'>('trades');
+  const [activeTab, setActiveTab] = useState<'chart' | 'trades' | 'chat' | 'positions' | 'readme' | 'ai'>('trades');
   const [timeRange, setTimeRange] = useState<'all' | '72h'>('all');
   const [selectedModel, setSelectedModel] = useState<string>('all');
   const [apiStatus, setApiStatus] = useState({ status: 'checking', version: '0.0.0' });
@@ -286,6 +288,14 @@ export default function Home() {
                 >
                   CHART
                 </button>
+                <button 
+                  onClick={() => setActiveTab('ai')}
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                    activeTab === 'ai' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  AI STATUS
+                </button>
               </div>
             </div>
             
@@ -341,6 +351,12 @@ export default function Home() {
             )}
             {activeTab === 'positions' && (
               <PositionsList selectedModel={selectedModel} />
+            )}
+            {activeTab === 'ai' && (
+              <div className="h-full overflow-y-auto p-4 space-y-4">
+                <AIStatusPanel />
+                <PermissionIndicator />
+              </div>
             )}
             {activeTab === 'readme' && (
               <div className="h-full overflow-y-auto p-6 bg-white font-mono text-sm text-gray-800 leading-relaxed">
