@@ -163,12 +163,7 @@ export default function Home() {
             </div>
           </nav>
           
-          <div className="flex items-center space-x-4 text-sm">
-            <a href="https://github.com/allenxing4071/aicoin" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900">
-              JOIN THE PLATFORM WAITLIST
-            </a>
-            <a href="#about" className="text-gray-700 hover:text-gray-900">ABOUT NOF1</a>
-          </div>
+          {/* 已移除: JOIN THE PLATFORM WAITLIST / ABOUT NOF1 链接 */}
         </div>
       </header>
 
