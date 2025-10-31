@@ -23,40 +23,77 @@ export default function LightweightChart({ symbol = 'BTC-PERP', data }: Lightwei
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    // 创建图表
+    // 创建图表 - 完全匹配nof1.ai样式
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: '#ffffff' },
-        textColor: '#333',
+        textColor: '#1a1a1a',
+        fontSize: 12,
       },
       width: chartContainerRef.current.clientWidth,
       height: 400,
       grid: {
-        vertLines: { color: '#f0f0f0' },
-        horzLines: { color: '#f0f0f0' },
+        vertLines: { 
+          color: '#e0e0e0',
+          style: 0, // Solid line
+          visible: true,
+        },
+        horzLines: { 
+          color: '#e0e0e0',
+          style: 0, // Solid line  
+          visible: true,
+        },
       },
       crosshair: {
         mode: 1, // Normal crosshair
+        vertLine: {
+          color: '#9B7DFF',
+          width: 1,
+          style: 3, // Dashed
+          labelBackgroundColor: '#9B7DFF',
+        },
+        horzLine: {
+          color: '#9B7DFF',
+          width: 1,
+          style: 3, // Dashed
+          labelBackgroundColor: '#9B7DFF',
+        },
+      },
+      leftPriceScale: {
+        visible: true,
+        borderVisible: true,
+        borderColor: '#2B2B43',
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+        autoScale: true,
       },
       rightPriceScale: {
-        borderColor: '#e0e0e0',
+        visible: false, // 只显示左侧Y轴
       },
       timeScale: {
-        borderColor: '#e0e0e0',
+        borderVisible: true,
+        borderColor: '#2B2B43',
         timeVisible: true,
         secondsVisible: false,
+        rightOffset: 5,
+        barSpacing: 10,
+        fixLeftEdge: false,
+        fixRightEdge: false,
       },
     });
 
     chartRef.current = chart;
 
-    // 添加K线系列
+    // 添加K线系列 - 匹配nof1.ai样式
     const candlestickSeries = chart.addCandlestickSeries({
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,
       wickUpColor: '#26a69a',
       wickDownColor: '#ef5350',
+      priceScaleId: 'left', // 使用左侧价格轴
     });
 
     candlestickSeriesRef.current = candlestickSeries;
