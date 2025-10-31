@@ -8,6 +8,7 @@ import TradeListComplete from './components/trades/TradeListComplete';
 import AIDecisionChat from './components/chat/AIDecisionChat';
 import ModelCard from './components/models/ModelCard';
 import TradingChart from './components/charts/TradingChart';
+import LightweightChart from './components/charts/LightweightChart';
 import PositionsList from './components/positions/PositionsList';
 import AIStatusPanel from './components/ai/AIStatusPanel';
 import PermissionIndicator from './components/ai/PermissionIndicator';
@@ -257,7 +258,7 @@ export default function Home() {
                     activeTab === 'trades' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  COMPLETED TRADES
+                  已完成交易
                 </button>
                 <button 
                   onClick={() => setActiveTab('chat')}
@@ -265,7 +266,7 @@ export default function Home() {
                     activeTab === 'chat' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  MODELCHAT
+                  模型对话
                 </button>
                 <button 
                   onClick={() => setActiveTab('positions')}
@@ -273,7 +274,7 @@ export default function Home() {
                     activeTab === 'positions' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  POSITIONS
+                  持仓
                 </button>
                 <button 
                   onClick={() => setActiveTab('readme')}
@@ -281,7 +282,7 @@ export default function Home() {
                     activeTab === 'readme' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  README.TXT
+                  关于项目
                 </button>
                 <button 
                   onClick={() => setActiveTab('chart')}
@@ -289,7 +290,7 @@ export default function Home() {
                     activeTab === 'chart' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  CHART
+                  K线图
                 </button>
                 <button 
                   onClick={() => setActiveTab('ai')}
@@ -297,7 +298,7 @@ export default function Home() {
                     activeTab === 'ai' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  AI STATUS
+                  AI状态
                 </button>
                 <button 
                   onClick={() => setActiveTab('decisions')}
@@ -305,7 +306,7 @@ export default function Home() {
                     activeTab === 'decisions' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  DECISIONS
+                  决策历史
                 </button>
                 <button 
                   onClick={() => setActiveTab('performance')}
@@ -313,7 +314,7 @@ export default function Home() {
                     activeTab === 'performance' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  PERFORMANCE
+                  性能仪表盘
                 </button>
               </div>
             </div>
@@ -364,8 +365,8 @@ export default function Home() {
               <AIDecisionChat selectedModel={selectedModel} />
             )}
             {activeTab === 'chart' && (
-              <div className="h-full p-4">
-                <TradingChart symbol="BTC-PERP" />
+              <div className="h-full">
+                <LightweightChart symbol="BTC-PERP" />
               </div>
             )}
             {activeTab === 'positions' && (
