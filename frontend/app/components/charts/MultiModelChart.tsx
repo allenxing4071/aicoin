@@ -105,19 +105,22 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
   // 获取账户历史数据
   useEffect(() => {
     const fetchAccountHistory = async () => {
-      try {
-        const response = await axios.get(`${API_BASE}/trading/account/history`);
-        if (response.data && response.data.length > 0) {
-          setAccountHistory(response.data);
-          updateChartData(response.data);
-        } else {
-          // 如果没有历史数据，生成初始数据点
-          generateInitialData();
-        }
-      } catch (error) {
-        console.log('Failed to fetch account history, using initial data');
-        generateInitialData();
-      }
+      // TODO: 实现真实的account history API
+      // try {
+      //   const response = await axios.get(`${API_BASE}/account/snapshots`);
+      //   if (response.data && response.data.length > 0) {
+      //     setAccountHistory(response.data);
+      //     updateChartData(response.data);
+      //   } else {
+      //     generateInitialData();
+      //   }
+      // } catch (error) {
+      //   console.log('Failed to fetch account history, using initial data');
+      //   generateInitialData();
+      // }
+      
+      // 暂时使用模拟数据
+      generateInitialData();
     };
 
     fetchAccountHistory();

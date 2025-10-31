@@ -22,6 +22,7 @@ export default function PriceTicker() {
     { symbol: 'DOGE', price: 0.35, change24h: 5.2 },
     { symbol: 'XRP', price: 0.50, change24h: -0.8 },
   ]);
+  const [mounted, setMounted] = useState(false);
 
   // 获取真实价格数据
   const fetchRealPrices = async () => {
@@ -49,6 +50,7 @@ export default function PriceTicker() {
 
   // 实时价格更新
   useEffect(() => {
+    setMounted(true);
     // 立即获取一次真实数据
     fetchRealPrices();
     
@@ -57,6 +59,37 @@ export default function PriceTicker() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // 防止hydration错误
+  if (!mounted) {
+    return (
+      <div className="bg-white border-b border-gray-200">
+        <div className="flex items-center py-3 px-6 gap-8">
+          {tickers.map((ticker) => (
+            <div key={ticker.symbol} className="flex items-center space-x-3">
+              <span className="text-gray-600 font-medium">{ticker.symbol}</span>
+              <span className="text-gray-900 font-semibold">
+                ${ticker.price.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </span>
+              <span className={`flex items-center text-sm ${
+                ticker.change24h >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {ticker.change24h >= 0 ? (
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                ) : (
+                  <TrendingDown className="w-3 h-3 mr-1" />
+                )}
+                {Math.abs(ticker.change24h).toFixed(2)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border-b border-gray-200">

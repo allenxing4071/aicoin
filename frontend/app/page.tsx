@@ -71,9 +71,10 @@ export default function Home() {
 
   const fetchAiHealth = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/ai/health`);
-      if (response.data && response.data.success) {
-        setAiHealth(response.data);
+      // 使用正确的health endpoint
+      const response = await axios.get(`http://localhost:8000/health`);
+      if (response.data && response.data.status) {
+        setAiHealth({ success: true, ...response.data });
       }
     } catch (error) {
       console.log('Failed to fetch AI health');
