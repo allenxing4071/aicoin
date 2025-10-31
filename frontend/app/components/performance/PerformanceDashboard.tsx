@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import MetricCard from './MetricCard';
 import RiskGauge from './RiskGauge';
+import { PerformanceSkeleton } from '../common/LoadingSkeleton';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
@@ -50,7 +51,9 @@ interface PerformanceMetrics {
 export default function PerformanceDashboard() {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState(30);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     fetchMetrics();
@@ -60,32 +63,74 @@ export default function PerformanceDashboard() {
 
   const fetchMetrics = async () => {
     try {
-      console.log('🔍 Fetching performance metrics for period:', period);
+      setError(null);
+      console.log('🔍 Fetching performance metrics for period:', period, 'retry:', retryCount);
       const res = await axios.get(`${API_BASE}/performance/metrics`, {
-        params: { period_days: period }
+        params: { period_days: period },
+        timeout: 10000 // 10秒超时
       });
       console.log('✅ Performance API response:', res.data);
       setMetrics(res.data);
       setLoading(false);
-    } catch (error) {
+      setRetryCount(0);
+    } catch (error: any) {
       console.error('❌ Failed to fetch performance metrics:', error);
-      console.error('Error details:', error);
-      setLoading(false);
+      console.error('❌ Error type:', error.code);
+      console.error('❌ Error message:', error.message);
+      
+      // 设置错误信息
+      if (error.code === 'ECONNABORTED') {
+        setError('请求超时，API响应过慢');
+      } else if (error.code === 'ERR_NETWORK') {
+        setError('网络错误，无法连接到服务器');
+      } else {
+        setError('加载失败：' + (error.message || '未知错误'));
+      }
+      
+      // 自动重试机制
+      if (retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(retryCount + 1);
+          fetchMetrics();
+        }, 2000);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
   if (loading) {
     return (
-      <div className="bg-white border border-gray-200 p-4">
-        <div className="text-sm text-gray-500">加载性能数据中...</div>
+      <div className="space-y-4">
+        <div className="bg-white border border-gray-200 p-3">
+          <div className="text-sm text-gray-500">
+            加载性能数据中...
+            {retryCount > 0 && <span className="text-orange-600"> (重试 {retryCount}/3)</span>}
+          </div>
+        </div>
+        <PerformanceSkeleton />
       </div>
     );
   }
 
-  if (!metrics) {
+  if (error || !metrics) {
     return (
-      <div className="bg-white border border-gray-200 p-4">
-        <div className="text-sm text-red-600">加载性能数据失败</div>
+      <div className="bg-red-50 border border-red-200 p-4">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-red-600">
+            ⚠️ {error || '加载性能数据失败'}
+          </div>
+          <button
+            onClick={() => {
+              setRetryCount(0);
+              setLoading(true);
+              fetchMetrics();
+            }}
+            className="px-3 py-1 text-xs font-bold bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            重试
+          </button>
+        </div>
       </div>
     );
   }

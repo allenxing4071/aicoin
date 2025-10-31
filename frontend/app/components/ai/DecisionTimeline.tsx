@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import DecisionFlowViewer from './DecisionFlowViewer';
+import { DecisionSkeleton } from '../common/LoadingSkeleton';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
@@ -22,7 +23,9 @@ export default function DecisionTimeline() {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [selectedDecisionId, setSelectedDecisionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'approved' | 'rejected'>('all');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     fetchDecisions();
@@ -32,8 +35,9 @@ export default function DecisionTimeline() {
 
   const fetchDecisions = async () => {
     try {
+      setError(null);
       const status = filter === 'all' ? undefined : filter;
-      console.log('🔍 Fetching decisions with filter:', filter);
+      console.log('🔍 Fetching decisions with filter:', filter, 'retry:', retryCount);
       const res = await axios.get(`${API_BASE}/ai/decisions`, {
         params: { limit: 25, status },
         timeout: 10000 // 10秒超时
@@ -43,26 +47,72 @@ export default function DecisionTimeline() {
       console.log('📊 Decisions count:', decisionsData.length);
       setDecisions(decisionsData);
       setLoading(false);
+      setRetryCount(0); // 成功后重置重试计数
     } catch (error: any) {
       console.error('❌ Failed to fetch decisions:', error);
       console.error('❌ Error type:', error.code);
       console.error('❌ Error message:', error.message);
-      // 即使出错也设置为空数组，避免一直Loading
-      setDecisions([]);
-      setLoading(false);
+      
+      // 设置错误信息
+      if (error.code === 'ECONNABORTED') {
+        setError('请求超时，API响应过慢');
+      } else if (error.code === 'ERR_NETWORK') {
+        setError('网络错误，无法连接到服务器');
+      } else {
+        setError('加载失败：' + (error.message || '未知错误'));
+      }
+      
+      // 如果重试次数少于3次，2秒后自动重试
+      if (retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(retryCount + 1);
+          fetchDecisions();
+        }, 2000);
+      } else {
+        // 超过3次后停止重试，但保留空数组
+        setDecisions([]);
+        setLoading(false);
+      }
     }
   };
 
   if (loading) {
     return (
-      <div className="bg-white border border-gray-200 p-4">
-        <div className="text-sm text-gray-500">加载决策数据中...</div>
+      <div className="space-y-4">
+        <div className="bg-white border border-gray-200 p-3">
+          <div className="text-sm text-gray-500">
+            加载决策数据中...
+            {retryCount > 0 && <span className="text-orange-600"> (重试 {retryCount}/3)</span>}
+          </div>
+        </div>
+        <DecisionSkeleton />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {/* 错误提示 */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 p-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-red-600">
+              ⚠️ {error}
+            </div>
+            <button
+              onClick={() => {
+                setRetryCount(0);
+                setLoading(true);
+                fetchDecisions();
+              }}
+              className="px-3 py-1 text-xs font-bold bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 决策详情查看器 */}
       {selectedDecisionId && (
         <div className="bg-white border-2 border-blue-500">
