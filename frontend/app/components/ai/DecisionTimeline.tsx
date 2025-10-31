@@ -35,15 +35,18 @@ export default function DecisionTimeline() {
       const status = filter === 'all' ? undefined : filter;
       console.log('🔍 Fetching decisions with filter:', filter);
       const res = await axios.get(`${API_BASE}/ai/decisions`, {
-        params: { limit: 25, status }
+        params: { limit: 25, status },
+        timeout: 10000 // 10秒超时
       });
       console.log('✅ Decisions API response:', res.data);
       const decisionsData = res.data.decisions || [];
       console.log('📊 Decisions count:', decisionsData.length);
       setDecisions(decisionsData);
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to fetch decisions:', error);
+      console.error('❌ Error type:', error.code);
+      console.error('❌ Error message:', error.message);
       // 即使出错也设置为空数组，避免一直Loading
       setDecisions([]);
       setLoading(false);
