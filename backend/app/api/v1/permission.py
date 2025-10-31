@@ -8,7 +8,7 @@ import logging
 
 from app.services.constraints.permission_manager import PermissionManager
 
-router = APIRouter(prefix="/ai/permission", tags=["AI Permission"])
+router = APIRouter(tags=["AI Permission"])
 logger = logging.getLogger(__name__)
 
 

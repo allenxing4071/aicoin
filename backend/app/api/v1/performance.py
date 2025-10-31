@@ -18,7 +18,7 @@ from app.schemas.performance import (
     EfficiencyMetrics
 )
 
-router = APIRouter(prefix="/performance", tags=["performance"])
+router = APIRouter(tags=["performance"])
 logger = logging.getLogger(__name__)
 
 

@@ -9,7 +9,7 @@ import logging
 from app.core.config import settings
 from app.services.constraints.constraint_validator import ConstraintValidator
 
-router = APIRouter(prefix="/constraints", tags=["constraints"])
+router = APIRouter(tags=["constraints"])
 logger = logging.getLogger(__name__)
 
 

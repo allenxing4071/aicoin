@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import logging
 
-router = APIRouter(prefix="/ai/decisions", tags=["AI Decisions"])
+router = APIRouter(tags=["AI Decisions"])
 logger = logging.getLogger(__name__)
 
 

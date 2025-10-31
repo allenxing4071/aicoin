@@ -66,17 +66,17 @@ app.include_router(
 )
 app.include_router(
     constraints.router,
-    prefix=f"{settings.API_V1_PREFIX}",
+    prefix=f"{settings.API_V1_PREFIX}/constraints",
     tags=["Constraints"]
 )
 app.include_router(
     decisions.router,
-    prefix=f"{settings.API_V1_PREFIX}",
+    prefix=f"{settings.API_V1_PREFIX}/ai/decisions",
     tags=["AI Decisions"]
 )
 app.include_router(
     permission.router,
-    prefix=f"{settings.API_V1_PREFIX}",
+    prefix=f"{settings.API_V1_PREFIX}/ai/permission",
     tags=["AI Permission"]
 )
 app.include_router(
