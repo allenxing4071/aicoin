@@ -130,7 +130,7 @@ export default function Home() {
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${apiStatus.status === 'healthy' ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
               <span className={`relative inline-flex rounded-full h-2 w-2 ${apiStatus.status === 'healthy' ? 'bg-green-500' : 'bg-red-500'}`}></span>
             </span>
-            Alpha Arena <span className="text-sm text-gray-500 ml-1">by H-1</span>
+            AI Ghost <span className="text-sm text-gray-500 ml-1">by allen</span>
           </h1>
           
           <nav className="absolute left-1/2 transform -translate-x-1/2 flex space-x-1 text-sm font-bold">
