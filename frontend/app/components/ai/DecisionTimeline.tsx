@@ -33,13 +33,19 @@ export default function DecisionTimeline() {
   const fetchDecisions = async () => {
     try {
       const status = filter === 'all' ? undefined : filter;
+      console.log('🔍 Fetching decisions with filter:', filter);
       const res = await axios.get(`${API_BASE}/ai/decisions`, {
         params: { limit: 25, status }
       });
-      setDecisions(res.data.decisions || []);
+      console.log('✅ Decisions API response:', res.data);
+      const decisionsData = res.data.decisions || [];
+      console.log('📊 Decisions count:', decisionsData.length);
+      setDecisions(decisionsData);
       setLoading(false);
     } catch (error) {
-      console.error('Failed to fetch decisions:', error);
+      console.error('❌ Failed to fetch decisions:', error);
+      // 即使出错也设置为空数组，避免一直Loading
+      setDecisions([]);
       setLoading(false);
     }
   };
@@ -47,7 +53,7 @@ export default function DecisionTimeline() {
   if (loading) {
     return (
       <div className="bg-white border border-gray-200 p-4">
-        <div className="text-sm text-gray-500">Loading decisions...</div>
+        <div className="text-sm text-gray-500">加载决策数据中...</div>
       </div>
     );
   }
@@ -57,15 +63,15 @@ export default function DecisionTimeline() {
       {/* 决策详情查看器 */}
       {selectedDecisionId && (
         <div className="bg-white border-2 border-blue-500">
-          <div className="px-3 py-2 bg-blue-50 border-b border-blue-500 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-gray-900">DECISION DETAIL</h3>
-            <button
-              onClick={() => setSelectedDecisionId(null)}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800"
-            >
-              ✕ CLOSE
-            </button>
-          </div>
+        <div className="px-3 py-2 bg-blue-50 border-b border-blue-500 flex items-center justify-between">
+          <h3 className="text-xs font-bold text-gray-900">决策详情</h3>
+          <button
+            onClick={() => setSelectedDecisionId(null)}
+            className="text-xs font-bold text-blue-600 hover:text-blue-800"
+          >
+            ✕ 关闭
+          </button>
+        </div>
           <div className="p-3 max-h-96 overflow-y-auto">
             <DecisionFlowViewer decisionId={selectedDecisionId} />
           </div>
@@ -75,7 +81,7 @@ export default function DecisionTimeline() {
       {/* 决策时间轴 */}
       <div className="bg-white border border-gray-200">
         <div className="px-3 py-2 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-gray-900">DECISION TIMELINE</h3>
+          <h3 className="text-xs font-bold text-gray-900">决策时间轴</h3>
           <div className="flex space-x-2">
             <button
               onClick={() => setFilter('all')}
@@ -83,7 +89,7 @@ export default function DecisionTimeline() {
                 filter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-600'
               }`}
             >
-              ALL
+              全部
             </button>
             <button
               onClick={() => setFilter('approved')}
@@ -91,7 +97,7 @@ export default function DecisionTimeline() {
                 filter === 'approved' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
               }`}
             >
-              APPROVED
+              已批准
             </button>
             <button
               onClick={() => setFilter('rejected')}
@@ -99,7 +105,7 @@ export default function DecisionTimeline() {
                 filter === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-600'
               }`}
             >
-              REJECTED
+              已拒绝
             </button>
           </div>
         </div>
@@ -107,7 +113,7 @@ export default function DecisionTimeline() {
         <div className="divide-y divide-gray-200">
           {decisions.length === 0 ? (
             <div className="p-4 text-sm text-gray-500 text-center">
-              No decisions found
+              暂无决策记录
             </div>
           ) : (
             decisions.map((decision) => (

@@ -60,13 +60,16 @@ export default function PerformanceDashboard() {
 
   const fetchMetrics = async () => {
     try {
+      console.log('🔍 Fetching performance metrics for period:', period);
       const res = await axios.get(`${API_BASE}/performance/metrics`, {
         params: { period_days: period }
       });
+      console.log('✅ Performance API response:', res.data);
       setMetrics(res.data);
       setLoading(false);
     } catch (error) {
-      console.error('Failed to fetch performance metrics:', error);
+      console.error('❌ Failed to fetch performance metrics:', error);
+      console.error('Error details:', error);
       setLoading(false);
     }
   };
@@ -74,7 +77,7 @@ export default function PerformanceDashboard() {
   if (loading) {
     return (
       <div className="bg-white border border-gray-200 p-4">
-        <div className="text-sm text-gray-500">Loading performance data...</div>
+        <div className="text-sm text-gray-500">加载性能数据中...</div>
       </div>
     );
   }
@@ -82,7 +85,7 @@ export default function PerformanceDashboard() {
   if (!metrics) {
     return (
       <div className="bg-white border border-gray-200 p-4">
-        <div className="text-sm text-red-600">Failed to load performance data</div>
+        <div className="text-sm text-red-600">加载性能数据失败</div>
       </div>
     );
   }

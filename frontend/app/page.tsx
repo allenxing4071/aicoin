@@ -515,7 +515,7 @@ export default function Home() {
           <span className="text-gray-500">|</span>
           <span>TRADES: {aiHealth?.stats?.total_trades || 0}</span>
           <span className="text-gray-500">|</span>
-          <span>{new Date().toLocaleTimeString()}</span>
+          <span suppressHydrationWarning>{new Date().toLocaleTimeString('zh-CN', { hour12: false })}</span>
         </div>
       </div>
     </div>
