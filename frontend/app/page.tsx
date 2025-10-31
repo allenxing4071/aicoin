@@ -11,11 +11,13 @@ import TradingChart from './components/charts/TradingChart';
 import PositionsList from './components/positions/PositionsList';
 import AIStatusPanel from './components/ai/AIStatusPanel';
 import PermissionIndicator from './components/ai/PermissionIndicator';
+import DecisionTimeline from './components/ai/DecisionTimeline';
+import PerformanceDashboard from './components/performance/PerformanceDashboard';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'chart' | 'trades' | 'chat' | 'positions' | 'readme' | 'ai'>('trades');
+  const [activeTab, setActiveTab] = useState<'chart' | 'trades' | 'chat' | 'positions' | 'readme' | 'ai' | 'decisions' | 'performance'>('trades');
   const [timeRange, setTimeRange] = useState<'all' | '72h'>('all');
   const [selectedModel, setSelectedModel] = useState<string>('all');
   const [apiStatus, setApiStatus] = useState({ status: 'checking', version: '0.0.0' });
@@ -296,6 +298,22 @@ export default function Home() {
                 >
                   AI STATUS
                 </button>
+                <button 
+                  onClick={() => setActiveTab('decisions')}
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                    activeTab === 'decisions' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  DECISIONS
+                </button>
+                <button 
+                  onClick={() => setActiveTab('performance')}
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                    activeTab === 'performance' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  PERFORMANCE
+                </button>
               </div>
             </div>
             
@@ -356,6 +374,16 @@ export default function Home() {
               <div className="h-full overflow-y-auto p-4 space-y-4">
                 <AIStatusPanel />
                 <PermissionIndicator />
+              </div>
+            )}
+            {activeTab === 'decisions' && (
+              <div className="h-full overflow-y-auto p-4">
+                <DecisionTimeline />
+              </div>
+            )}
+            {activeTab === 'performance' && (
+              <div className="h-full overflow-y-auto p-4">
+                <PerformanceDashboard />
               </div>
             )}
             {activeTab === 'readme' && (
