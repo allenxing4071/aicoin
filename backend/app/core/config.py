@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"  # 允许额外字段（向后兼容）
 
 
 # Global settings instance

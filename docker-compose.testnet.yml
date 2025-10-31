@@ -1,0 +1,94 @@
+version: '3.8'
+
+# AIcoin v2.0 测试网配置
+# 使用: docker-compose -f docker-compose.testnet.yml up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: aicoin-postgres-testnet
+    environment:
+      POSTGRES_DB: aicoin
+      POSTGRES_USER: ${POSTGRES_USER:-aicoin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aicoin_secure_password_2024}
+    volumes:
+      - postgres_testnet_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aicoin} -d aicoin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: aicoin-redis-testnet
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_testnet_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: aicoin-qdrant-testnet
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC API
+    volumes:
+      - qdrant_testnet_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: aicoin-backend-testnet-v2
+    command: uvicorn app.main_v2:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://aicoin:aicoin_secure_password_2024@postgres:5432/aicoin}
+      REDIS_URL: redis://redis:6379
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      HYPERLIQUID_WALLET_ADDRESS: ${HYPERLIQUID_WALLET_ADDRESS:-}
+      HYPERLIQUID_PRIVATE_KEY: ${HYPERLIQUID_PRIVATE_KEY:-}
+      HYPERLIQUID_VAULT_ADDRESS: ${HYPERLIQUID_VAULT_ADDRESS:-}
+      HYPERLIQUID_TESTNET: ${HYPERLIQUID_TESTNET:-true}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      TRADING_ENABLED: ${TRADING_ENABLED:-false}
+      DECISION_INTERVAL: ${DECISION_INTERVAL:-300}
+      INITIAL_PERMISSION_LEVEL: ${INITIAL_PERMISSION_LEVEL:-L1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  postgres_testnet_data:
+  redis_testnet_data:
+  qdrant_testnet_data:
+
