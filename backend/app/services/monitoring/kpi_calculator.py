@@ -9,7 +9,7 @@ import math
 import logging
 
 from app.models.trade import Trade
-from app.models.account import Account
+from app.models.account import AccountSnapshot
 
 logger = logging.getLogger(__name__)
 

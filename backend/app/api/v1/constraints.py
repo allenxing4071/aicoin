@@ -7,11 +7,7 @@ from typing import Dict, Any, List
 import logging
 
 from app.core.config import settings
-from app.services.constraints.constraint_validator import (
-    HARD_CONSTRAINTS,
-    validate_hard_constraints,
-    check_forced_liquidation
-)
+from app.services.constraints.constraint_validator import ConstraintValidator
 
 router = APIRouter(prefix="/constraints", tags=["constraints"])
 logger = logging.getLogger(__name__)
@@ -46,7 +42,8 @@ async def get_constraints_status() -> Dict[str, Any]:
         soft_constraints_status = _check_soft_constraints_status()
         
         # 检查是否触发强制平仓
-        forced_liquidation = check_forced_liquidation(mock_account_state)
+        margin_ratio = mock_account_state.get("margin_ratio", 0)
+        forced_liquidation = margin_ratio < settings.FORCED_LIQUIDATION_THRESHOLD
         
         # 统计状态
         total_hard = len(hard_constraints_status)
@@ -92,7 +89,7 @@ async def get_hard_constraints() -> Dict[str, Any]:
     """
     try:
         return {
-            "constraints": HARD_CONSTRAINTS,
+            "constraints": ConstraintValidator.HARD_CONSTRAINTS,
             "description": "8项硬约束红线，违反将强制拒绝交易或平仓"
         }
     except Exception as e:

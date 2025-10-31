@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from typing import Dict, Any, List
 import logging
 
-from app.services.constraints.permission_manager import PERMISSION_LEVELS
+from app.services.constraints.permission_manager import PermissionManager
 
 router = APIRouter(prefix="/ai/permission", tags=["AI Permission"])
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ async def get_permission_status() -> Dict[str, Any]:
         current_level = "L1"
         
         # 当前等级配置
-        current_config = PERMISSION_LEVELS.get(current_level, {})
+        current_config = PermissionManager.LEVELS.get(current_level, PermissionManager.LEVELS["L1"])
         
         # 升级进度
         upgrade_progress = _calculate_upgrade_progress(current_level)
@@ -35,12 +35,12 @@ async def get_permission_status() -> Dict[str, Any]:
         
         return {
             "current_level": current_level,
-            "display_name": current_config.get("name", "未知"),
+            "display_name": current_config.name,
             "config": {
-                "max_position_pct": current_config.get("max_position_pct", 0),
-                "max_leverage": current_config.get("max_leverage", 1),
-                "confidence_threshold": current_config.get("confidence_threshold", 1.0),
-                "max_daily_trades": current_config.get("max_daily_trades", 0)
+                "max_position_pct": current_config.max_position_pct,
+                "max_leverage": current_config.max_leverage,
+                "confidence_threshold": current_config.confidence_threshold,
+                "max_daily_trades": current_config.max_daily_trades
             },
             "upgrade": upgrade_progress,
             "downgrade": downgrade_risk,
@@ -64,8 +64,19 @@ async def get_all_permission_levels() -> Dict[str, Any]:
         Dict: L0-L5完整配置
     """
     try:
+        # 转换PermissionLevel对象为字典
+        levels_dict = {}
+        for key, level in PermissionManager.LEVELS.items():
+            levels_dict[key] = {
+                "name": level.name,
+                "max_position_pct": level.max_position_pct,
+                "max_leverage": level.max_leverage,
+                "confidence_threshold": level.confidence_threshold,
+                "max_daily_trades": level.max_daily_trades
+            }
+        
         return {
-            "levels": PERMISSION_LEVELS,
+            "levels": levels_dict,
             "description": "L0=保护模式, L1=新手级, L2=成长级, L3=稳定级, L4=熟练级, L5=专家级"
         }
     except Exception as e:
