@@ -7,7 +7,7 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.redis_client import redis_client
-from app.api.v1 import trading as v1_trading, market, account, performance, ai
+from app.api.v1 import market, account, performance, ai
 from app.api import websocket, market_data
 from app.api import trading as hyperliquid_trading
 from app.services.hyperliquid_market_data import HyperliquidMarketData
@@ -47,11 +47,6 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(
-    v1_trading.router,
-    prefix=f"{settings.API_V1_PREFIX}/trading",
-    tags=["Trading - AI Decision"]
-)
 app.include_router(
     market.router,
     prefix=f"{settings.API_V1_PREFIX}/market",
