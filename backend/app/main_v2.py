@@ -9,7 +9,7 @@ from app.core.database import init_db, get_db
 from app.core.redis_client import redis_client
 from app.api.v1 import market, account, performance, ai
 from app.api import websocket, market_data
-from app.api import trading as hyperliquid_trading
+# from app.api import trading as hyperliquid_trading  # 暂时禁用，待修复
 from app.services.hyperliquid_market_data import HyperliquidMarketData
 from app.services.hyperliquid_trading import HyperliquidTradingService
 from app.services.orchestrator_v2 import AITradingOrchestratorV2
@@ -79,11 +79,11 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/market-data",
     tags=["Market Data - Real-time"]
 )
-app.include_router(
-    hyperliquid_trading.router,
-    prefix=f"{settings.API_V1_PREFIX}/trading",
-    tags=["Hyperliquid Trading"]
-)
+# app.include_router(
+#     hyperliquid_trading.router,
+#     prefix=f"{settings.API_V1_PREFIX}/trading",
+#     tags=["Hyperliquid Trading"]
+# )
 
 
 @app.on_event("startup")
@@ -127,7 +127,7 @@ async def startup_event():
         testnet = getattr(settings, 'HYPERLIQUID_TESTNET', True)
         trading_service = HyperliquidTradingService(redis_client, testnet=testnet)
         await trading_service.initialize()
-        hyperliquid_trading.set_trading_service(trading_service)
+        # hyperliquid_trading.set_trading_service(trading_service)
         logger.info(f"✅ Hyperliquid trading service initialized (testnet={testnet})")
     except Exception as e:
         logger.error(f"❌ Trading service initialization failed: {e}")
@@ -146,7 +146,7 @@ async def startup_event():
             )
             
             # 设置全局实例
-            hyperliquid_trading.set_ai_orchestrator(ai_orchestrator_v2)
+            # hyperliquid_trading.set_ai_orchestrator(ai_orchestrator_v2)
             
             # 启动交易系统
             await ai_orchestrator_v2.start()
