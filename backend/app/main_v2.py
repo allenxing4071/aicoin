@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import init_db, get_db
 from app.core.redis_client import redis_client
 from app.api.v1 import market, account, performance, ai
+from app.api.v1 import constraints, decisions, permission
 from app.api import websocket, market_data
 # from app.api import trading as hyperliquid_trading  # 暂时禁用，待修复
 from app.services.hyperliquid_market_data import HyperliquidMarketData
@@ -62,6 +63,21 @@ app.include_router(
     performance.router,
     prefix=f"{settings.API_V1_PREFIX}/performance",
     tags=["Performance"]
+)
+app.include_router(
+    constraints.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["Constraints"]
+)
+app.include_router(
+    decisions.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["AI Decisions"]
+)
+app.include_router(
+    permission.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["AI Permission"]
 )
 app.include_router(
     ai.router,
