@@ -3551,7 +3551,7 @@ v2.0: 架构升级或重大改进
 
 ```
 ┌─────────────────────────────────────────────────┐
-│             核心交易指标                          │
+│          核心交易指标（量化专业版）                 │
 ├─────────────────────────────────────────────────┤
 │                                                 │
 │  📊 盈利指标                                     │
@@ -3559,24 +3559,39 @@ v2.0: 架构升级或重大改进
 │     • 年化收益率 (APY)                          │
 │     • 平均每笔PnL                                │
 │     • 最大单笔盈利                               │
+│     • 超额收益率 (Excess Return)                │
 │                                                 │
 │  🎯 风险指标                                     │
 │     • 最大回撤 (Max Drawdown)                   │
+│     • 最大回撤持续时间 (DD Duration)             │
+│     • 当前回撤 (Current Drawdown)               │
+│     • 年化波动率 (Annual Volatility)            │
+│     • 下行波动率 (Downside Volatility)          │
+│     • 跟踪误差 (Tracking Error)                 │
+│                                                 │
+│  📐 风险调整收益比率                             │
 │     • 夏普比率 (Sharpe Ratio)                   │
 │     • 索提诺比率 (Sortino Ratio)                │
-│     • 波动率 (Volatility)                       │
+│     • 信息比率 (Information Ratio)              │
+│     • Calmar比率 (Calmar Ratio)                 │
+│     • Omega比率 (Omega Ratio)                   │
+│     • MAR比率 (Managed Account Ratio)           │
 │                                                 │
 │  ✅ 胜率指标                                     │
 │     • 总体胜率 (Win Rate)                       │
-│     • 7日胜率                                    │
-│     • 30日胜率                                   │
+│     • 7日/30日/90日胜率                          │
+│     • 多头/空头胜率                              │
 │     • 连胜/连亏次数                              │
+│     • 盈利稳定性 (Profit Consistency)           │
 │                                                 │
 │  📈 效率指标                                     │
 │     • 盈亏比 (Profit/Loss Ratio)                │
+│     • 期望值 (Expectancy)                       │
+│     • 凯利比例 (Kelly Criterion)                │
 │     • 资金利用率                                 │
 │     • 平均持仓时间                               │
 │     • 交易频率                                   │
+│     • 资金周转率                                 │
 │                                                 │
 └─────────────────────────────────────────────────┘
 ```
@@ -3627,42 +3642,104 @@ class KPICalculator:
         }
     
     def _calc_risk(self, trades: list) -> dict:
-        """风险指标"""
+        """风险指标（增强版）"""
         if not trades:
             return {}
         
         pnls = [t["pnl"] for t in trades]
+        initial_capital = trades[0]["account_balance_before"]
         
-        # 最大回撤
-        cumulative = 0
-        peak = 0
-        max_drawdown = 0
-        
+        # 计算累计资产曲线
+        account_values = [initial_capital]
         for pnl in pnls:
-            cumulative += pnl
-            peak = max(peak, cumulative)
-            drawdown = (peak - cumulative) / peak if peak > 0 else 0
-            max_drawdown = max(max_drawdown, drawdown)
+            account_values.append(account_values[-1] + pnl)
+        
+        # 最大回撤和持续时间
+        peak = account_values[0]
+        max_drawdown = 0
+        max_drawdown_duration = 0
+        current_drawdown_duration = 0
+        drawdown_start_idx = 0
+        
+        for i, value in enumerate(account_values):
+            if value > peak:
+                peak = value
+                current_drawdown_duration = 0
+            else:
+                current_drawdown_duration = i - drawdown_start_idx
+                if current_drawdown_duration == 0:
+                    drawdown_start_idx = i
+                
+            drawdown = (peak - value) / peak if peak > 0 else 0
+            if drawdown > max_drawdown:
+                max_drawdown = drawdown
+                max_drawdown_duration = current_drawdown_duration
+        
+        # 当前回撤
+        current_peak = max(account_values)
+        current_value = account_values[-1]
+        current_drawdown = (current_peak - current_value) / current_peak if current_peak > 0 else 0
+        
+        # 波动率指标
+        returns = [pnl / initial_capital for pnl in pnls]  # 收益率序列
+        avg_return = statistics.mean(returns)
+        std_return = statistics.stdev(returns) if len(returns) > 1 else 0
+        annual_volatility = std_return * math.sqrt(252)  # 年化波动率
+        
+        # 下行波动率（只考虑负收益）
+        downside_returns = [r for r in returns if r < avg_return]
+        downside_std = statistics.stdev(downside_returns) if len(downside_returns) > 1 else 0
+        downside_volatility = downside_std * math.sqrt(252)
+        
+        # 无风险利率（年化2%）
+        risk_free_rate = 0.02
+        daily_rf = risk_free_rate / 252
         
         # 夏普比率
-        avg_return = statistics.mean(pnls)
-        std_return = statistics.stdev(pnls) if len(pnls) > 1 else 0
-        sharpe = (avg_return / std_return * math.sqrt(252)) if std_return > 0 else 0
+        sharpe = ((avg_return - daily_rf) / std_return * math.sqrt(252)) if std_return > 0 else 0
         
-        # 索提诺比率（只考虑下行波动）
-        downside_returns = [p for p in pnls if p < 0]
-        downside_std = statistics.stdev(downside_returns) if len(downside_returns) > 1 else 0
-        sortino = (avg_return / downside_std * math.sqrt(252)) if downside_std > 0 else 0
+        # 索提诺比率（使用下行波动率）
+        sortino = ((avg_return - daily_rf) / downside_std * math.sqrt(252)) if downside_std > 0 else 0
+        
+        # Calmar比率（年化收益/最大回撤）
+        days = (trades[-1]["closed_at"] - trades[0]["created_at"]).days
+        total_return = (account_values[-1] - account_values[0]) / account_values[0]
+        annual_return = (1 + total_return) ** (365 / days) - 1 if days > 0 else 0
+        calmar = annual_return / max_drawdown if max_drawdown > 0 else 0
+        
+        # MAR比率（类似Calmar，但使用平均年化回撤）
+        mar = annual_return / max_drawdown if max_drawdown > 0 else 0
+        
+        # 信息比率（需要基准数据）
+        # 简化版：假设基准为0，实际应用中需要获取BTC/ETH基准收益
+        excess_returns = returns  # 超额收益 = 策略收益 - 基准收益
+        tracking_error = statistics.stdev(excess_returns) if len(excess_returns) > 1 else 0
+        information_ratio = (statistics.mean(excess_returns) / tracking_error * math.sqrt(252)) if tracking_error > 0 else 0
+        
+        # Omega比率（收益概率/损失概率的比值）
+        threshold = 0  # 阈值收益率
+        gains = sum([r - threshold for r in returns if r > threshold])
+        losses = sum([threshold - r for r in returns if r < threshold])
+        omega = gains / losses if losses > 0 else float('inf')
         
         return {
             "max_drawdown": max_drawdown,
+            "max_drawdown_duration": max_drawdown_duration,  # 最大回撤持续天数
+            "current_drawdown": current_drawdown,  # 当前回撤
             "sharpe_ratio": sharpe,
             "sortino_ratio": sortino,
-            "volatility": std_return
+            "information_ratio": information_ratio,
+            "calmar_ratio": calmar,
+            "mar_ratio": mar,
+            "omega_ratio": omega,
+            "volatility": std_return,
+            "annual_volatility": annual_volatility,
+            "downside_volatility": downside_volatility,
+            "tracking_error": tracking_error
         }
     
     def _calc_win_rate(self, trades: list) -> dict:
-        """胜率指标"""
+        """胜率指标（增强版）"""
         if not trades:
             return {}
         
@@ -3683,9 +3760,30 @@ class KPICalculator:
                 current_streak = min(-1, current_streak - 1)
                 max_loss_streak = min(max_loss_streak, current_streak)
         
-        # 7日和30日胜率
+        # 多周期胜率
         recent_7d = [t for t in trades if (datetime.now() - t["closed_at"]).days <= 7]
         recent_30d = [t for t in trades if (datetime.now() - t["closed_at"]).days <= 30]
+        recent_90d = [t for t in trades if (datetime.now() - t["closed_at"]).days <= 90]
+        
+        # 多头/空头分别统计
+        long_trades = [t for t in trades if t.get("direction") == "long"]
+        short_trades = [t for t in trades if t.get("direction") == "short"]
+        
+        long_win_rate = sum(1 for t in long_trades if t["pnl"] > 0) / len(long_trades) if long_trades else 0
+        short_win_rate = sum(1 for t in short_trades if t["pnl"] > 0) / len(short_trades) if short_trades else 0
+        
+        # 盈利稳定性（连续盈利周期的标准差）
+        # 计算每周的盈利情况
+        weekly_profits = {}
+        for t in trades:
+            week = t["closed_at"].strftime("%Y-W%W")
+            if week not in weekly_profits:
+                weekly_profits[week] = []
+            weekly_profits[week].append(t["pnl"])
+        
+        weekly_totals = [sum(profits) for profits in weekly_profits.values()]
+        profit_consistency = 1 - (statistics.stdev(weekly_totals) / abs(statistics.mean(weekly_totals))) if len(weekly_totals) > 1 and statistics.mean(weekly_totals) != 0 else 0
+        profit_consistency = max(0, min(1, profit_consistency))  # 归一化到0-1
         
         return {
             "total_trades": total,
@@ -3694,12 +3792,16 @@ class KPICalculator:
             "win_rate": win_rate,
             "win_rate_7d": sum(1 for t in recent_7d if t["pnl"] > 0) / len(recent_7d) if recent_7d else 0,
             "win_rate_30d": sum(1 for t in recent_30d if t["pnl"] > 0) / len(recent_30d) if recent_30d else 0,
+            "win_rate_90d": sum(1 for t in recent_90d if t["pnl"] > 0) / len(recent_90d) if recent_90d else 0,
+            "long_win_rate": long_win_rate,
+            "short_win_rate": short_win_rate,
             "max_win_streak": max_win_streak,
-            "max_loss_streak": abs(max_loss_streak)
+            "max_loss_streak": abs(max_loss_streak),
+            "profit_consistency": profit_consistency
         }
     
     def _calc_efficiency(self, trades: list) -> dict:
-        """效率指标"""
+        """效率指标（增强版）"""
         if not trades:
             return {}
         
@@ -3711,6 +3813,18 @@ class KPICalculator:
         
         profit_loss_ratio = avg_win / avg_loss if avg_loss > 0 else 0
         
+        # 期望值（Expectancy）= (胜率 × 平均盈利) - (败率 × 平均亏损)
+        win_rate = len(winning_trades) / len(trades)
+        loss_rate = len(losing_trades) / len(trades)
+        expectancy = (win_rate * avg_win) - (loss_rate * avg_loss)
+        
+        # 凯利比例（Kelly Criterion）= (胜率 × 盈亏比 - 败率) / 盈亏比
+        # 用于指导最优仓位大小
+        kelly_percentage = 0
+        if profit_loss_ratio > 0:
+            kelly_percentage = (win_rate * profit_loss_ratio - loss_rate) / profit_loss_ratio
+            kelly_percentage = max(0, min(kelly_percentage, 0.25))  # 限制在0-25%，安全起见
+        
         # 平均持仓时间
         holding_times = [(t["closed_at"] - t["created_at"]).total_seconds() / 3600 for t in trades]
         avg_holding_hours = statistics.mean(holding_times) if holding_times else 0
@@ -3720,13 +3834,24 @@ class KPICalculator:
         avg_balance = statistics.mean([t["account_balance_before"] for t in trades])
         capital_utilization = avg_position_size / avg_balance if avg_balance > 0 else 0
         
+        # 交易频率
+        days = (trades[-1]["closed_at"] - trades[0]["created_at"]).days or 1
+        trades_per_day = len(trades) / days
+        
+        # 资金周转率（每美元资金产生的交易次数）
+        total_volume = sum([t["size_usd"] for t in trades])
+        capital_turnover = total_volume / avg_balance if avg_balance > 0 else 0
+        
         return {
             "profit_loss_ratio": profit_loss_ratio,
+            "expectancy": expectancy,  # 期望值
+            "kelly_criterion": kelly_percentage,  # 凯利比例
             "avg_win": avg_win,
             "avg_loss": avg_loss,
             "avg_holding_hours": avg_holding_hours,
             "capital_utilization": capital_utilization,
-            "trades_per_day": len(trades) / ((trades[-1]["closed_at"] - trades[0]["created_at"]).days or 1)
+            "trades_per_day": trades_per_day,
+            "capital_turnover": capital_turnover  # 资金周转率
         }
     
     async def _calc_ai_quality(self, period_days: int) -> dict:
@@ -3762,6 +3887,171 @@ class KPICalculator:
             "decision_quality_score": (excellent * 1.0 + good * 0.5) / total,
             "avg_confidence": avg_confidence
         }
+```
+
+#### 6.1.3 基准收益率服务
+
+```python
+# backend/app/services/market/benchmark_service.py
+
+class BenchmarkService:
+    """
+    基准收益率服务
+    用于计算超额收益和信息比率
+    """
+    
+    def __init__(self, redis_client, market_client):
+        self.redis = redis_client
+        self.market_client = market_client
+        self.benchmark_symbol = "BTC"  # 默认使用BTC作为基准
+    
+    async def get_benchmark_return(
+        self, 
+        start_date: datetime, 
+        end_date: datetime,
+        benchmark: str = "BTC"
+    ) -> float:
+        """
+        获取基准收益率
+        
+        Args:
+            start_date: 起始时间
+            end_date: 结束时间
+            benchmark: 基准资产（BTC/ETH）
+            
+        Returns:
+            基准收益率（小数形式）
+        """
+        cache_key = f"benchmark:{benchmark}:{start_date.date()}:{end_date.date()}"
+        
+        # 尝试从缓存获取
+        cached = await self.redis.get(cache_key)
+        if cached:
+            return float(cached)
+        
+        try:
+            # 获取起始和结束价格
+            start_price = await self._get_price_at(benchmark, start_date)
+            end_price = await self._get_price_at(benchmark, end_date)
+            
+            if start_price and end_price:
+                return_rate = (end_price - start_price) / start_price
+                
+                # 缓存结果（24小时）
+                await self.redis.setex(cache_key, 86400, str(return_rate))
+                
+                return return_rate
+            else:
+                logger.warning(f"无法获取{benchmark}的价格数据")
+                return 0
+                
+        except Exception as e:
+            logger.error(f"获取基准收益率失败: {e}")
+            return 0
+    
+    async def _get_price_at(self, symbol: str, timestamp: datetime) -> float:
+        """
+        获取指定时间点的价格
+        """
+        # 从市场数据服务获取历史价格
+        # 这里需要实现与Hyperliquid API的集成
+        try:
+            # 示例：从数据库或API获取
+            price = await self.market_client.get_historical_price(
+                symbol=symbol,
+                timestamp=timestamp
+            )
+            return price
+        except Exception as e:
+            logger.error(f"获取{symbol}价格失败: {e}")
+            return None
+    
+    async def get_daily_benchmark_returns(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        benchmark: str = "BTC"
+    ) -> list[float]:
+        """
+        获取每日基准收益率序列
+        用于更精确的信息比率计算
+        """
+        daily_returns = []
+        current_date = start_date
+        
+        while current_date < end_date:
+            next_date = current_date + timedelta(days=1)
+            daily_return = await self.get_benchmark_return(
+                current_date, 
+                next_date,
+                benchmark
+            )
+            daily_returns.append(daily_return)
+            current_date = next_date
+        
+        return daily_returns
+```
+
+#### 6.1.4 改进的信息比率计算
+
+```python
+# 在KPICalculator中改进信息比率计算
+
+async def _calc_risk_with_benchmark(self, trades: list, benchmark: str = "BTC") -> dict:
+    """
+    风险指标（包含基准比较）
+    """
+    if not trades:
+        return {}
+    
+    # ... 前面的计算保持不变 ...
+    
+    # 获取基准收益率
+    start_date = trades[0]["created_at"]
+    end_date = trades[-1]["closed_at"]
+    
+    # 获取每日基准收益率
+    benchmark_service = BenchmarkService(redis_client, market_client)
+    daily_benchmark_returns = await benchmark_service.get_daily_benchmark_returns(
+        start_date, 
+        end_date,
+        benchmark
+    )
+    
+    # 对齐策略收益和基准收益
+    # 计算每个交易日的策略收益率
+    strategy_returns = []
+    for trade in trades:
+        trade_return = trade["pnl"] / trade["account_balance_before"]
+        strategy_returns.append(trade_return)
+    
+    # 计算超额收益
+    min_length = min(len(strategy_returns), len(daily_benchmark_returns))
+    excess_returns = [
+        strategy_returns[i] - daily_benchmark_returns[i] 
+        for i in range(min_length)
+    ]
+    
+    # 跟踪误差（超额收益的标准差）
+    tracking_error = statistics.stdev(excess_returns) if len(excess_returns) > 1 else 0
+    
+    # 信息比率 = 平均超额收益 / 跟踪误差
+    avg_excess_return = statistics.mean(excess_returns) if excess_returns else 0
+    information_ratio = (avg_excess_return / tracking_error * math.sqrt(252)) if tracking_error > 0 else 0
+    
+    # 超额收益率（年化）
+    total_excess_return = sum(excess_returns)
+    days = (end_date - start_date).days or 1
+    annual_excess_return = (1 + total_excess_return) ** (365 / days) - 1
+    
+    return {
+        # ... 其他指标 ...
+        "information_ratio": information_ratio,
+        "tracking_error": tracking_error,
+        "excess_return": total_excess_return,
+        "annual_excess_return": annual_excess_return,
+        "benchmark_used": benchmark
+    }
 ```
 
 ### 6.2 实时监控机制
