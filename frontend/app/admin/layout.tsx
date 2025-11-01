@@ -1,8 +1,9 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import AuthGuard from "./AuthGuard";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -10,6 +11,19 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    const user = localStorage.getItem("admin_user");
+    setUsername(user);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+    router.push("/admin/login");
+  };
 
   const navItems = [
     { name: "概览", path: "/admin" },
@@ -22,29 +36,48 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: "风控事件", path: "/admin/risk-events" },
   ];
 
+  // 如果是登录页面,不显示layout
+  if (pathname === "/admin/login") {
+    return <AuthGuard>{children}</AuthGuard>;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">
-                AIcoin 管理后台
-              </h1>
-              <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                只读模式
-              </span>
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center space-x-4">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  AIcoin 管理后台
+                </h1>
+                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                  只读模式
+                </span>
+              </div>
+              <div className="flex items-center space-x-4">
+                {username && (
+                  <span className="text-sm text-gray-600">
+                    欢迎, <span className="font-medium">{username}</span>
+                  </span>
+                )}
+                <Link
+                  href="/"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  返回主页
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  退出登录
+                </button>
+              </div>
             </div>
-            <Link
-              href="/"
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              返回主页
-            </Link>
           </div>
-        </div>
-      </header>
+        </header>
 
       {/* Navigation */}
       <nav className="bg-white border-b border-gray-200">
@@ -73,11 +106,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
-    </div>
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {children}
+        </main>
+      </div>
+    </AuthGuard>
   );
 }
 

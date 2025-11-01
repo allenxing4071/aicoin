@@ -50,20 +50,23 @@ export default function PositionsList({ selectedModel = 'all' }: PositionsListPr
       const response = await axios.get(`${API_BASE}/trading/positions`);
       
       if (response.data && response.data.success && response.data.positions) {
-        const realPositions = response.data.positions.map((pos: any, index: number) => ({
-          id: `pos_${index}`,
-          model: 'SHARED WALLET',  // 所有AI共享同一个钱包
-          modelIcon: '🤖',
-          modelColor: '#6b7280',
-          side: (pos.side === 'long' || pos.size > 0) ? 'LONG' as const : 'SHORT' as const,
-          coin: pos.symbol.replace('-PERP', ''),
-          coinIcon: COIN_ICONS[pos.symbol.replace('-PERP', '')] || '💰',
-          leverage: pos.leverage ? `${pos.leverage}X` : '1X',
-          notional: Math.abs(pos.size * pos.entry_price),
-          unrealizedPnL: pos.unrealized_pnl || 0,
-          totalUnrealizedPnL: pos.unrealized_pnl || 0,
-          availableCash: 0  // 从account API获取
-        }));
+        const realPositions = response.data.positions.map((pos: any, index: number) => {
+          const symbol = (pos.coin || pos.symbol || '').replace('-PERP', '');
+          return {
+            id: `pos_${index}`,
+            model: 'SHARED WALLET',  // 所有AI共享同一个钱包
+            modelIcon: '🤖',
+            modelColor: '#6b7280',
+            side: (pos.side === 'long' || (pos.size && pos.size > 0)) ? 'LONG' as const : 'SHORT' as const,
+            coin: symbol,
+            coinIcon: COIN_ICONS[symbol] || '💰',
+            leverage: pos.leverage ? `${pos.leverage}X` : '1X',
+            notional: Math.abs((pos.size || 0) * (pos.entry_price || 0)),
+            unrealizedPnL: pos.unrealized_pnl || 0,
+            totalUnrealizedPnL: pos.unrealized_pnl || 0,
+            availableCash: 0  // 从account API获取
+          };
+        });
         
         setPositions(realPositions);
         setLoading(false);

@@ -7,7 +7,7 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db, get_db
 from app.core.redis_client import redis_client
-from app.api.v1 import market, account, performance, ai, trades
+from app.api.v1 import market, account, performance, ai, trades, positions, admin
 from app.api.v1 import constraints, decisions, permission
 from app.api import websocket, market_data
 # from app.api import trading as hyperliquid_trading  # 暂时禁用，待修复
@@ -85,13 +85,23 @@ app.include_router(
 )
 app.include_router(
     trades.router,
-    prefix=f"{settings.API_V1_PREFIX}/trades",
+    prefix=f"{settings.API_V1_PREFIX}/trading/trades",
     tags=["Trades"]
+)
+app.include_router(
+    positions.router,
+    prefix=f"{settings.API_V1_PREFIX}/trading/positions",
+    tags=["Positions"]
 )
 app.include_router(
     ai.router,
     prefix=f"{settings.API_V1_PREFIX}/ai",
     tags=["AI Status"]
+)
+app.include_router(
+    admin.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Database Viewer"]
 )
 
 # Include new API routers

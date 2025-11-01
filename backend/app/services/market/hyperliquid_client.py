@@ -221,6 +221,37 @@ class HyperliquidClient:
             logger.error(f"Error fetching positions: {e}")
             raise
     
+    async def get_user_fills(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """获取用户交易历史 - 从Hyperliquid获取真实数据"""
+        try:
+            logger.info(f"Fetching user fills from Hyperliquid (limit={limit})")
+            
+            # 使用缓存的trading service，避免重复初始化
+            if self._trading_service is None:
+                from app.services.hyperliquid_trading import HyperliquidTradingService
+                from app.core.redis_client import redis_client
+                logger.warning("Trading service not provided, creating new instance (slow!)")
+                self._trading_service = HyperliquidTradingService(redis_client, testnet=self.testnet)
+                await self._trading_service.initialize()
+            
+            # 调用Hyperliquid API获取用户交易历史
+            response = await self.client.post(
+                f"{self.base_url}/info",
+                json={
+                    "type": "userFills",
+                    "user": self.wallet_address
+                }
+            )
+            response.raise_for_status()
+            fills = response.json()
+            
+            # 限制返回数量
+            return fills[:limit] if fills else []
+            
+        except Exception as e:
+            logger.error(f"Error fetching user fills: {e}")
+            return []  # 返回空列表而不是抛出异常
+    
     async def place_order(
         self,
         symbol: str,

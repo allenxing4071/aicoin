@@ -1,9 +1,11 @@
 """AI Health and Status API endpoints"""
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from datetime import datetime
 from typing import Optional
 import logging
+from sqlalchemy.orm import Session
+from app.core.database import get_db
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -72,10 +74,11 @@ async def get_ai_health():
 @router.get("/chat/history")
 async def get_chat_history(
     model: Optional[str] = Query(None, description="Filter by model name"),
-    limit: int = Query(50, ge=1, le=200, description="Maximum number of messages")
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of messages"),
+    db: Session = Depends(get_db)
 ):
     """
-    获取AI决策聊天历史
+    获取AI决策聊天历史（从decisions表获取）
     
     Args:
         model: 模型名称筛选 (可选)
@@ -85,10 +88,47 @@ async def get_chat_history(
         AI聊天历史列表
     """
     try:
-        # TODO: 从Redis或数据库查询真实聊天记录
-        # 这里暂时返回空列表
+        from app.models.ai_decision import AIDecision
+        from sqlalchemy import desc
         
+        # 从数据库查询决策记录
+        query = db.query(AIDecision).order_by(desc(AIDecision.created_at))
+        
+        # 如果指定了model，添加筛选
+        if model and model != 'all':
+            query = query.filter(AIDecision.model_name == model)
+        
+        decisions = query.limit(limit).all()
+        
+        # 转换为聊天消息格式
         messages = []
+        for decision in decisions:
+            # 从JSONB字段解析决策数据
+            decision_data = decision.decision if isinstance(decision.decision, dict) else {}
+            action_str = decision_data.get("action", "HOLD")
+            
+            # 确定action类型
+            action = "— HOLD"
+            if action_str and action_str.upper() in ["BUY", "LONG"]:
+                action = "↗ BUY"
+            elif action_str and action_str.upper() in ["SELL", "SHORT"]:
+                action = "↘ SELL"
+            
+            # 获取confidence（可能是0-1的浮点数或0-100的整数）
+            confidence_raw = decision_data.get("confidence", 0.5)
+            confidence = int(confidence_raw * 100) if confidence_raw <= 1 else int(confidence_raw)
+            
+            message = {
+                "model": decision.model_name or "DEEPSEEK",
+                "timestamp": decision.created_at.isoformat() if decision.created_at else datetime.now().isoformat(),
+                "action": action,
+                "symbol": decision.symbol or "BTC-PERP",
+                "confidence": confidence,
+                "reasoning": decision_data.get("reasoning", decision.reject_reason or "No reasoning provided")
+            }
+            messages.append(message)
+        
+        logger.info(f"✅ Found {len(messages)} chat messages")
         
         return {
             "success": True,
@@ -98,5 +138,10 @@ async def get_chat_history(
         
     except Exception as e:
         logger.error(f"Error fetching chat history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # 如果数据库查询失败，返回空列表而不是抛出异常
+        return {
+            "success": True,
+            "messages": [],
+            "count": 0
+        }
 

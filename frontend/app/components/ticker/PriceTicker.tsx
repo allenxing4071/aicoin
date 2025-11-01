@@ -24,12 +24,14 @@ export default function PriceTicker() {
     try {
       const response = await axios.get(`${API_BASE}/market/tickers`);
       if (response.data && Array.isArray(response.data)) {
-        const realTickers = response.data.map((ticker: any) => ({
-          symbol: ticker.symbol,
-          price: parseFloat(ticker.price),
-          change24h: parseFloat(ticker.change_24h || 0),
-          timestamp: ticker.timestamp
-        }));
+        const realTickers = response.data
+          .filter((ticker: any) => ticker && ticker.symbol)  // 过滤无效数据
+          .map((ticker: any) => ({
+            symbol: ticker.symbol,
+            price: parseFloat(ticker.price || 0),
+            change24h: parseFloat(ticker.change_24h || 0),
+            timestamp: ticker.timestamp
+          }));
         setTickers(realTickers);
         setLoading(false);
       }

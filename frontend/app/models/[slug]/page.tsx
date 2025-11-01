@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
+import TradeListComplete from '@/app/components/trades/TradeListComplete';
+import DecisionTimeline from '@/app/components/ai/DecisionTimeline';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
@@ -256,14 +258,21 @@ export default function ModelDetailPage() {
         {activeTab === 'trades' && (
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">交易历史</h3>
-            <p className="text-gray-600">交易历史功能开发中...</p>
+            <div className="h-[600px] overflow-y-auto">
+              <TradeListComplete 
+                selectedModel={modelStats.slug} 
+                models={[{ name: modelStats.name, slug: modelStats.slug, value: modelStats.balance, change: modelStats.totalReturn, color: '#3b82f6', icon: 'deepseek' }]} 
+              />
+            </div>
           </div>
         )}
 
         {activeTab === 'decisions' && (
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">决策记录</h3>
-            <p className="text-gray-600">决策记录功能开发中...</p>
+            <div className="h-[600px]">
+              <DecisionTimeline filter={modelStats.slug} />
+            </div>
           </div>
         )}
       </div>

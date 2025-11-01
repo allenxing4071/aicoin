@@ -1,11 +1,15 @@
 """Admin API endpoints for database viewing"""
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, asc, text
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
+from pydantic import BaseModel
 import logging
+import jwt
+import hashlib
 
 from app.core.database import get_db
 from app.models.trade import Trade
@@ -37,6 +41,117 @@ from app.schemas.admin import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+security = HTTPBearer()
+
+# JWT配置
+SECRET_KEY = "aicoin-admin-secret-key-2025"  # 生产环境应使用环境变量
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8小时
+
+# 默认管理员账号 (生产环境应存储在数据库中)
+ADMIN_USERS = {
+    "admin": hashlib.sha256("admin123".encode()).hexdigest(),
+}
+
+
+# ============= 认证相关模型 =============
+
+class LoginRequest(BaseModel):
+    """登录请求"""
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    """登录响应"""
+    token: str
+    username: str
+    expires_in: int
+
+
+# ============= 认证辅助函数 =============
+
+def create_access_token(username: str) -> str:
+    """创建访问令牌"""
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode = {
+        "sub": username,
+        "exp": expire,
+        "iat": datetime.utcnow()
+    }
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def verify_token(token: str) -> Optional[str]:
+    """验证令牌并返回用户名"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        return username
+    except jwt.ExpiredSignatureError:
+        logger.warning("Token has expired")
+        return None
+    except jwt.JWTError as e:
+        logger.warning(f"Token validation failed: {e}")
+        return None
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    """获取当前登录用户"""
+    token = credentials.credentials
+    username = verify_token(token)
+    if username is None:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    return username
+
+
+# ============= 认证接口 =============
+
+@router.post("/login", response_model=AdminResponse)
+async def login(request: LoginRequest):
+    """
+    管理员登录
+    
+    默认账号:
+    - 用户名: admin
+    - 密码: admin123
+    """
+    # 验证用户名和密码
+    password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+    
+    if request.username not in ADMIN_USERS:
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    
+    if ADMIN_USERS[request.username] != password_hash:
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    
+    # 生成token
+    token = create_access_token(request.username)
+    
+    return AdminResponse(
+        success=True,
+        data=LoginResponse(
+            token=token,
+            username=request.username,
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        ),
+        message="登录成功"
+    )
+
+
+@router.get("/verify")
+async def verify_token_endpoint(current_user: str = Depends(get_current_user)):
+    """
+    验证令牌是否有效
+    """
+    return {
+        "success": True,
+        "username": current_user,
+        "message": "Token is valid"
+    }
 
 
 # ============= 辅助函数 =============

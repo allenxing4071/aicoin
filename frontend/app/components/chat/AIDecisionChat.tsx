@@ -24,6 +24,7 @@ interface AIDecisionChatProps {
 
 export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // 获取真实聊天数据
@@ -36,25 +37,33 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
         params: { model: selectedModel === 'all' ? undefined : selectedModel, limit: 50 }
       });
       if (response.data && response.data.success && Array.isArray(response.data.messages)) {
-        const chatMessages = response.data.messages.map((msg: any, index: number) => ({
-          id: index + 1,
-          model: msg.model || 'DEEPSEEK',
-          modelColor: '#10b981',
-          timestamp: new Date(msg.timestamp).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-          action: msg.action || '— HOLD',
-          symbol: msg.symbol || 'BTC-PERP',
-          confidence: msg.confidence || 50,
-          reasoning: msg.reasoning || 'No reasoning provided',
-        }));
-        setMessages(chatMessages);
+        if (response.data.messages.length > 0) {
+          const chatMessages = response.data.messages.map((msg: any, index: number) => ({
+            id: index + 1,
+            model: msg.model || 'DEEPSEEK',
+            modelColor: '#10b981',
+            timestamp: new Date(msg.timestamp).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+            action: msg.action || '— HOLD',
+            symbol: msg.symbol || 'BTC-PERP',
+            confidence: msg.confidence || 50,
+            reasoning: msg.reasoning || 'No reasoning provided',
+          }));
+          setMessages(chatMessages);
+        } else {
+          // API返回空数据，显示"暂无记录"
+          setMessages([]);
+        }
+        setLoading(false);
       } else {
-        // 如果API返回空数据，使用模拟数据
-        setMessages(getMockMessages());
+        // 如果API返回格式不正确，保持加载状态
+        setMessages([]);
+        setLoading(true);
       }
     } catch (error) {
       console.error('Failed to fetch chat history:', error);
-      // API失败时使用模拟数据
-      setMessages(getMockMessages());
+      // API失败时保持加载状态
+      setMessages([]);
+      setLoading(true);
     }
   };
 
@@ -169,7 +178,16 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4 bg-white">
-      {filteredMessages.map((message) => (
+      {loading ? (
+        <div className="flex items-center justify-center h-full text-gray-400 animate-pulse">
+          加载AI决策记录中...
+        </div>
+      ) : filteredMessages.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          暂无AI决策记录
+        </div>
+      ) : (
+        filteredMessages.map((message) => (
         <div key={message.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all">
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
@@ -209,13 +227,7 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
             </div>
           </div>
         </div>
-      ))}
-
-      {filteredMessages.length === 0 && (
-        <div className="flex items-center justify-center h-full text-gray-500">
-          暂无AI决策记录
-        </div>
-      )}
+      )))}
     </div>
   );
 }

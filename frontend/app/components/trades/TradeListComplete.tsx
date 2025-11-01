@@ -61,11 +61,11 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
             modelIcon: modelData.icon || '🤖',
             type: trade.side.toLowerCase() === 'buy' ? 'long' as const : 'short' as const,
             symbol: trade.symbol,
-            price: `$${parseFloat(trade.price).toFixed(4)}`,
-            quantity: parseFloat(trade.size).toFixed(4),
-            notional: `$${(parseFloat(trade.size) * parseFloat(trade.price) / 1000).toFixed(3)}k`,
+            price: `$${parseFloat(trade.price || 0).toFixed(4)}`,
+            quantity: parseFloat(trade.size || 0).toFixed(4),
+            notional: `$${(parseFloat(trade.size || 0) * parseFloat(trade.price || 0) / 1000).toFixed(3)}k`,
             holdingTime: formatHoldingTime(trade.timestamp),
-            pnl: parseFloat(trade.pnl || 0),
+            pnl: parseFloat(trade.closed_pnl || trade.pnl || 0),
             timestamp: formatTimestamp(trade.timestamp)
           };
         });
@@ -73,12 +73,15 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
         setTrades(realTrades);
         setLoading(false);
       } else {
-        // 如果API返回空数据，使用演示数据
-        generateMockTrades();
+        // 如果API返回空数据，保持加载状态
+        setTrades([]);
+        setLoading(true);
       }
     } catch (error) {
-      console.error('Failed to fetch trades, using mock data:', error);
-      generateMockTrades();
+      console.error('Failed to fetch trades:', error);
+      // 如果API失败，保持加载状态
+      setTrades([]);
+      setLoading(true);
     }
   };
 
@@ -159,7 +162,16 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-3 bg-white">
-      {filteredTrades.map((trade) => (
+      {loading ? (
+        <div className="flex items-center justify-center h-full text-gray-400 animate-pulse">
+          加载交易记录中...
+        </div>
+      ) : filteredTrades.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          暂无交易记录
+        </div>
+      ) : (
+        filteredTrades.map((trade) => (
         <div 
           key={trade.id} 
           className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 hover:shadow-sm transition-all"
@@ -212,7 +224,7 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
             </span>
           </div>
         </div>
-      ))}
+      )))}
     </div>
   );
 }

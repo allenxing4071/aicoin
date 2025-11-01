@@ -1,54 +1,46 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-*.egg-info/
-dist/
-build/
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Logs
-logs/
-*.log
-
-# Database
-*.db
-*.sqlite3
-
-# Node
-node_modules/
-.next/
-out/
-*.tsbuildinfo
-
-# Docker
-.dockerignore
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Secrets
-**/private_key.txt
-**/api_keys.txt
 
 # Backups
-backups/
+# Database
+# Docker
+# Environment variables
+# IDEs
+# Logs
+# Node
+# OS
+# Python
+# Secrets
+*$py.class
+**/api_keys.txt
+**/private_key.txt
+*.db
+*.egg-info/
+*.log
+*.py[cod]
+*.so
 *.sql
 *.sql.gz
+*.sqlite3
+*.swo
+*.swp
+*.tsbuildinfo
+*~
+.DS_Store
+.Python
+.dockerignore
+.env
+.env.*.local
+.env.local
+.idea/
+.next/
+.vscode/
+ENV/
+Thumbs.db
+__pycache__/
+backups/
+build/
+dist/
+env/
+logs/
+node_modules/
+out/
+venv/
