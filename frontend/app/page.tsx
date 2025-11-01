@@ -27,10 +27,11 @@ export default function Home() {
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
   const [aiHealth, setAiHealth] = useState<any>(null);
   const [modelsData, setModelsData] = useState<any[]>([
-    { name: 'DEEPSEEK CHAT V3.1', slug: 'deepseek-chat-v3.1', value: 100, change: 0, color: '#3b82f6', icon: 'deepseek' },
+    { name: 'DEEPSEEK CHAT V3.1', slug: 'deepseek-chat-v3.1', value: 0, change: 0, color: '#3b82f6', icon: 'deepseek' },
     // Qwen已禁用 - 只使用DeepSeek单一AI模型
-    // { name: 'QWEN3 MAX', slug: 'qwen3-max', value: 100, change: 0, color: '#ec4899', icon: '🎨' },
+    // { name: 'QWEN3 MAX', slug: 'qwen3-max', value: 0, change: 0, color: '#ec4899', icon: '🎨' },
   ]);
+  const [loadingModels, setLoadingModels] = useState(true);
 
   // 使用useMemo稳定models引用，避免React重新渲染错误
   const modelsWithData = useMemo(() => modelsData, [JSON.stringify(modelsData)]);
@@ -121,19 +122,11 @@ export default function Home() {
           icon: 'deepseek' // 使用DeepSeek logo
         },
       ]);
+      setLoadingModels(false);
     } catch (error) {
       console.log('Failed to fetch models data:', error);
-      // API失败时，使用0作为默认值而不是100
-      setModelsData([
-        { 
-          name: 'DEEPSEEK CHAT V3.1', 
-          slug: 'deepseek-chat-v3.1', 
-          value: 0, 
-          change: 0, 
-          color: '#3b82f6', 
-          icon: 'deepseek' // 使用DeepSeek logo
-        },
-      ]);
+      // API失败时，保持加载状态
+      setLoadingModels(true);
     }
   };
 
@@ -212,9 +205,13 @@ export default function Home() {
               <div>
                 <div className="text-sm text-gray-500 mb-1">账户总价值</div>
                 <div className="flex items-baseline space-x-3">
-                  <span className="text-4xl font-bold text-gray-900">
-                    ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-                  </span>
+                  {loadingModels ? (
+                    <span className="text-2xl text-gray-400 animate-pulse">加载中...</span>
+                  ) : (
+                    <span className="text-4xl font-bold text-gray-900">
+                      ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                    </span>
+                  )}
                 </div>
               </div>
               {/* AI模型标签已删除 */}

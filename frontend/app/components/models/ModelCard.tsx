@@ -40,16 +40,22 @@ export default function ModelCard({ model }: ModelCardProps) {
       </div>
       
       <div className="flex items-center space-x-4">
-        <div className="text-gray-900 text-base font-bold">
-          ${model.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-        </div>
-        <div className={`text-sm font-bold flex items-center ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-          {isPositive ? '+' : ''}{model.change.toFixed(2)}%
-          <div 
-            className="w-2 h-2 rounded-full ml-2" 
-            style={{ backgroundColor: model.color, boxShadow: `0 0 8px ${model.color}` }} 
-          />
-        </div>
+        {model.value === 0 && model.change === 0 ? (
+          <div className="text-gray-400 text-sm animate-pulse">加载中...</div>
+        ) : (
+          <>
+            <div className="text-gray-900 text-base font-bold">
+              ${model.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+            </div>
+            <div className={`text-sm font-bold flex items-center ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+              {isPositive ? '+' : ''}{model.change.toFixed(2)}%
+              <div 
+                className="w-2 h-2 rounded-full ml-2" 
+                style={{ backgroundColor: model.color, boxShadow: `0 0 8px ${model.color}` }} 
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

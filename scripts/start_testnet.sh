@@ -73,14 +73,14 @@ echo ""
 
 # 停止旧容器
 echo "🛑 停止旧容器（如果有）..."
-docker-compose -f docker-compose.testnet.yml down
+docker-compose -f deploy/docker-compose.testnet.yml down
 
 echo ""
 echo "🚀 启动Docker服务（测试网专用配置）..."
 echo ""
 
 # 使用测试网专用配置启动所有服务
-docker-compose -f docker-compose.testnet.yml up -d
+docker-compose -f deploy/docker-compose.testnet.yml up -d
 
 echo ""
 echo "⏳ 等待服务启动..."
@@ -89,7 +89,7 @@ sleep 15
 # 检查服务状态
 echo ""
 echo "📊 检查服务状态..."
-docker-compose -f docker-compose.testnet.yml ps
+docker-compose -f deploy/docker-compose.testnet.yml ps
 
 echo ""
 echo "⏳ 等待Backend初始化..."
@@ -107,20 +107,20 @@ echo "   - 系统状态: http://localhost:8000/api/v1/status"
 echo "   - Qdrant:   http://localhost:6333/dashboard"
 echo ""
 echo "📋 查看日志："
-echo "   docker-compose -f docker-compose.testnet.yml logs -f backend"
+echo "   docker-compose -f deploy/docker-compose.testnet.yml logs -f backend"
 echo ""
 echo "🔍 监控命令："
 echo "   # 实时日志"
-echo "   docker-compose -f docker-compose.testnet.yml logs -f backend | grep -E '(🔄|✅|❌|⚠️)'"
+echo "   docker-compose -f deploy/docker-compose.testnet.yml logs -f backend | grep -E '(🔄|✅|❌|⚠️)'"
 echo ""
 echo "   # 查看决策"
-echo "   docker-compose -f docker-compose.testnet.yml logs backend | grep '决策'"
+echo "   docker-compose -f deploy/docker-compose.testnet.yml logs backend | grep '决策'"
 echo ""
 echo "   # 查看权限"
-echo "   docker-compose -f docker-compose.testnet.yml logs backend | grep '权限'"
+echo "   docker-compose -f deploy/docker-compose.testnet.yml logs backend | grep '权限'"
 echo ""
 echo "🛑 停止系统："
-echo "   docker-compose -f docker-compose.testnet.yml down"
+echo "   docker-compose -f deploy/docker-compose.testnet.yml down"
 echo ""
 echo "=========================================="
 echo "⚠️  重要提醒："
