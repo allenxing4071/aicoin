@@ -140,7 +140,7 @@ export default function PerformanceDashboard() {
       {/* 期间选择器 */}
       <div className="bg-white border border-gray-200 p-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-gray-900">PERFORMANCE OVERVIEW</h3>
+          <h3 className="text-xs font-bold text-gray-900">性能概览</h3>
           <div className="flex space-x-2">
             {[7, 30, 90].map((days) => (
               <button
@@ -152,7 +152,7 @@ export default function PerformanceDashboard() {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {days}D
+                {days}天
               </button>
             ))}
           </div>
@@ -162,19 +162,19 @@ export default function PerformanceDashboard() {
       {/* 收益指标 */}
       <div className="grid grid-cols-3 gap-3">
         <MetricCard
-          title="Total Return"
+          title="总收益"
           value={`${metrics.returns.total_return.toFixed(2)}%`}
           change={metrics.returns.daily_return}
           trend={metrics.returns.total_return >= 0 ? 'up' : 'down'}
         />
         <MetricCard
-          title="Annual Return"
+          title="年化收益"
           value={`${metrics.returns.annual_return.toFixed(2)}%`}
           change={metrics.returns.mtd_return}
           trend={metrics.returns.annual_return >= 0 ? 'up' : 'down'}
         />
         <MetricCard
-          title="Daily Return"
+          title="日收益"
           value={`${metrics.returns.daily_return.toFixed(2)}%`}
           change={metrics.returns.daily_return}
           trend={metrics.returns.daily_return >= 0 ? 'up' : 'down'}
@@ -184,14 +184,14 @@ export default function PerformanceDashboard() {
       {/* 风险仪表盘 */}
       <div className="grid grid-cols-3 gap-3">
         <RiskGauge
-          title="Max Drawdown"
+          title="最大回撤"
           value={metrics.risk.max_drawdown}
           max={10}
           unit="%"
           thresholds={{ warning: 5, danger: 8 }}
         />
         <RiskGauge
-          title="Sharpe Ratio"
+          title="夏普比率"
           value={metrics.risk.sharpe_ratio}
           max={3}
           unit=""
@@ -199,7 +199,7 @@ export default function PerformanceDashboard() {
           inverted={true}
         />
         <RiskGauge
-          title="Volatility"
+          title="波动率"
           value={metrics.risk.annual_volatility}
           max={50}
           unit="%"
@@ -210,11 +210,11 @@ export default function PerformanceDashboard() {
       {/* 胜率与交易统计 */}
       <div className="bg-white border border-gray-200">
         <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-xs font-bold text-gray-900">TRADING STATISTICS</h3>
+          <h3 className="text-xs font-bold text-gray-900">交易统计</h3>
         </div>
         <div className="p-3 grid grid-cols-2 gap-3">
           <div>
-            <div className="text-xs text-gray-600 mb-1">Win Rate</div>
+            <div className="text-xs text-gray-600 mb-1">胜率</div>
             <div className="flex items-baseline space-x-2">
               <div className={`text-2xl font-bold ${
                 metrics.win_rate.overall >= 50 ? 'text-green-600' :
@@ -224,28 +224,28 @@ export default function PerformanceDashboard() {
                 {metrics.win_rate.overall.toFixed(1)}%
               </div>
               <div className="text-xs text-gray-500">
-                ({metrics.win_rate.winning_trades}W / {metrics.win_rate.losing_trades}L)
+                ({metrics.win_rate.winning_trades}胜 / {metrics.win_rate.losing_trades}负)
               </div>
             </div>
             <div className="mt-2 flex space-x-4 text-xs">
               <div>
-                <span className="text-gray-600">Long: </span>
+                <span className="text-gray-600">做多: </span>
                 <span className="font-mono">{metrics.win_rate.long.toFixed(1)}%</span>
               </div>
               <div>
-                <span className="text-gray-600">Short: </span>
+                <span className="text-gray-600">做空: </span>
                 <span className="font-mono">{metrics.win_rate.short.toFixed(1)}%</span>
               </div>
             </div>
           </div>
 
           <div>
-            <div className="text-xs text-gray-600 mb-1">Total Trades</div>
+            <div className="text-xs text-gray-600 mb-1">总交易数</div>
             <div className="text-2xl font-bold text-gray-900">
               {metrics.win_rate.total_trades}
             </div>
             <div className="mt-2 text-xs text-gray-600">
-              Avg: {metrics.efficiency.trades_per_day.toFixed(1)} per day
+              平均: {metrics.efficiency.trades_per_day.toFixed(1)} 笔/天
             </div>
           </div>
         </div>
@@ -254,11 +254,11 @@ export default function PerformanceDashboard() {
       {/* 风险调整收益比率 */}
       <div className="bg-white border border-gray-200">
         <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-xs font-bold text-gray-900">RISK-ADJUSTED RETURNS</h3>
+          <h3 className="text-xs font-bold text-gray-900">风险调整收益</h3>
         </div>
         <div className="p-3 grid grid-cols-3 gap-3 text-xs">
           <div>
-            <div className="text-gray-600 mb-1">Sharpe Ratio</div>
+            <div className="text-gray-600 mb-1">夏普比率</div>
             <div className={`text-lg font-bold ${
               metrics.ratios.sharpe_ratio >= 1 ? 'text-green-600' :
               metrics.ratios.sharpe_ratio >= 0.5 ? 'text-yellow-600' :
@@ -268,7 +268,7 @@ export default function PerformanceDashboard() {
             </div>
           </div>
           <div>
-            <div className="text-gray-600 mb-1">Sortino Ratio</div>
+            <div className="text-gray-600 mb-1">索提诺比率</div>
             <div className={`text-lg font-bold ${
               metrics.ratios.sortino_ratio >= 1 ? 'text-green-600' :
               metrics.ratios.sortino_ratio >= 0.5 ? 'text-yellow-600' :
@@ -278,7 +278,7 @@ export default function PerformanceDashboard() {
             </div>
           </div>
           <div>
-            <div className="text-gray-600 mb-1">Calmar Ratio</div>
+            <div className="text-gray-600 mb-1">卡玛比率</div>
             <div className={`text-lg font-bold ${
               metrics.ratios.calmar_ratio >= 1 ? 'text-green-600' :
               metrics.ratios.calmar_ratio >= 0 ? 'text-yellow-600' :
@@ -293,23 +293,23 @@ export default function PerformanceDashboard() {
       {/* 效率指标 */}
       <div className="bg-white border border-gray-200">
         <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-xs font-bold text-gray-900">EFFICIENCY METRICS</h3>
+          <h3 className="text-xs font-bold text-gray-900">效率指标</h3>
         </div>
         <div className="p-3 grid grid-cols-2 gap-3 text-xs">
           <div className="flex justify-between">
-            <span className="text-gray-600">Expectancy:</span>
+            <span className="text-gray-600">期望值:</span>
             <span className="font-mono font-semibold">${metrics.efficiency.expectancy.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Kelly Criterion:</span>
+            <span className="text-gray-600">凯利准则:</span>
             <span className="font-mono font-semibold">{metrics.efficiency.kelly_criterion.toFixed(2)}%</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Capital Turnover:</span>
+            <span className="text-gray-600">资金周转率:</span>
             <span className="font-mono font-semibold">{metrics.efficiency.capital_turnover.toFixed(2)}x</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Profit Factor:</span>
+            <span className="text-gray-600">盈利因子:</span>
             <span className="font-mono font-semibold">{metrics.efficiency.profit_factor.toFixed(2)}</span>
           </div>
         </div>

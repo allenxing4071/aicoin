@@ -1,0 +1,142 @@
+version: '3.8'
+
+# AIcoin v2.0 生产环境配置
+# 使用: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: aicoin-postgres-prod
+    environment:
+      POSTGRES_DB: aicoin
+      POSTGRES_USER: ${POSTGRES_USER:-aicoin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aicoin} -d aicoin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aicoin-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: aicoin-redis-prod
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_prod_data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - aicoin-network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: aicoin-qdrant-prod
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC API
+    volumes:
+      - qdrant_prod_data:/qdrant/storage
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 sh -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - aicoin-network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aicoin-backend-prod-v2
+    command: uvicorn app.main_v2:app --host 0.0.0.0 --port 8000 --workers 4
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aicoin}:${POSTGRES_PASSWORD}@postgres:5432/aicoin
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      HYPERLIQUID_WALLET_ADDRESS: ${HYPERLIQUID_WALLET_ADDRESS}
+      HYPERLIQUID_PRIVATE_KEY: ${HYPERLIQUID_PRIVATE_KEY}
+      HYPERLIQUID_VAULT_ADDRESS: ${HYPERLIQUID_VAULT_ADDRESS:-}
+      HYPERLIQUID_TESTNET: ${HYPERLIQUID_TESTNET:-false}
+      HYPERLIQUID_API_URL: ${HYPERLIQUID_API_URL:-https://api.hyperliquid.xyz}
+      SECRET_KEY: ${SECRET_KEY}
+      TRADING_ENABLED: ${TRADING_ENABLED:-false}
+      DECISION_INTERVAL: ${DECISION_INTERVAL:-300}
+      INITIAL_PERMISSION_LEVEL: ${INITIAL_PERMISSION_LEVEL:-L1}
+      APP_VERSION: "2.0.0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+    restart: always
+    networks:
+      - aicoin-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aicoin-frontend-prod
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    restart: always
+    networks:
+      - aicoin-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: aicoin-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: always
+    networks:
+      - aicoin-network
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  qdrant_prod_data:
+
+networks:
+  aicoin-network:
+    driver: bridge
+

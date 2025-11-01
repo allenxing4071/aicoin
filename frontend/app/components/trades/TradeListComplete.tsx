@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import CoinIcon from '../common/CoinIcon';
+import DeepSeekLogo from '../common/DeepSeekLogo';
 
 interface Model {
   name: string;
@@ -164,52 +166,47 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2">
-              <span className="text-xl">{trade.modelIcon}</span>
+              <DeepSeekLogo size={20} />
               <span className="text-sm font-bold text-gray-900">
                 {trade.model.split(' ')[0]} {trade.model.includes('2.5') ? '2.5' : ''} {trade.model.includes('PRO') ? 'Pro' : trade.model.includes('MAX') ? 'Max' : ''}
               </span>
-              <span className="text-xs text-gray-600">completed a</span>
+              <span className="text-xs text-gray-600">完成了一笔</span>
               <span className={`text-xs font-bold ${trade.type === 'long' ? 'text-green-600' : 'text-red-600'}`}>
-                {trade.type}
+                {trade.type === 'long' ? '做多' : '做空'}
               </span>
-              <span className="text-xs text-gray-600">trade on</span>
+              <span className="text-xs text-gray-600">交易于</span>
             </div>
             <span className="text-xs text-gray-500 font-mono">{trade.timestamp}</span>
           </div>
 
           <div className="mb-3">
-            <span className="text-lg font-bold text-gray-900 flex items-center">
-              {trade.symbol.includes('X') && <span className="text-sm mr-1">✕</span>}
-              {trade.symbol.includes('DOGE') && <span className="text-sm mr-1">🐕</span>}
-              {trade.symbol.includes('ETH') && <span className="text-sm mr-1">💎</span>}
-              {trade.symbol.includes('SOL') && <span className="text-sm mr-1">☀️</span>}
-              {trade.symbol.includes('BTC') && <span className="text-sm mr-1">₿</span>}
-              {trade.symbol.includes('BNB') && <span className="text-sm mr-1">🔶</span>}
+            <span className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <CoinIcon symbol={trade.symbol} size={24} />
               {trade.symbol}
             </span>
           </div>
 
           <div className="space-y-1 text-xs font-mono">
             <div className="flex justify-between">
-              <span className="text-gray-500">Price:</span>
+              <span className="text-gray-500">价格:</span>
               <span className="text-gray-900">{trade.price}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Quantity:</span>
+              <span className="text-gray-500">数量:</span>
               <span className="text-gray-900">{trade.quantity}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Notional:</span>
+              <span className="text-gray-500">名义价值:</span>
               <span className="text-gray-900">{trade.notional}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Holding time:</span>
+              <span className="text-gray-500">持仓时间:</span>
               <span className="text-gray-900">{trade.holdingTime}</span>
             </div>
           </div>
 
           <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
-            <span className="text-xs text-gray-500 font-mono">NET P&L:</span>
+            <span className="text-xs text-gray-500 font-mono">净盈亏:</span>
             <span className={`text-lg font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {trade.pnl >= 0 ? '+' : ''}${Math.abs(trade.pnl).toFixed(2)}
             </span>

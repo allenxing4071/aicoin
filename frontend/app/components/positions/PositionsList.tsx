@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import CoinIcon from '../common/CoinIcon';
 
 interface Position {
   id: string;
@@ -142,7 +143,7 @@ export default function PositionsList({ selectedModel = 'all' }: PositionsListPr
                   {position.side}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">{position.coinIcon}</span>
+                  <CoinIcon symbol={position.coin} size={20} />
                   <span className="text-sm font-semibold text-gray-900">{position.coin}</span>
                 </div>
                 <div className="text-sm text-gray-900 text-right">{position.leverage}</div>

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, IChartApi, ISeriesApi } from 'lightweight-charts';
+import axios from 'axios';
+
+const API_BASE = 'http://localhost:8000/api/v1';
 
 interface LightweightChartProps {
   symbol?: string;
@@ -68,9 +71,10 @@ export default function LightweightChart({ symbol = 'BTC-PERP', data }: Lightwei
           bottom: 0.1,
         },
         autoScale: true,
+        invertScale: true, // 反转Y轴：上大下小
       },
       rightPriceScale: {
-        visible: false, // 只显示左侧Y轴
+        visible: false, // 隐藏右侧，只显示左侧
       },
       timeScale: {
         borderVisible: true,
@@ -81,6 +85,16 @@ export default function LightweightChart({ symbol = 'BTC-PERP', data }: Lightwei
         barSpacing: 10,
         fixLeftEdge: false,
         fixRightEdge: false,
+      },
+      localization: {
+        timeFormatter: (timestamp: number) => {
+          const date = new Date(timestamp * 1000);
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${month}-${day} ${hours}:${minutes}`;
+        },
       },
     });
 
@@ -93,15 +107,21 @@ export default function LightweightChart({ symbol = 'BTC-PERP', data }: Lightwei
       borderVisible: false,
       wickUpColor: '#26a69a',
       wickDownColor: '#ef5350',
-      priceScaleId: 'left', // 使用左侧价格轴
+      priceScaleId: '', // 空字符串 = 左侧价格轴
     });
 
     candlestickSeriesRef.current = candlestickSeries;
 
-    // 生成模拟K线数据 (如果没有提供真实数据)
+    // 获取K线数据 (如果没有提供真实数据)
     if (!data || data.length === 0) {
-      const mockData = generateMockCandleData();
-      candlestickSeries.setData(mockData);
+      fetchKlineData(symbol).then(klineData => {
+        if (klineData && klineData.length > 0) {
+          candlestickSeries.setData(klineData);
+        } else {
+          const mockData = generateMockCandleData();
+          candlestickSeries.setData(mockData);
+        }
+      });
     } else {
       candlestickSeries.setData(data);
     }
@@ -148,6 +168,27 @@ export default function LightweightChart({ symbol = 'BTC-PERP', data }: Lightwei
       <div ref={chartContainerRef} className="w-full" />
     </div>
   );
+}
+
+// 获取真实K线数据
+async function fetchKlineData(symbol: string) {
+  try {
+    const response = await axios.get(`${API_BASE}/market/kline/${symbol}`, {
+      params: { interval: '15m', limit: 100 }
+    });
+    if (response.data && Array.isArray(response.data)) {
+      return response.data.map((k: any) => ({
+        time: k.timestamp,
+        open: parseFloat(k.open),
+        high: parseFloat(k.high),
+        low: parseFloat(k.low),
+        close: parseFloat(k.close),
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to fetch kline data:', error);
+  }
+  return null;
 }
 
 // 生成模拟K线数据

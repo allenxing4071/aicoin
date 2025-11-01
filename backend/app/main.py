@@ -7,7 +7,7 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.redis_client import redis_client
-from app.api.v1 import market, account, performance, ai
+from app.api.v1 import market, account, performance, ai, admin
 from app.api import websocket, market_data
 from app.api import trading as hyperliquid_trading
 from app.services.hyperliquid_market_data import HyperliquidMarketData
@@ -27,9 +27,80 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="AI-powered cryptocurrency trading system",
+    description="""
+## AIcoin 智能交易系统 API 文档
+
+这是一个基于AI的加密货币自动交易系统,支持多模型决策、智能约束框架和完整的风控体系。
+
+### 核心功能模块
+
+* **市场数据 (Market Data)**: 实时市场数据获取、K线数据、订单簿等
+* **账户管理 (Account)**: 账户信息查询、余额管理、持仓查看
+* **交易执行 (Trading)**: 订单下单、撤单、交易历史查询
+* **AI决策 (AI Status)**: AI决策状态、权限等级、决策日志
+* **绩效分析 (Performance)**: 交易绩效统计、收益分析、风险指标
+* **管理后台 (Admin)**: 数据库查看、系统统计、日志查询
+
+### 管理后台功能
+
+管理后台提供只读的数据库查看功能,可以查看:
+- 交易记录 (Trades)
+- 订单记录 (Orders)  
+- 账户快照 (Account Snapshots)
+- AI决策日志 (AI Decisions)
+- K线数据 (Market Data)
+- 风控事件 (Risk Events)
+
+所有查询接口都支持分页、筛选、排序等功能。
+
+### 认证说明
+
+当前版本为开发环境,暂未启用认证。生产环境将使用JWT认证。
+
+### 技术栈
+
+- **框架**: FastAPI + SQLAlchemy + PostgreSQL
+- **AI模型**: DeepSeek, Qwen, Claude等
+- **交易所**: Hyperliquid (支持测试网和主网)
+- **实时通信**: WebSocket
+- **缓存**: Redis
+    """,
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    openapi_tags=[
+        {
+            "name": "Market Data",
+            "description": "市场数据查询接口,包括实时价格、K线数据等"
+        },
+        {
+            "name": "Market Data - Real-time",
+            "description": "实时市场数据推送服务"
+        },
+        {
+            "name": "Account",
+            "description": "账户信息管理,包括余额、持仓等"
+        },
+        {
+            "name": "Hyperliquid Trading",
+            "description": "Hyperliquid交易所交易接口,支持下单、撤单等操作"
+        },
+        {
+            "name": "AI Status",
+            "description": "AI决策系统状态查询,包括权限等级、决策历史等"
+        },
+        {
+            "name": "Performance",
+            "description": "交易绩效分析,包括收益率、夏普比率、最大回撤等指标"
+        },
+        {
+            "name": "Admin - Database Viewer",
+            "description": "管理后台数据库查看接口 (只读),支持查看所有核心数据表"
+        },
+        {
+            "name": "WebSocket",
+            "description": "WebSocket实时数据推送"
+        }
+    ]
 )
 
 # Global services
@@ -66,6 +137,11 @@ app.include_router(
     ai.router,
     prefix=f"{settings.API_V1_PREFIX}/ai",
     tags=["AI Status"]
+)
+app.include_router(
+    admin.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Database Viewer"]
 )
 
 # Include new API routers

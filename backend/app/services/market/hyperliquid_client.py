@@ -13,12 +13,22 @@ logger = logging.getLogger(__name__)
 class HyperliquidClient:
     """Hyperliquid API客户端 (Testnet/Mainnet)"""
     
-    def __init__(self):
+    def __init__(self, trading_service=None, use_mainnet_for_market_data: bool = True):
         self.base_url = settings.HYPERLIQUID_API_URL
-        self.testnet = settings.HYPERLIQUID_TESTNET
+        self.testnet = "testnet" in self.base_url.lower()  # 根据URL判断是否为testnet
         self.wallet_address = settings.HYPERLIQUID_WALLET_ADDRESS
         self.private_key = settings.HYPERLIQUID_PRIVATE_KEY
         self.client = httpx.AsyncClient(timeout=30.0)
+        self._trading_service = trading_service  # 缓存trading service，避免重复初始化
+        
+        # 市场数据API：如果在testnet模式且use_mainnet_for_market_data=True，则使用mainnet获取市场数据
+        # 这是因为testnet的交易对较少（例如没有XRP）
+        if self.testnet and use_mainnet_for_market_data:
+            self.market_data_url = "https://api.hyperliquid.xyz"
+            logger.info(f"🌐 Using mainnet for market data (testnet has limited pairs)")
+        else:
+            self.market_data_url = self.base_url
+            logger.info(f"🌐 Using {self.base_url} for market data")
     
     async def get_klines(
         self,
@@ -64,18 +74,101 @@ class HyperliquidClient:
             raise
     
     async def get_ticker(self, symbol: str) -> Dict[str, Any]:
-        """获取实时价格"""
+        """获取实时价格 - 从Hyperliquid获取真实数据，包含24h涨跌幅"""
         try:
             logger.info(f"Fetching ticker for {symbol}")
             
-            # TODO: 实现真实API调用
-            return {
-                "symbol": symbol,
-                "price": "67500.00",
-                "change_24h": "0.025",
-                "volume_24h": "1250000.00",
-                "timestamp": datetime.now().isoformat()
-            }
+            # 使用缓存的trading service，避免重复初始化
+            if self._trading_service is None:
+                from app.services.hyperliquid_trading import HyperliquidTradingService
+                from app.core.redis_client import redis_client
+                logger.warning("Trading service not provided, creating new instance (slow!)")
+                self._trading_service = HyperliquidTradingService(redis_client, testnet=self.testnet)
+                await self._trading_service.initialize()
+            
+            # 获取市场数据
+            try:
+                # 1. 获取当前价格（使用market_data_url，可能是mainnet）
+                url = f"{self.market_data_url}/info"
+                response = await self.client.post(url, json={"type": "allMids"})
+                response.raise_for_status()
+                data = response.json()
+                
+                # 查找对应symbol的价格（精确匹配）
+                symbol_upper = symbol.upper()
+                current_price = None
+                
+                # 直接查找（Hyperliquid使用大写symbol，如BTC, ETH等）
+                logger.debug(f"Looking for {symbol_upper} in {len(data)} symbols")
+                logger.debug(f"XRP in data: {'XRP' in data}, BTC in data: {'BTC' in data}")
+                
+                if symbol_upper in data:
+                    current_price = float(data[symbol_upper])
+                    logger.info(f"✅ Found {symbol_upper} price: {current_price}")
+                else:
+                    logger.error(f"❌ Symbol {symbol_upper} not found in market data")
+                    # 打印所有包含字母的symbol（过滤掉@开头的）
+                    letter_symbols = [s for s in data.keys() if not s.startswith('@') and not s[0].isdigit()]
+                    logger.error(f"Available letter symbols: {sorted(letter_symbols)[:50]}")
+                
+                if current_price is None:
+                    logger.warning(f"Symbol {symbol} not found in market data, using fallback")
+                    return {
+                        "symbol": symbol,
+                        "price": "0.00",
+                        "change_24h": "0.00",
+                        "volume_24h": "0.00",
+                        "timestamp": datetime.now().isoformat()
+                    }
+                
+                # 2. 获取24小时K线数据来计算涨跌幅
+                change_24h = "0.00"
+                try:
+                    # 获取24小时K线（1小时间隔，24根）
+                    candles_response = await self.client.post(
+                        url,
+                        json={
+                            "type": "candleSnapshot",
+                            "req": {
+                                "coin": symbol.upper(),
+                                "interval": "1h",
+                                "startTime": int((datetime.now().timestamp() - 86400) * 1000),  # 24小时前
+                                "endTime": int(datetime.now().timestamp() * 1000)
+                            }
+                        }
+                    )
+                    if candles_response.status_code == 200:
+                        candles_data = candles_response.json()
+                        if candles_data and len(candles_data) > 0:
+                            # 获取24小时前的开盘价
+                            price_24h_ago = float(candles_data[0]['o'])  # 第一根K线的开盘价
+                            # 计算涨跌幅
+                            if price_24h_ago > 0:
+                                change_pct = ((current_price - price_24h_ago) / price_24h_ago) * 100
+                                change_24h = f"{change_pct:.2f}"
+                                logger.info(f"{symbol}: 24h前价格={price_24h_ago}, 当前价格={current_price}, 涨跌幅={change_24h}%")
+                except Exception as candle_error:
+                    logger.warning(f"Failed to fetch 24h candles for {symbol}: {candle_error}")
+                    # 如果获取K线失败，涨跌幅保持为0
+                
+                return {
+                    "symbol": symbol,
+                    "price": str(current_price),
+                    "change_24h": change_24h,
+                    "volume_24h": "0.00",  # TODO: 需要从API获取
+                    "timestamp": datetime.now().isoformat()
+                }
+            except Exception as api_error:
+                logger.error(f"❌ Error calling Hyperliquid API for {symbol}: {api_error}")
+                logger.exception("Full traceback:")
+                # 返回默认值而不是抛出异常
+                return {
+                    "symbol": symbol,
+                    "price": "0.00",
+                    "change_24h": "0.00",
+                    "volume_24h": "0.00",
+                    "timestamp": datetime.now().isoformat()
+                }
             
         except Exception as e:
             logger.error(f"Error fetching ticker: {e}")
@@ -86,15 +179,15 @@ class HyperliquidClient:
         try:
             logger.info("Fetching account balance from Hyperliquid")
             
-            # 使用hyperliquid_trading服务获取真实账户状态
-            from app.services.hyperliquid_trading import HyperliquidTradingService
-            from app.core.database import AsyncSessionLocal
-            from app.core.redis_client import redis_client
+            # 使用缓存的trading service，避免重复初始化
+            if self._trading_service is None:
+                from app.services.hyperliquid_trading import HyperliquidTradingService
+                from app.core.redis_client import redis_client
+                logger.warning("Trading service not provided, creating new instance (slow!)")
+                self._trading_service = HyperliquidTradingService(redis_client, testnet=self.testnet)
+                await self._trading_service.initialize()
             
-            trading_service = HyperliquidTradingService(redis_client, testnet=self.testnet)
-            await trading_service.initialize()
-            
-            account_state = await trading_service.get_account_state()
+            account_state = await self._trading_service.get_account_state()
             margin_summary = account_state.get('marginSummary', {})
             
             return {
@@ -113,14 +206,15 @@ class HyperliquidClient:
         try:
             logger.info("Fetching positions from Hyperliquid")
             
-            # 使用hyperliquid_trading服务获取真实持仓
-            from app.services.hyperliquid_trading import HyperliquidTradingService
-            from app.core.redis_client import redis_client
+            # 使用缓存的trading service，避免重复初始化
+            if self._trading_service is None:
+                from app.services.hyperliquid_trading import HyperliquidTradingService
+                from app.core.redis_client import redis_client
+                logger.warning("Trading service not provided, creating new instance (slow!)")
+                self._trading_service = HyperliquidTradingService(redis_client, testnet=self.testnet)
+                await self._trading_service.initialize()
             
-            trading_service = HyperliquidTradingService(redis_client, testnet=self.testnet)
-            await trading_service.initialize()
-            
-            positions = await trading_service.get_positions()
+            positions = await self._trading_service.get_positions()
             return positions
             
         except Exception as e:

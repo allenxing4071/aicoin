@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import axios from 'axios';
+import DeepSeekLogo from '../common/DeepSeekLogo';
+
+const API_BASE = 'http://localhost:8000/api/v1';
 
 interface ChatMessage {
   id: number;
   model: string;
-  modelIcon: string;
+  modelIcon?: string; // 改为可选，因为我们会用DeepSeekLogo组件
   modelColor: string;
   timestamp: string;
   action: '— HOLD' | '↗ BUY' | '↘ SELL';
@@ -22,8 +26,39 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
-    // 生成模拟聊天数据 - 只显示DEEPSEEK和QWEN
-    const mockMessages: ChatMessage[] = [
+    // 获取真实聊天数据
+    fetchChatHistory();
+  }, [selectedModel]);
+
+  const fetchChatHistory = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/ai/chat/history`, {
+        params: { model: selectedModel === 'all' ? undefined : selectedModel, limit: 50 }
+      });
+      if (response.data && response.data.success && Array.isArray(response.data.messages)) {
+        const chatMessages = response.data.messages.map((msg: any, index: number) => ({
+          id: index + 1,
+          model: msg.model || 'DEEPSEEK',
+          modelColor: '#10b981',
+          timestamp: new Date(msg.timestamp).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+          action: msg.action || '— HOLD',
+          symbol: msg.symbol || 'BTC-PERP',
+          confidence: msg.confidence || 50,
+          reasoning: msg.reasoning || 'No reasoning provided',
+        }));
+        setMessages(chatMessages);
+      } else {
+        // 如果API返回空数据，使用模拟数据
+        setMessages(getMockMessages());
+      }
+    } catch (error) {
+      console.error('Failed to fetch chat history:', error);
+      // API失败时使用模拟数据
+      setMessages(getMockMessages());
+    }
+  };
+
+  const getMockMessages = (): ChatMessage[] => [
       {
         id: 1,
         model: 'GPT 5',
@@ -82,7 +117,6 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
       {
         id: 6,
         model: 'DEEPSEEK CHAT V3.1',
-        modelIcon: '🧠',
         modelColor: '#3b82f6',
         timestamp: '10/22 21:52',
         action: '— HOLD',
@@ -104,7 +138,6 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
       {
         id: 8,
         model: 'DEEPSEEK CHAT V3.1',
-        modelIcon: '🧠',
         modelColor: '#3b82f6',
         timestamp: '10/22 19:52',
         action: '↗ BUY',
@@ -125,9 +158,6 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
       },
     ];
 
-    setMessages(mockMessages);
-  }, []);
-
   // 过滤选中的模型
   const filteredMessages = selectedModel === 'all' 
     ? messages 
@@ -144,7 +174,11 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-2">
-              <span className="text-xl">{message.modelIcon}</span>
+              {message.model.includes('DEEPSEEK') ? (
+                <DeepSeekLogo size={20} />
+              ) : (
+                <span className="text-xl">{message.modelIcon || '🤖'}</span>
+              )}
               <span className="text-sm font-bold" style={{ color: message.modelColor }}>
                 {message.model}
               </span>

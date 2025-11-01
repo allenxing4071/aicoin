@@ -7,7 +7,7 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db, get_db
 from app.core.redis_client import redis_client
-from app.api.v1 import market, account, performance, ai
+from app.api.v1 import market, account, performance, ai, trades
 from app.api.v1 import constraints, decisions, permission
 from app.api import websocket, market_data
 # from app.api import trading as hyperliquid_trading  # 暂时禁用，待修复
@@ -23,6 +23,10 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+# Global service instances
+trading_service_global = None
+hyperliquid_client_global = None
 
 # Create FastAPI app
 app = FastAPI(
@@ -80,6 +84,11 @@ app.include_router(
     tags=["AI Permission"]
 )
 app.include_router(
+    trades.router,
+    prefix=f"{settings.API_V1_PREFIX}/trades",
+    tags=["Trades"]
+)
+app.include_router(
     ai.router,
     prefix=f"{settings.API_V1_PREFIX}/ai",
     tags=["AI Status"]
@@ -105,7 +114,7 @@ app.include_router(
 @app.on_event("startup")
 async def startup_event():
     """Application startup - v2.0"""
-    global market_data_service, trading_service, ai_orchestrator_v2, db_session
+    global market_data_service, trading_service, ai_orchestrator_v2, db_session, trading_service_global, hyperliquid_client_global
     
     logger.info("="*60)
     logger.info("🚀 Starting AIcoin Trading System v2.0")
@@ -143,8 +152,14 @@ async def startup_event():
         testnet = getattr(settings, 'HYPERLIQUID_TESTNET', True)
         trading_service = HyperliquidTradingService(redis_client, testnet=testnet)
         await trading_service.initialize()
-        # hyperliquid_trading.set_trading_service(trading_service)
+        trading_service_global = trading_service  # Set global instance
+        
+        # Create hyperliquid_client with trading_service to avoid re-initialization
+        from app.services.market.hyperliquid_client import HyperliquidClient
+        hyperliquid_client_global = HyperliquidClient(trading_service=trading_service, use_mainnet_for_market_data=True)
+        
         logger.info(f"✅ Hyperliquid trading service initialized (testnet={testnet})")
+        logger.info("✅ Hyperliquid client created with cached trading service")
     except Exception as e:
         logger.error(f"❌ Trading service initialization failed: {e}")
     

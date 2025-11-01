@@ -63,7 +63,7 @@ export default function RiskGauge({
           </div>
         </div>
         <div className={`text-3xl font-bold ${getTextColor()}`}>
-          {value.toFixed(2)}{unit}
+          {(value || 0).toFixed(2)}{unit}
         </div>
       </div>
 
@@ -71,7 +71,7 @@ export default function RiskGauge({
       <div className="flex justify-between text-xs text-gray-500">
         <span>0{unit}</span>
         <span className="text-gray-400">
-          {inverted ? 'Higher is better' : 'Lower is better'}
+          {inverted ? '越高越好' : '越低越好'}
         </span>
         <span>{max}{unit}</span>
       </div>

@@ -1,7 +1,8 @@
 """AI Health and Status API endpoints"""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
+from typing import Optional
 import logging
 
 router = APIRouter()
@@ -65,5 +66,37 @@ async def get_ai_health():
         
     except Exception as e:
         logger.error(f"Error fetching AI health: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/chat/history")
+async def get_chat_history(
+    model: Optional[str] = Query(None, description="Filter by model name"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of messages")
+):
+    """
+    获取AI决策聊天历史
+    
+    Args:
+        model: 模型名称筛选 (可选)
+        limit: 返回数量
+        
+    Returns:
+        AI聊天历史列表
+    """
+    try:
+        # TODO: 从Redis或数据库查询真实聊天记录
+        # 这里暂时返回空列表
+        
+        messages = []
+        
+        return {
+            "success": True,
+            "messages": messages,
+            "count": len(messages)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching chat history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -46,7 +46,7 @@ export default function PermissionIndicator() {
   if (loading || !permission) {
     return (
       <div className="bg-white border border-gray-200 p-4">
-        <div className="text-sm text-gray-500">Loading Permission...</div>
+        <div className="text-sm text-gray-500">加载权限信息中...</div>
       </div>
     );
   }
@@ -57,7 +57,7 @@ export default function PermissionIndicator() {
   return (
     <div className="bg-white border border-gray-200">
       <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-        <h3 className="text-sm font-bold text-gray-900">🔑 PERMISSION LEVEL</h3>
+        <h3 className="text-sm font-bold text-gray-900">🔑 权限等级</h3>
       </div>
       
       <div className="p-4 space-y-4">
@@ -102,26 +102,26 @@ export default function PermissionIndicator() {
 
         {/* 当前权限配置 */}
         <div className="border-t border-gray-200 pt-3">
-          <div className="text-xs font-bold text-gray-700 mb-2">CURRENT PERMISSIONS</div>
+          <div className="text-xs font-bold text-gray-700 mb-2">当前权限</div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <div className="text-gray-500">Max Position:</div>
+              <div className="text-gray-500">最大仓位:</div>
               <div className="font-mono font-semibold">
                 {(permission.config.max_position_pct * 100).toFixed(0)}%
               </div>
             </div>
             <div>
-              <div className="text-gray-500">Max Leverage:</div>
+              <div className="text-gray-500">最大杠杆:</div>
               <div className="font-mono font-semibold">{permission.config.max_leverage}x</div>
             </div>
             <div>
-              <div className="text-gray-500">Confidence:</div>
+              <div className="text-gray-500">信心阈值:</div>
               <div className="font-mono font-semibold">
                 {(permission.config.confidence_threshold * 100).toFixed(0)}%
               </div>
             </div>
             <div>
-              <div className="text-gray-500">Daily Trades:</div>
+              <div className="text-gray-500">日交易次数:</div>
               <div className="font-mono font-semibold">
                 {permission.config.max_daily_trades === 999 ? '∞' : permission.config.max_daily_trades}
               </div>

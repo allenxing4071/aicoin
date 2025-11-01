@@ -66,7 +66,7 @@ export default function AIStatusPanel() {
   if (loading) {
     return (
       <div className="bg-white border border-gray-200 p-4">
-        <div className="text-sm text-gray-500">Loading AI Status...</div>
+        <div className="text-sm text-gray-500">加载AI状态中...</div>
       </div>
     );
   }
@@ -76,31 +76,31 @@ export default function AIStatusPanel() {
       {/* AI Orchestrator状态 */}
       <div className="bg-white border border-gray-200">
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-bold text-gray-900">🤖 AI ORCHESTRATOR STATUS</h3>
+          <h3 className="text-sm font-bold text-gray-900">🤖 AI编排器状态</h3>
         </div>
         <div className="p-4 space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">Running:</span>
+            <span className="text-gray-600">运行状态:</span>
             <span className="font-mono">
               {orchestratorStatus?.running ? (
-                <span className="text-green-600">✅ Active</span>
+                <span className="text-green-600">✅ 运行中</span>
               ) : (
-                <span className="text-red-600">❌ Stopped</span>
+                <span className="text-red-600">❌ 已停止</span>
               )}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Permission:</span>
+            <span className="text-gray-600">权限等级:</span>
             <span className="font-mono font-semibold">
               {orchestratorStatus?.permission_level || 'L1'} (新手级)
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Runtime:</span>
-            <span className="font-mono">{orchestratorStatus?.runtime_hours?.toFixed(2) || '0.00'}h</span>
+            <span className="text-gray-600">运行时长:</span>
+            <span className="font-mono">{orchestratorStatus?.runtime_hours?.toFixed(2) || '0.00'}小时</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Decisions:</span>
+            <span className="text-gray-600">决策次数:</span>
             <span className="font-mono">
               {orchestratorStatus?.total_decisions || 0} 
               <span className="text-gray-400 ml-1">
@@ -109,7 +109,7 @@ export default function AIStatusPanel() {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Approval Rate:</span>
+            <span className="text-gray-600">批准率:</span>
             <span className={`font-mono font-semibold ${
               (orchestratorStatus?.approval_rate || 0) > 20 ? 'text-green-600' : 
               (orchestratorStatus?.approval_rate || 0) > 10 ? 'text-yellow-600' : 'text-red-600'
@@ -118,8 +118,8 @@ export default function AIStatusPanel() {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Interval:</span>
-            <span className="font-mono">{orchestratorStatus?.decision_interval || 300}s</span>
+            <span className="text-gray-600">决策间隔:</span>
+            <span className="font-mono">{orchestratorStatus?.decision_interval || 300}秒</span>
           </div>
         </div>
       </div>
@@ -127,7 +127,7 @@ export default function AIStatusPanel() {
       {/* 约束状态 */}
       <div className="bg-white border border-gray-200">
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-bold text-gray-900">🛡️ CONSTRAINTS STATUS</h3>
+          <h3 className="text-sm font-bold text-gray-900">🛡️ 约束状态</h3>
         </div>
         <div className="p-4 space-y-2 text-xs">
           {Object.entries(constraints).map(([key, constraint]) => (
@@ -151,20 +151,20 @@ export default function AIStatusPanel() {
       {/* 记忆系统状态 */}
       <div className="bg-white border border-gray-200">
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-bold text-gray-900">🧠 MEMORY STATUS</h3>
+          <h3 className="text-sm font-bold text-gray-900">🧠 记忆系统状态</h3>
         </div>
         <div className="p-4 space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">Short-term:</span>
-            <span className="font-mono">{orchestratorStatus?.total_decisions || 0} decisions</span>
+            <span className="text-gray-600">短期记忆:</span>
+            <span className="font-mono">{orchestratorStatus?.total_decisions || 0} 条决策</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Long-term:</span>
-            <span className="font-mono text-gray-400">0 patterns</span>
+            <span className="text-gray-600">长期记忆:</span>
+            <span className="font-mono text-gray-400">0 个模式</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Knowledge:</span>
-            <span className="font-mono text-gray-400">0 lessons</span>
+            <span className="text-gray-600">知识库:</span>
+            <span className="font-mono text-gray-400">0 条经验</span>
           </div>
         </div>
       </div>

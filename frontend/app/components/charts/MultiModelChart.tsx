@@ -54,12 +54,19 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
           style: LineStyle.Dashed,
         },
       },
-      rightPriceScale: {
-        borderColor: '#1f2937',
+      leftPriceScale: {
+        visible: true,
+        borderVisible: true,
+        borderColor: '#2B2B43',
         scaleMargins: {
-          top: 0.05,
-          bottom: 0.05,
+          top: 0.1,
+          bottom: 0.1,
         },
+        autoScale: true,
+        invertScale: true, // 反转Y轴：上大下小
+      },
+      rightPriceScale: {
+        visible: false, // 隐藏右侧
       },
       timeScale: {
         borderColor: '#1f2937',
@@ -80,6 +87,7 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
         title: model.name,
         priceLineVisible: false,
         lastValueVisible: true,
+        priceScaleId: '', // 空字符串 = 左侧价格轴
       });
       seriesRefs.current.set(model.slug, series);
     });
