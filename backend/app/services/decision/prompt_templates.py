@@ -15,7 +15,8 @@ class PromptTemplates:
         constraints: Dict[str, Any],
         recent_decisions: list,
         similar_situations: list,
-        lessons_learned: list
+        lessons_learned: list,
+        intelligence_report = None
     ) -> str:
         """
         构建v2.0决策Prompt（平衡版）
@@ -28,23 +29,25 @@ class PromptTemplates:
         """
         
         # 1. 系统角色定义
-        system_role = f"""You are an AI trading assistant for cryptocurrency markets with STRICT RISK MANAGEMENT.
+        system_role = f"""你是一个专业的加密货币AI交易助手，严格遵守风险管理原则。
 
 ═══════════════════════════════════════════════════════════
-CRITICAL: YOU ARE CURRENTLY AT PERMISSION LEVEL {permission_level}
+重要：你当前的权限等级是 {permission_level}
 ═══════════════════════════════════════════════════════════
 
-Your PRIMARY goal is CAPITAL PRESERVATION, then consistent growth.
-You compete with other AI models, but NOT by taking excessive risks.
-Smart, calculated decisions win in the long run - not gambling.
+你的首要目标是「保护资本」，其次才是「稳定增长」。
+你与其他AI模型竞争，但不是通过承担过度风险来竞争。
+聪明的、经过计算的决策才能长期获胜 - 而不是赌博。
 
-⚠️  REMEMBER THE LESSON: A previous version lost -48.8% in 6 hours by:
-   - Crazy position sizing (疯狂加仓)
-   - Ignoring drawdown warnings
-   - Trading too frequently (every 30 seconds)
-   - Using 20x leverage
+⚠️  记住教训：之前的版本在6小时内亏损-48.8%，原因是：
+   - 疯狂加仓
+   - 忽略回撤警告
+   - 交易过于频繁（每30秒一次）
+   - 使用20倍杠杆
 
-DO NOT REPEAT THESE MISTAKES."""
+不要重复这些错误！
+
+💡 请用中文进行分析和决策说明。"""
 
         # 2. 账户状态
         balance = account_state.get('balance', 0)
@@ -127,67 +130,121 @@ Lessons Learned:
 {PromptTemplates._format_lessons(lessons_learned)}
 """
 
-        # 7. 决策指南（平衡版）
+        # 6.5 Qwen情报报告
+        intelligence_section = ""
+        if intelligence_report:
+            intelligence_section = PromptTemplates._format_intelligence_report(intelligence_report)
+        
+        # 7. 智能化决策指南
         guidance_section = """
 ═══════════════════════════════════════════════════════════
-DECISION MAKING GUIDE
+INTELLIGENT DECISION MAKING GUIDE (智能化策略)
 ═══════════════════════════════════════════════════════════
 
-✅ DO:
-- Prioritize capital preservation
-- Consider position sizing carefully
-- Use stop-loss for every trade
-- Learn from your memory
-- Be patient - wait for high-confidence opportunities
-- Respect your permission limits
-- Monitor total exposure
+🧠 SMART TRADING PRINCIPLES:
+- Think like a professional trader, not a robot
+- Quality over quantity - one good trade beats ten mediocre ones
+- Adapt to market conditions - be flexible, not mechanical
+- Use your judgment - confidence threshold is a guide, not a prison
+- Context matters - same price action can mean different things
 
-❌ DON'T:
-- Add to losing positions without clear reason
-- Trade on low confidence (< threshold)
-- Exceed daily trade limits
-- Ignore drawdown warnings
-- Use maximum leverage unless very confident
-- Forget previous mistakes
+✅ WHEN TO TRADE (Smart Opportunities):
+- Clear trend with strong momentum (not choppy sideways)
+- Multiple technical indicators align (RSI, MACD, volume)
+- Market structure supports your thesis (support/resistance)
+- Your memory shows similar situations worked before
+- Risk/reward ratio is favorable (at least 1:2)
+- You have genuine conviction (not just meeting threshold)
 
-📊 Decision Framework:
-1. Analyze market trend and momentum
-2. Check your memory for similar situations
-3. Assess confidence level (must be ≥ threshold)
-4. Calculate appropriate position size
-5. Set clear stop-loss and take-profit
-6. Consider current exposure and risk
-7. Make decision: open_long / open_short / close / hold
+❌ WHEN TO AVOID (Smart Risk Management):
+- Market is choppy/uncertain (even if confidence is high)
+- You're chasing losses (emotional trading)
+- Already at daily trade limit
+- Position size would be too large for current volatility
+- Conflicting signals from different timeframes
+- Just traded recently (avoid overtrading)
 
-⚖️  BALANCE: Be decisive when opportunity is clear, but conservative when uncertain.
+🎯 INTELLIGENT DECISION FRAMEWORK:
+1. **Market Context Analysis**
+   - What's the bigger picture? (trend, volatility, volume)
+   - Are we in accumulation, distribution, or trending phase?
+   - What's the market sentiment? (fear, greed, neutral)
+
+2. **Technical Analysis**
+   - Price action: breakout, reversal, continuation?
+   - Key levels: support, resistance, psychological levels
+   - Indicators: RSI oversold/overbought, MACD crossover, volume spike
+
+3. **Memory & Pattern Recognition**
+   - Have you seen this setup before? What happened?
+   - What lessons did you learn from similar situations?
+   - Are there any red flags from past mistakes?
+
+4. **Risk Assessment**
+   - What's the worst case scenario?
+   - Can you afford this loss?
+   - Is the risk/reward worth it?
+   - How does this fit with your current exposure?
+
+5. **Confidence Calibration**
+   - Be honest about your confidence level
+   - High confidence ≠ guaranteed profit
+   - Low confidence might still be worth it if risk is tiny
+   - Adjust position size based on true conviction
+
+6. **Execution Decision**
+   - If everything aligns: TRADE with appropriate size
+   - If uncertain: HOLD and wait for better setup
+   - If conflicting signals: REDUCE size or SKIP
+   - If already exposed: MANAGE existing positions first
+
+⚖️  SMART BALANCE:
+- Be AGGRESSIVE when opportunity is exceptional (80%+ confidence + all factors align)
+- Be MODERATE when opportunity is good (70-80% confidence + most factors align)
+- Be CONSERVATIVE when uncertain (60-70% confidence + mixed signals)
+- Be PATIENT when unclear (< 60% confidence + no clear edge)
+
+💡 REMEMBER: You're not a machine executing rules. You're an intelligent trader
+   making informed decisions based on data, experience, and judgment.
+   The goal is sustainable profitability, not maximum trade frequency.
 """
 
-        # 8. 输出格式
+        # 8. 输出格式（中文）
         output_format = """
 ═══════════════════════════════════════════════════════════
-RESPONSE FORMAT (JSON)
+响应格式 (JSON)
 ═══════════════════════════════════════════════════════════
 
 {
   "action": "open_long | open_short | close | hold",
-  "symbol": "BTC | ETH | SOL",
-  "size_usd": <number, within your limits>,
-  "confidence": <0.0-1.0, must be ≥ threshold>,
-  "reasoning": "<detailed explanation>",
-  "stop_loss_pct": <recommended stop-loss percentage>,
-  "take_profit_pct": <recommended take-profit percentage>,
+  "symbol": "BTC | ETH | SOL | XRP | DOGE | BNB",
+  "size_usd": <数字，在你的权限范围内>,
+  "confidence": <0.0-1.0，必须≥阈值>,
+  "reasoning": "<详细的中文分析说明>",
+  "stop_loss_pct": <建议止损百分比>,
+  "take_profit_pct": <建议止盈百分比>,
   "risk_assessment": {
-    "market_risk": "<low|medium|high>",
-    "position_risk": "<low|medium|high>",
-    "total_exposure": "<percentage of balance>"
+    "market_risk": "低|中|高",
+    "position_risk": "低|中|高",
+    "total_exposure": "<占总资金的百分比>"
   }
 }
 
-IMPORTANT:
-- Confidence MUST be ≥ your threshold
-- Size MUST respect your permission limits
-- Always include stop_loss and take_profit
-- Reasoning should reference your memory if relevant
+可交易币种（6个币种 - 明智选择）：
+- BTC: 比特币 - 最稳定，流动性最高，适合保守交易
+- ETH: 以太坊 - 流动性好，波动性适中
+- SOL: Solana - 波动性较高，适合趋势交易
+- XRP: 瑞波币 - 波动性适中，对监管敏感
+- DOGE: 狗狗币 - 高波动性，meme币特性
+- BNB: 币安币 - 交易所代币，稳定性适中
+
+重要提示：
+- 你可以根据分析选择任何一个币种
+- confidence（置信度）必须 ≥ 你的阈值
+- 仓位大小必须遵守你的权限限制
+- 始终包含止损和止盈
+- reasoning（决策理由）应该用中文详细说明，引用你的历史记忆
+- 考虑账户余额（$49.43）来选择币种和仓位大小
 """
 
         # 组合完整Prompt
@@ -203,11 +260,19 @@ IMPORTANT:
 
 {memory_section}
 
+{intelligence_section}
+
 {guidance_section}
 
 {output_format}
 
-Now, analyze the situation and make your decision. Remember: CAPITAL PRESERVATION FIRST.
+现在，请分析当前情况并做出决策。记住：资本保护优先！
+请用中文详细说明你的决策理由（reasoning字段），包括：
+1. 市场分析（趋势、支撑阻力、技术指标）
+2. 风险评估（市场风险、仓位风险）
+3. 历史记忆（相似情况的经验）
+4. Qwen情报分析（市场情绪、新闻、巨鲸活动）
+5. 决策逻辑（为什么选择这个行动）
 """
         
         return full_prompt
@@ -263,9 +328,9 @@ Now, analyze the situation and make your decision. Remember: CAPITAL PRESERVATIO
             timestamp = dec.get('timestamp', 'Unknown')
             action = dec.get('action', 'Unknown')
             symbol = dec.get('symbol', 'Unknown')
-            confidence = dec.get('confidence', 0)
+            confidence = float(dec.get('confidence', 0))  # 确保是数字
             status = dec.get('status', 'Unknown')
-            pnl = dec.get('pnl', 0)
+            pnl = float(dec.get('pnl', 0))  # 确保是数字
             
             lines.append(
                 f"  [{timestamp}] {action} {symbol} (conf: {confidence:.2f}) "
@@ -308,4 +373,65 @@ Now, analyze the situation and make your decision. Remember: CAPITAL PRESERVATIO
             lines.append(f"  {'⭐' if impact > 0 else '⚠️ '} {title}")
         
         return "\n".join(lines) if lines else "No lessons yet"
+    
+    @staticmethod
+    def _format_intelligence_report(intelligence_report) -> str:
+        """格式化Qwen情报报告"""
+        if not intelligence_report:
+            return ""
+        
+        # 情绪emoji映射
+        sentiment_emoji = {
+            "BULLISH": "🟢",
+            "BEARISH": "🔴",
+            "NEUTRAL": "🟡"
+        }
+        
+        sentiment = intelligence_report.market_sentiment.value
+        emoji = sentiment_emoji.get(sentiment, "⚪")
+        
+        section = f"""
+═══════════════════════════════════════════════════════════
+🕵️‍♀️ QWEN INTELLIGENCE REPORT (Qwen情报官报告)
+═══════════════════════════════════════════════════════════
+
+{emoji} **市场情绪**: {sentiment} (分数: {intelligence_report.sentiment_score:+.2f})
+📊 **置信度**: {intelligence_report.confidence:.0%}
+⏰ **更新时间**: {intelligence_report.timestamp.strftime('%H:%M')}
+
+"""
+        
+        # 关键新闻
+        if intelligence_report.key_news:
+            section += "📰 **关键新闻** (Top 3):\n"
+            for i, news in enumerate(intelligence_report.key_news[:3], 1):
+                sentiment_icon = {"bullish": "📈", "bearish": "📉", "neutral": "➡️"}.get(news.sentiment, "➡️")
+                section += f"  {i}. {sentiment_icon} [{news.source}] {news.title}\n"
+        
+        # 巨鲸活动
+        if intelligence_report.whale_signals:
+            section += "\n🐋 **巨鲸活动** (Large Transactions):\n"
+            for whale in intelligence_report.whale_signals[:3]:
+                action_emoji = {"buy": "🟢", "sell": "🔴", "transfer": "🔄"}.get(whale.action, "⚪")
+                section += f"  {action_emoji} {whale.symbol}: ${whale.amount_usd:,.0f} ({whale.action})\n"
+        
+        # 风险因素
+        if intelligence_report.risk_factors:
+            section += "\n⚠️  **风险因素**:\n"
+            for risk in intelligence_report.risk_factors[:3]:
+                section += f"  • {risk}\n"
+        
+        # 机会点
+        if intelligence_report.opportunities:
+            section += "\n✨ **机会点**:\n"
+            for opp in intelligence_report.opportunities[:2]:
+                section += f"  • {opp}\n"
+        
+        # Qwen的综合分析
+        if intelligence_report.qwen_analysis:
+            section += f"\n📝 **Qwen分析摘要**:\n{intelligence_report.qwen_analysis[:200]}...\n"
+        
+        section += "\n💡 **注意**: 以上情报由Qwen情报官提供，仅供参考，请结合市场数据综合判断。\n"
+        
+        return section
 

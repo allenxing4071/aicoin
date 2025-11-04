@@ -17,6 +17,7 @@ from app.services.memory.short_term_memory import ShortTermMemory
 from app.services.memory.long_term_memory import LongTermMemory
 from app.services.memory.knowledge_base import KnowledgeBase
 from app.services.decision.prompt_templates import PromptTemplates
+from app.services.intelligence.storage import intelligence_storage
 
 logger = logging.getLogger(__name__)
 
@@ -62,10 +63,36 @@ class DecisionEngineV2:
         )
         self.knowledge_base = KnowledgeBase(db_session)
         
-        # 当前权限等级
-        self.current_permission_level = settings.INITIAL_PERMISSION_LEVEL
+        # 当前权限等级 - 从数据库加载默认等级
+        self.current_permission_level = self._load_default_permission_level()
         
         logger.info(f"✅ DecisionEngineV2 initialized at level {self.current_permission_level}")
+    
+    def _load_default_permission_level(self) -> str:
+        """从数据库加载默认权限等级"""
+        try:
+            from app.models.permission_config import PermissionLevelConfig
+            from sqlalchemy import select
+            
+            # 查询is_default=True的权限等级
+            stmt = select(PermissionLevelConfig).where(
+                PermissionLevelConfig.is_default == True,
+                PermissionLevelConfig.is_active == True
+            ).limit(1)
+            
+            result = self.db_session.execute(stmt)
+            default_config = result.scalars().first()
+            
+            if default_config:
+                logger.info(f"📌 从数据库加载默认权限等级: {default_config.level} ({default_config.name})")
+                return default_config.level
+            else:
+                logger.warning(f"⚠️ 数据库中没有找到默认权限等级，使用配置文件默认值: {settings.INITIAL_PERMISSION_LEVEL}")
+                return settings.INITIAL_PERMISSION_LEVEL
+                
+        except Exception as e:
+            logger.error(f"❌ 从数据库加载默认权限等级失败: {e}，使用配置文件默认值: {settings.INITIAL_PERMISSION_LEVEL}")
+            return settings.INITIAL_PERMISSION_LEVEL
     
     async def make_decision(
         self,
@@ -98,8 +125,8 @@ class DecisionEngineV2:
             # === 第1步：权限检查 ===
             logger.info(f"🔑 当前权限等级: {self.current_permission_level}")
             
-            permission = self.permission_mgr.get_permission(self.current_permission_level)
-            permission_config = self.permission_mgr.get_permission_summary(self.current_permission_level)
+            permission = await self.permission_mgr.get_permission(self.current_permission_level)
+            permission_config = await self.permission_mgr.get_permission_summary(self.current_permission_level)
             
             # 检查是否在保护模式
             if self.current_permission_level == "L0":
@@ -141,6 +168,13 @@ class DecisionEngineV2:
                 limit=5
             )
             
+            # 2.4 Qwen情报报告
+            intelligence_report = await intelligence_storage.get_latest_report()
+            if intelligence_report:
+                logger.info(f"🕵️‍♀️ 获取Qwen情报: 情绪={intelligence_report.market_sentiment.value}, 置信度={intelligence_report.confidence:.2f}")
+            else:
+                logger.warning("⚠️  未找到Qwen情报报告")
+            
             # === 第3步：构建Prompt ===
             logger.info("📝 构建决策Prompt...")
             
@@ -154,7 +188,8 @@ class DecisionEngineV2:
                 constraints=constraints,
                 recent_decisions=recent_decisions,
                 similar_situations=similar_situations,
-                lessons_learned=lessons_learned
+                lessons_learned=lessons_learned,
+                intelligence_report=intelligence_report
             )
             
             # === 第4步：调用LLM ===
@@ -353,7 +388,7 @@ class DecisionEngineV2:
         market_data: Dict[str, Any],
         status: str
     ):
-        """记录决策到记忆系统"""
+        """记录决策到记忆系统和数据库"""
         try:
             decision_id = decision.get("decision_id")
             timestamp = datetime.now()
@@ -385,10 +420,47 @@ class DecisionEngineV2:
                     decision=decision
                 )
             
+            # 3. 保存到数据库
+            await self._save_to_database(
+                decision=decision,
+                market_data=market_data,
+                status=status,
+                timestamp=timestamp
+            )
+            
             logger.debug(f"📝 决策已记录: {decision_id}")
         
         except Exception as e:
             logger.error(f"记录决策失败: {e}")
+    
+    async def _save_to_database(
+        self,
+        decision: Dict[str, Any],
+        market_data: Dict[str, Any],
+        status: str,
+        timestamp: datetime
+    ):
+        """保存决策到Postgres数据库"""
+        try:
+            from app.models.ai_decision import AIDecision
+            
+            db_decision = AIDecision(
+                timestamp=timestamp,
+                symbol=decision.get("symbol", ""),
+                market_data=market_data,
+                decision=decision,
+                executed=(status == "APPROVED"),
+                reject_reason=decision.get("notes") if status != "APPROVED" else None,
+                model_name=decision.get("model_name", "deepseek-chat-v3.1")
+            )
+            
+            self.db_session.add(db_decision)
+            await self.db_session.commit()
+            logger.debug(f"💾 决策已保存到数据库: {decision.get('decision_id')}")
+            
+        except Exception as e:
+            logger.error(f"保存决策到数据库失败: {e}")
+            await self.db_session.rollback()
     
     async def evaluate_and_adjust_permission(
         self,

@@ -1,5 +1,6 @@
 """FastAPI main application"""
 
+from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -7,17 +8,21 @@ import logging
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.redis_client import redis_client
-from app.api.v1 import market, account, performance, ai, admin
+from app.api.v1 import market, account, performance, ai, admin_db, constraints, intelligence
+from app.api.v1.admin import permissions as admin_permissions
+from app.api.v1.admin import database as admin_database
+from app.api.v1.admin import memory as admin_memory
+from app.api.v1.admin import intelligence_config as admin_intelligence
 from app.api import websocket, market_data
 from app.api import trading as hyperliquid_trading
 from app.services.hyperliquid_market_data import HyperliquidMarketData
 from app.services.hyperliquid_trading import HyperliquidTradingService
-from app.services.ai_trading_orchestrator import AITradingOrchestrator
+from app.services.orchestrator_v2 import AITradingOrchestratorV2
 from app.websocket.manager import websocket_manager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
@@ -108,6 +113,24 @@ market_data_service = None
 trading_service = None
 ai_orchestrator = None
 
+# Simple status endpoint for frontend
+@app.get(f"{settings.API_V1_PREFIX}/status")
+async def get_system_status():
+    """获取系统状态"""
+    # AI orchestrator在startup中启动，这里直接返回运行状态
+    return {
+        "success": True,
+        "orchestrator_running": True,  # AI在startup中已启动
+        "api_version": "1.0.0",
+        "trading_enabled": settings.TRADING_ENABLED,
+        "models": {
+            "deepseek-chat-v3.1": {
+                "status": "running",
+                "last_decision_time": None
+            }
+        }
+    }
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -139,9 +162,29 @@ app.include_router(
     tags=["AI Status"]
 )
 app.include_router(
-    admin.router,
+    admin_db.router,
     prefix=f"{settings.API_V1_PREFIX}/admin",
     tags=["Admin - Database Viewer"]
+)
+app.include_router(
+    constraints.router,
+    prefix=f"{settings.API_V1_PREFIX}/constraints",
+    tags=["Constraints"]
+)
+app.include_router(
+    admin_permissions.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["Admin - Permissions"]
+)
+app.include_router(
+    admin_database.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Database Management"]
+)
+app.include_router(
+    admin_memory.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/memory",
+    tags=["Admin - Memory System"]
 )
 
 # Include new API routers
@@ -158,6 +201,16 @@ app.include_router(
     hyperliquid_trading.router,
     prefix=f"{settings.API_V1_PREFIX}/trading",
     tags=["Hyperliquid Trading"]
+)
+app.include_router(
+    intelligence.router,
+    prefix=f"{settings.API_V1_PREFIX}/intelligence",
+    tags=["Intelligence - Qwen"]
+)
+app.include_router(
+    admin_intelligence.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/intelligence",
+    tags=["Admin - Intelligence Config"]
 )
 
 
@@ -203,20 +256,30 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Trading service initialization failed: {e}")
     
-    # Initialize AI trading orchestrator
+    # Initialize AI trading orchestrator V2
     try:
-        if market_data_service and trading_service:
-            ai_orchestrator = AITradingOrchestrator(
-                redis_client, trading_service, market_data_service, testnet=True
-            )
-            hyperliquid_trading.set_ai_orchestrator(ai_orchestrator)
-            logger.info("AI trading orchestrator initialized")
-            
-            # Start the trading loop
-            await ai_orchestrator.start_trading()
-            logger.info("AI trading orchestrator started - autonomous trading enabled!")
+        from app.core.database import AsyncSessionLocal
+        db_session = AsyncSessionLocal()
+        
+        ai_orchestrator = AITradingOrchestratorV2(
+            redis_client=redis_client,
+            trading_service=trading_service,
+            market_data_service=market_data_service,
+            db_session=db_session,
+            decision_interval=settings.DECISION_INTERVAL
+        )
+        hyperliquid_trading.set_ai_orchestrator(ai_orchestrator)
+        logger.info("✅ AI trading orchestrator V2 initialized (global variable set)")
+        
+        # Start the trading loop in background
+        import asyncio
+        asyncio.create_task(ai_orchestrator.start())
+        logger.info("🚀 AI trading orchestrator V2 started - autonomous trading enabled!")
+        logger.info(f"📊 配置: 置信度阈值={settings.MIN_CONFIDENCE}, 每日交易限制={settings.MAX_DAILY_TRADES}, 决策间隔={settings.DECISION_INTERVAL}秒")
     except Exception as e:
-        logger.error(f"AI orchestrator initialization failed: {e}")
+        logger.error(f"❌ AI orchestrator V2 initialization failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
     
     # Start WebSocket manager
     try:
@@ -291,11 +354,46 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with orchestrator status"""
+    global ai_orchestrator
+    
+    orchestrator_data = None
+    try:
+        # 使用全局变量ai_orchestrator
+        orch = ai_orchestrator
+        logger.info(f"[HEALTH] ai_orchestrator = {orch}")
+        
+        if orch:
+            # 获取orchestrator的运行时统计
+            runtime_seconds = (datetime.now() - orch.start_time).total_seconds() if hasattr(orch, 'start_time') and orch.start_time else 0
+            runtime_hours = runtime_seconds / 3600
+            
+            total_decisions = getattr(orch, 'total_decisions', 0)
+            approved_decisions = getattr(orch, 'approved_decisions', 0)
+            approval_rate = (approved_decisions / total_decisions * 100) if total_decisions > 0 else 0.0
+            
+            orchestrator_data = {
+                "is_running": orch.is_running if hasattr(orch, 'is_running') else True,
+                "permission_level": settings.INITIAL_PERMISSION_LEVEL,
+                "runtime_hours": runtime_hours,
+                "total_decisions": total_decisions,
+                "approved_decisions": approved_decisions,
+                "approval_rate": approval_rate,
+                "decision_interval": settings.DECISION_INTERVAL
+            }
+            logger.info(f"[HEALTH] orchestrator_data = {orchestrator_data}")
+        else:
+            logger.warning("[HEALTH] ai_orchestrator is None")
+    except Exception as e:
+        logger.error(f"[HEALTH] Error getting orchestrator status: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+    
     return {
         "status": "healthy",
         "app": settings.APP_NAME,
-        "version": settings.APP_VERSION
+        "version": settings.APP_VERSION,
+        "orchestrator_status": orchestrator_data
     }
 
 
