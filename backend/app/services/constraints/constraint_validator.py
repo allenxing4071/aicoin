@@ -59,6 +59,20 @@ class ConstraintValidator:
             (is_valid, reason)
         """
         
+        # 【新增】检查交易控制开关（仅限建仓）
+        action = proposed_trade.get("action", "").lower()
+        if action in ["open_long", "open_short", "buy", "long", "short", "sell"]:
+            # 检查全局交易开关
+            try:
+                from app.api.v1.constraints import TRADING_ENABLED
+                if not TRADING_ENABLED:
+                    logger.warning("🚫 交易已停用，拒绝建仓")
+                    return False, "交易已停用，当前仅允许平仓操作"
+            except Exception as e:
+                logger.error(f"检查交易控制开关失败: {e}")
+                # 如果检查失败，为安全起见，拒绝交易
+                return False, "交易控制检查失败，拒绝交易"
+        
         # 1. 检查保证金率
         margin_ratio = account_state.get("margin_ratio", 1.0)
         if margin_ratio < self.HARD_CONSTRAINTS["min_margin_ratio"]:
@@ -139,7 +153,7 @@ class ConstraintValidator:
         from app.services.constraints.permission_manager import PermissionManager
         
         permission_mgr = PermissionManager(None)
-        permission = permission_mgr.get_permission(current_level)
+        permission = permission_mgr.get_permission_sync(current_level)
         
         confidence = ai_decision.get("confidence", 0.0)
         threshold = permission.confidence_threshold

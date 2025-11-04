@@ -25,20 +25,24 @@ export default function PriceTicker() {
       const response = await axios.get(`${API_BASE}/market/tickers`);
       if (response.data && Array.isArray(response.data)) {
         const realTickers = response.data
-          .filter((ticker: any) => ticker && ticker.symbol)  // 过滤无效数据
+          .filter((ticker: any) => ticker && ticker.symbol && parseFloat(ticker.price || 0) > 0)  // 过滤无效数据和价格为0的
           .map((ticker: any) => ({
             symbol: ticker.symbol,
             price: parseFloat(ticker.price || 0),
             change24h: parseFloat(ticker.change_24h || 0),
             timestamp: ticker.timestamp
           }));
-        setTickers(realTickers);
-        setLoading(false);
+        
+        if (realTickers.length > 0) {
+          setTickers(realTickers);
+          setLoading(false);
+        } else {
+          console.warn('No valid tickers with price > 0');
+        }
       }
     } catch (error) {
       console.error('Failed to fetch real prices:', error);
-      // 如果获取失败，显示加载状态
-      setLoading(true);
+      // 获取失败时不改变loading状态，保持之前的数据
     }
   };
 

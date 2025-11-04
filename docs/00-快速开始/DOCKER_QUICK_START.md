@@ -23,10 +23,10 @@ HYPERLIQUID_PRIVATE_KEY=0xYourPrivateKey
 ### 步骤3: 一键部署
 ```bash
 # 测试网
-./start_testnet.sh
+./scripts/start_testnet.sh
 
 # 或生产环境
-./deploy_prod.sh
+./scripts/deploy_prod.sh
 ```
 
 ### 步骤4: 访问系统
@@ -39,25 +39,25 @@ HYPERLIQUID_PRIVATE_KEY=0xYourPrivateKey
 
 ### 构建镜像
 ```bash
-./build_docker.sh
+./scripts/build_docker.sh
 ```
 
 ### 启动服务
 ```bash
 # 测试网
-docker-compose -f docker-compose.testnet.yml up -d
+docker-compose -f deploy/docker-compose.testnet.yml up -d
 
 # 生产环境
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f deploy/docker-compose.prod.yml up -d
 ```
 
 ### 停止服务
 ```bash
 # 测试网
-docker-compose -f docker-compose.testnet.yml down
+docker-compose -f deploy/docker-compose.testnet.yml down
 
 # 生产环境
-docker-compose -f docker-compose.prod.yml down
+docker-compose -f deploy/docker-compose.prod.yml down
 ```
 
 ### 查看日志
@@ -107,8 +107,10 @@ docker-compose logs -f backend | grep -E '(🔄|✅|❌|⚠️)'
 lsof -i :8000
 lsof -i :3000
 
-# 修改端口映射
-nano docker-compose.yml
+# 修改端口映射（根据实际使用的文件）
+nano deploy/docker-compose.testnet.yml
+# 或
+nano deploy/docker-compose.prod.yml
 ```
 
 ### 容器无法启动
@@ -133,7 +135,7 @@ docker-compose restart postgres
 
 ## 📚 完整文档
 
-详细文档请查看: [docs/部署指南.md](docs/部署指南.md)
+详细文档请查看: [docs/07-部署运维/部署指南.md](../07-部署运维/部署指南.md)
 
 ---
 

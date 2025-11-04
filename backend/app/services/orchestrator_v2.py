@@ -13,6 +13,8 @@ from app.services.decision.decision_engine_v2 import DecisionEngineV2
 from app.services.monitoring.kpi_calculator import KPICalculator
 from app.services.monitoring.alert_manager import AlertManager, AlertLevel
 from app.services.constraints.permission_manager import PerformanceData
+from app.services.intelligence.qwen_engine import qwen_intelligence_engine
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -48,11 +50,16 @@ class AITradingOrchestratorV2:
         self.kpi_calculator = KPICalculator()
         self.alert_manager = AlertManager()
         
+        # Qwen Intelligence Engine
+        self.intelligence_engine = qwen_intelligence_engine
+        self.intelligence_interval = settings.INTELLIGENCE_UPDATE_INTERVAL  # 30 minutes
+        
         # 状态管理
         self.is_running = False
         self.is_paused = False
         self._decision_task: Optional[asyncio.Task] = None
         self._monitoring_task: Optional[asyncio.Task] = None
+        self._intelligence_task: Optional[asyncio.Task] = None
         
         # 性能统计
         self.start_time = None
@@ -79,6 +86,10 @@ class AITradingOrchestratorV2:
             # 启动监控循环
             self._monitoring_task = asyncio.create_task(self._monitoring_loop())
             logger.info("✅ 监控循环已启动")
+            
+            # 启动Qwen情报循环
+            self._intelligence_task = asyncio.create_task(self._intelligence_loop())
+            logger.info("🕵️‍♀️ Qwen情报循环已启动")
             
             # 发送启动通知
             await self.alert_manager.send_alert(
@@ -110,11 +121,14 @@ class AITradingOrchestratorV2:
                 self._decision_task.cancel()
             if self._monitoring_task:
                 self._monitoring_task.cancel()
+            if self._intelligence_task:
+                self._intelligence_task.cancel()
             
             # 等待任务完成
             await asyncio.gather(
                 self._decision_task,
                 self._monitoring_task,
+                self._intelligence_task,
                 return_exceptions=True
             )
             
@@ -278,26 +292,92 @@ class AITradingOrchestratorV2:
             except Exception as e:
                 logger.error(f"监控循环异常: {e}", exc_info=True)
     
-    async def _get_market_data(self) -> Dict[str, Any]:
-        """获取市场数据"""
+    async def _intelligence_loop(self):
+        """Qwen情报循环（每30分钟）"""
+        logger.info(f"🕵️‍♀️ Qwen情报循环启动 (间隔: {self.intelligence_interval}秒)")
+        
+        # 立即执行第一次情报收集
+        logger.info("🚀 执行首次情报收集...")
         try:
-            # 从市场数据服务获取
-            # TODO: 实现完整的市场数据获取逻辑
+            await self.intelligence_engine.collect_intelligence()
+        except Exception as e:
+            logger.error(f"首次情报收集失败: {e}", exc_info=True)
+        
+        while self.is_running:
+            try:
+                await asyncio.sleep(self.intelligence_interval)  # 30 minutes
+                
+                logger.info("\n" + "="*60)
+                logger.info("🕵️‍♀️ Qwen情报官开始收集情报...")
+                logger.info("="*60)
+                
+                # 收集和分析情报
+                report = await self.intelligence_engine.collect_intelligence()
+                
+                logger.info(f"✅ 情报收集完成:")
+                logger.info(f"  - 市场情绪: {report.market_sentiment.value}")
+                logger.info(f"  - 情绪分数: {report.sentiment_score:.2f}")
+                logger.info(f"  - 新闻数量: {len(report.key_news)}")
+                logger.info(f"  - 巨鲸活动: {len(report.whale_signals)}")
+                logger.info(f"  - 置信度: {report.confidence:.2f}")
+                
+                # 如果有重要情报，发送告警
+                if report.confidence > 0.7:
+                    if abs(report.sentiment_score) > 0.5:
+                        alert_level = AlertLevel.WARNING if abs(report.sentiment_score) > 0.7 else AlertLevel.INFO
+                        await self.alert_manager.send_alert(
+                            alert_level,
+                            "市场情报更新",
+                            f"Qwen检测到{report.market_sentiment.value}信号 (分数: {report.sentiment_score:.2f})",
+                            {
+                                "sentiment": report.market_sentiment.value,
+                                "score": report.sentiment_score,
+                                "confidence": report.confidence
+                            }
+                        )
+            
+            except asyncio.CancelledError:
+                logger.info("情报循环被取消")
+                break
+            except Exception as e:
+                logger.error(f"情报循环异常: {e}", exc_info=True)
+                # 错误后继续运行，不中断情报循环
+    
+    async def _get_market_data(self) -> Dict[str, Any]:
+        """获取市场数据 - 6个币种"""
+        try:
+            # 从市场数据服务获取6个主流币种的数据
+            # BTC, ETH, SOL (主要), BNB, DOGE, XRP (辅助)
             market_data = {
                 "BTC": {
-                    "price": 68000,
-                    "change_24h": 2.5,
-                    "volume_24h": 25000000000
+                    "price": 107225,
+                    "change_24h": 0.0,
+                    "volume_24h": 45000000000
                 },
                 "ETH": {
-                    "price": 3500,
-                    "change_24h": 1.8,
-                    "volume_24h": 12000000000
+                    "price": 3699,
+                    "change_24h": 0.0,
+                    "volume_24h": 18000000000
                 },
                 "SOL": {
-                    "price": 187,
-                    "change_24h": 3.2,
-                    "volume_24h": 5000000000
+                    "price": 174.79,
+                    "change_24h": 0.0,
+                    "volume_24h": 6000000000
+                },
+                "XRP": {
+                    "price": 1014.05,
+                    "change_24h": 0.0,
+                    "volume_24h": 8000000000
+                },
+                "DOGE": {
+                    "price": 0.17,
+                    "change_24h": 0.0,
+                    "volume_24h": 2000000000
+                },
+                "BNB": {
+                    "price": 2.39,
+                    "change_24h": 0.0,
+                    "volume_24h": 1500000000
                 }
             }
             return market_data

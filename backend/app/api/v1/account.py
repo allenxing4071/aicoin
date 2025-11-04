@@ -10,15 +10,13 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def get_hyperliquid_client():
-    """获取Hyperliquid client实例（优先使用全局缓存的）"""
-    from app.main_v2 import hyperliquid_client_global, trading_service_global
-    if hyperliquid_client_global is not None:
-        return hyperliquid_client_global
-    # Fallback: 创建临时实例
-    logger.warning("⚠️ Global client not available, creating temporary instance (slow!)")
-    from app.services.market.hyperliquid_client import HyperliquidClient
-    return HyperliquidClient(trading_service=trading_service_global)
+def get_trading_service():
+    """获取全局的trading service"""
+    from app.main import trading_service
+    if trading_service is None:
+        logger.error("❌ Trading service not initialized!")
+        raise HTTPException(status_code=503, detail="Trading service not available")
+    return trading_service
 
 
 @router.get("/info", response_model=AccountInfo)
@@ -30,21 +28,26 @@ async def get_account_info():
         账户信息(余额、持仓等)
     """
     try:
-        client = get_hyperliquid_client()
+        service = get_trading_service()
         
-        # 获取账户余额
-        balance_data = await client.get_account_balance()
+        # 获取账户状态
+        account_state = await service.get_account_state()
         
-        # 获取持仓
-        positions_data = await client.get_positions()
+        # 正确解析Hyperliquid返回的数据结构
+        margin_summary = account_state.get('marginSummary', {})
+        balance = str(margin_summary.get('accountValue', '0'))
+        equity = str(margin_summary.get('accountValue', '0'))
+        unrealized_pnl = str(margin_summary.get('totalNtlPos', '0'))
         
-        positions = [PositionInfo(**p) for p in positions_data] if positions_data else []
+        # 解析持仓
+        asset_positions = account_state.get('assetPositions', [])
+        positions = [PositionInfo(**p) for p in asset_positions] if asset_positions else []
         
         return AccountInfo(
-            balance=balance_data['balance'],
-            equity=balance_data['equity'],
-            unrealized_pnl=balance_data.get('unrealized_pnl', '0'),
-            realized_pnl=balance_data.get('realized_pnl', '0'),
+            balance=balance,
+            equity=equity,
+            unrealized_pnl=unrealized_pnl,
+            realized_pnl='0',
             positions=positions
         )
         

@@ -16,34 +16,182 @@ logger = logging.getLogger(__name__)
 
 
 class MarketStateVectorizer:
-    """市场状态向量化器"""
+    """
+    市场状态向量化器
     
-    def __init__(self, api_key: str, model: str = "text-embedding-ada-002"):
-        self.client = openai.OpenAI(api_key=api_key)
-        self.model = model
+    支持多种Embedding服务:
+    - OpenAI (text-embedding-ada-002)
+    - DeepSeek (deepseek-chat with custom embedding)
+    - Qwen (text-embedding-v2/v3)
+    """
+    
+    def __init__(
+        self, 
+        api_key: Optional[str] = None,
+        provider: str = "auto",  # auto, openai, deepseek, qwen
+        model: Optional[str] = None
+    ):
+        """
+        初始化向量化器
+        
+        Args:
+            api_key: API密钥（如果为None，自动从settings获取）
+            provider: embedding服务提供商 (auto会自动选择可用的)
+            model: 模型名称（如果为None，使用默认值）
+        """
+        self.provider = provider
+        self.enabled = False
+        self.client = None
+        self.model = None
+        self.vector_dim = 1536  # 默认维度
+        
+        # 自动选择provider
+        if provider == "auto":
+            if settings.QWEN_API_KEY:
+                provider = "qwen"
+                api_key = api_key or settings.QWEN_API_KEY
+                logger.info("🔍 使用Qwen Embedding服务")
+            elif settings.DEEPSEEK_API_KEY:
+                provider = "deepseek"
+                api_key = api_key or settings.DEEPSEEK_API_KEY
+                logger.info("🔍 使用DeepSeek Embedding服务")
+            elif settings.OPENAI_API_KEY:
+                provider = "openai"
+                api_key = api_key or settings.OPENAI_API_KEY
+                logger.info("🔍 使用OpenAI Embedding服务")
+            else:
+                logger.warning("⚠️ 未配置任何Embedding API Key，长期记忆功能已禁用")
+                return
+        
+        # 验证API Key
+        if not api_key or api_key.startswith("sk-your-") or api_key == "your-key-here":
+            logger.warning(f"⚠️ {provider.upper()} API Key未配置或无效，长期记忆功能已禁用")
+            return
+        
+        # 初始化对应的客户端
+        try:
+            if provider == "qwen":
+                self.client = openai.OpenAI(
+                    api_key=api_key,
+                    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+                )
+                self.model = model or "text-embedding-v3"
+                self.vector_dim = 1024  # Qwen embedding维度
+                self.enabled = True
+                logger.info(f"✅ Qwen Embedding已启用 (模型: {self.model}, 维度: {self.vector_dim})")
+                
+            elif provider == "deepseek":
+                # DeepSeek暂不直接支持embedding，使用chat模型生成特征
+                self.client = openai.OpenAI(
+                    api_key=api_key,
+                    base_url="https://api.deepseek.com/v1"
+                )
+                self.model = model or "deepseek-chat"
+                self.vector_dim = 768  # 使用较小维度
+                self.enabled = True
+                logger.info(f"✅ DeepSeek特征提取已启用 (模型: {self.model}, 维度: {self.vector_dim})")
+                logger.warning("⚠️ DeepSeek暂无专用embedding接口，使用特征哈希方法")
+                
+            elif provider == "openai":
+                self.client = openai.OpenAI(api_key=api_key)
+                self.model = model or "text-embedding-ada-002"
+                self.vector_dim = 1536
+                self.enabled = True
+                logger.info(f"✅ OpenAI Embedding已启用 (模型: {self.model}, 维度: {self.vector_dim})")
+            
+            else:
+                logger.error(f"❌ 不支持的provider: {provider}")
+                
+        except Exception as e:
+            logger.error(f"❌ 初始化{provider}客户端失败: {e}")
+            self.enabled = False
+        
+        self.provider = provider
     
     def extract_features(self, market_data: Dict[str, Any], decision: Dict[str, Any]) -> List[float]:
         """
-        提取市场特征并转换为文本描述
+        提取市场特征并转换为向量
         
         Returns:
             特征向量
         """
+        # 如果未启用，返回零向量
+        if not self.enabled:
+            return [0.0] * self.vector_dim
+        
         # 1. 构建文本描述
         text_description = self._build_text_description(market_data, decision)
         
-        # 2. 调用Embedding API
+        # 2. 根据provider调用相应的向量化方法
         try:
-            response = self.client.embeddings.create(
-                model=self.model,
-                input=text_description
-            )
-            return response.data[0].embedding
+            if self.provider in ["qwen", "openai"]:
+                # Qwen和OpenAI都支持标准的embeddings接口
+                response = self.client.embeddings.create(
+                    model=self.model,
+                    input=text_description
+                )
+                return response.data[0].embedding
+            
+            elif self.provider == "deepseek":
+                # DeepSeek使用特征哈希方法
+                # 提取关键特征并生成固定维度向量
+                return self._deepseek_feature_hash(text_description, market_data, decision)
+            
+            else:
+                logger.error(f"不支持的provider: {self.provider}")
+                return [0.0] * self.vector_dim
         
         except Exception as e:
-            logger.error(f"向量化失败: {e}")
-            # 返回零向量（1536维）
-            return [0.0] * 1536
+            logger.error(f"向量化失败 ({self.provider}): {e}")
+            # 返回零向量
+            return [0.0] * self.vector_dim
+    
+    def _deepseek_feature_hash(
+        self, 
+        text_description: str, 
+        market_data: Dict[str, Any], 
+        decision: Dict[str, Any]
+    ) -> List[float]:
+        """
+        DeepSeek特征哈希方法
+        
+        由于DeepSeek暂无embedding接口，使用数值特征组合生成向量
+        """
+        import hashlib
+        import struct
+        
+        # 提取数值特征
+        symbol = decision.get("symbol", "BTC")
+        action = decision.get("action", "hold")
+        confidence = decision.get("confidence", 0.0)
+        
+        price = market_data.get(symbol, {}).get("price", 0)
+        change_24h = market_data.get(symbol, {}).get("change_24h", 0)
+        volume = market_data.get(symbol, {}).get("volume_24h", 0)
+        
+        # 归一化数值特征
+        features = []
+        
+        # 价格相关特征 (256维)
+        price_hash = hashlib.sha256(str(price).encode()).digest()
+        features.extend([b / 255.0 for b in price_hash])
+        
+        # 变化相关特征 (256维)
+        change_hash = hashlib.sha256(str(change_24h).encode()).digest()
+        features.extend([b / 255.0 for b in change_hash])
+        
+        # 决策相关特征 (256维)
+        decision_str = f"{symbol}_{action}_{confidence}"
+        decision_hash = hashlib.sha256(decision_str.encode()).digest()
+        features.extend([b / 255.0 for b in decision_hash])
+        
+        # 确保维度正确 (768维)
+        if len(features) < self.vector_dim:
+            features.extend([0.0] * (self.vector_dim - len(features)))
+        else:
+            features = features[:self.vector_dim]
+        
+        return features
     
     def _build_text_description(self, market_data: Dict[str, Any], decision: Dict[str, Any]) -> str:
         """构建市场状态的文本描述"""
@@ -78,19 +226,41 @@ class LongTermMemory:
     """
     长期记忆服务（Qdrant向量数据库）
     存储历史交易经验，用于相似场景检索
+    
+    支持多种embedding服务:
+    - Qwen (推荐): 性价比高，中文支持好
+    - DeepSeek: 使用特征哈希，无需额外费用
+    - OpenAI: 效果好，但需要额外费用
     """
     
     COLLECTION_NAME = "trading_memories"
-    VECTOR_DIM = 1536  # OpenAI text-embedding-ada-002
     
     def __init__(
         self,
         qdrant_host: str = "localhost",
         qdrant_port: int = 6333,
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        embedding_provider: str = "auto"  # auto, qwen, deepseek, openai
     ):
+        """
+        初始化长期记忆服务
+        
+        Args:
+            qdrant_host: Qdrant服务器地址
+            qdrant_port: Qdrant端口
+            api_key: Embedding API密钥（如果为None，自动选择）
+            embedding_provider: embedding服务提供商
+        """
         self.client = QdrantClient(host=qdrant_host, port=qdrant_port)
-        self.vectorizer = MarketStateVectorizer(api_key or settings.OPENAI_API_KEY)
+        
+        # 初始化向量化器（自动选择provider）
+        self.vectorizer = MarketStateVectorizer(
+            api_key=api_key,
+            provider=embedding_provider
+        )
+        
+        # 使用向量化器的维度
+        self.VECTOR_DIM = self.vectorizer.vector_dim
         
         # 初始化collection
         self._init_collection()
@@ -103,6 +273,7 @@ class LongTermMemory:
             exists = any(c.name == self.COLLECTION_NAME for c in collections)
             
             if not exists:
+                # 使用实际的向量维度创建collection
                 self.client.create_collection(
                     collection_name=self.COLLECTION_NAME,
                     vectors_config=VectorParams(

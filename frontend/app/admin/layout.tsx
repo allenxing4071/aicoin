@@ -34,6 +34,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: "AI决策", path: "/admin/ai-decisions" },
     { name: "K线数据", path: "/admin/market-data" },
     { name: "风控事件", path: "/admin/risk-events" },
+    { name: "权限管理", path: "/admin/permissions" },
   ];
 
   // 如果是登录页面,不显示layout

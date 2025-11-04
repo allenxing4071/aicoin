@@ -10,14 +10,14 @@ from loguru import logger
 from app.core.config import settings
 from app.core.redis_client import redis_client
 from app.services.hyperliquid_trading import HyperliquidTradingService
-from app.services.ai_trading_orchestrator import AITradingOrchestrator
+from app.services.orchestrator_v2 import AITradingOrchestratorV2
 from app.services.hyperliquid_market_data import HyperliquidMarketData
 
 router = APIRouter()
 
 # 全局服务实例
 trading_service: Optional[HyperliquidTradingService] = None
-ai_orchestrator: Optional[AITradingOrchestrator] = None
+ai_orchestrator: Optional[AITradingOrchestratorV2] = None
 market_data_service: Optional[HyperliquidMarketData] = None
 
 
@@ -31,19 +31,13 @@ def get_trading_service() -> HyperliquidTradingService:
     return trading_service
 
 
-def get_ai_orchestrator() -> AITradingOrchestrator:
+def get_ai_orchestrator() -> AITradingOrchestratorV2:
     """获取AI编排器实例"""
-    global ai_orchestrator, trading_service, market_data_service
+    global ai_orchestrator
     if ai_orchestrator is None:
-        from app.core.config import settings
-        testnet = settings.HYPERLIQUID_TESTNET if hasattr(settings, 'HYPERLIQUID_TESTNET') else False
-        if trading_service is None:
-            trading_service = HyperliquidTradingService(redis_client, testnet=testnet)
-        if market_data_service is None:
-            market_data_service = HyperliquidMarketData(redis_client, testnet=testnet)
-        ai_orchestrator = AITradingOrchestrator(
-            redis_client, trading_service, market_data_service, testnet=True
-        )
+        logger.info("初始化AITradingOrchestratorV2...")
+        ai_orchestrator = AITradingOrchestratorV2()
+        logger.info("AITradingOrchestratorV2初始化完成")
     return ai_orchestrator
 
 
@@ -53,7 +47,7 @@ def set_trading_service(service: HyperliquidTradingService):
     trading_service = service
 
 
-def set_ai_orchestrator(orchestrator: AITradingOrchestrator):
+def set_ai_orchestrator(orchestrator: AITradingOrchestratorV2):
     """设置AI编排器实例"""
     global ai_orchestrator
     ai_orchestrator = orchestrator
@@ -75,11 +69,12 @@ async def get_account_info(service: HyperliquidTradingService = Depends(get_trad
 
 
 @router.get("/account/history")
+@router.get("/trades")  # 前端兼容性别名
 async def get_account_history(
     limit: int = 100,
     model: Optional[str] = None
 ):
-    """获取账户历史记录"""
+    """获取账户历史记录/交易记录"""
     try:
         history = []
         
@@ -231,10 +226,10 @@ async def get_trading_stats(service: HyperliquidTradingService = Depends(get_tra
 
 
 @router.post("/ai/start")
-async def start_ai_trading(orchestrator: AITradingOrchestrator = Depends(get_ai_orchestrator)):
+async def start_ai_trading(orchestrator: AITradingOrchestratorV2 = Depends(get_ai_orchestrator)):
     """启动AI交易"""
     try:
-        await orchestrator.start_trading()
+        await orchestrator.start()
         return {
             "success": True,
             "message": "AI trading started successfully",
@@ -246,10 +241,10 @@ async def start_ai_trading(orchestrator: AITradingOrchestrator = Depends(get_ai_
 
 
 @router.post("/ai/stop")
-async def stop_ai_trading(orchestrator: AITradingOrchestrator = Depends(get_ai_orchestrator)):
+async def stop_ai_trading(orchestrator: AITradingOrchestratorV2 = Depends(get_ai_orchestrator)):
     """停止AI交易"""
     try:
-        await orchestrator.stop_trading()
+        await orchestrator.stop()
         return {
             "success": True,
             "message": "AI trading stopped successfully",
@@ -261,10 +256,10 @@ async def stop_ai_trading(orchestrator: AITradingOrchestrator = Depends(get_ai_o
 
 
 @router.get("/ai/status")
-async def get_ai_trading_status(orchestrator: AITradingOrchestrator = Depends(get_ai_orchestrator)):
+async def get_ai_trading_status(orchestrator: AITradingOrchestratorV2 = Depends(get_ai_orchestrator)):
     """获取AI交易状态"""
     try:
-        status = await orchestrator.get_trading_status()
+        status = orchestrator.get_status()
         return {
             "success": True,
             "data": status,
@@ -276,7 +271,7 @@ async def get_ai_trading_status(orchestrator: AITradingOrchestrator = Depends(ge
 
 
 @router.get("/ai/performance")
-async def get_ai_performance(orchestrator: AITradingOrchestrator = Depends(get_ai_orchestrator)):
+async def get_ai_performance(orchestrator: AITradingOrchestratorV2 = Depends(get_ai_orchestrator)):
     """获取AI性能"""
     try:
         performance = await orchestrator.get_ai_performance()
@@ -293,7 +288,7 @@ async def get_ai_performance(orchestrator: AITradingOrchestrator = Depends(get_a
 @router.get("/ai/decisions")
 async def get_ai_decisions(
     limit: int = 10,
-    orchestrator: AITradingOrchestrator = Depends(get_ai_orchestrator)
+    orchestrator: AITradingOrchestratorV2 = Depends(get_ai_orchestrator)
 ):
     """获取AI决策历史"""
     try:
@@ -319,7 +314,7 @@ async def get_ai_decisions(
 
 @router.post("/ai/analyze")
 async def analyze_market(
-    orchestrator: AITradingOrchestrator = Depends(get_ai_orchestrator)
+    orchestrator: AITradingOrchestratorV2 = Depends(get_ai_orchestrator)
 ):
     """手动触发市场分析"""
     try:

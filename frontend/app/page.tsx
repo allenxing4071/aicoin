@@ -15,11 +15,12 @@ import PermissionIndicator from './components/ai/PermissionIndicator';
 import DecisionTimeline from './components/ai/DecisionTimeline';
 import PerformanceDashboard from './components/performance/PerformanceDashboard';
 import DeepSeekLogo from './components/common/DeepSeekLogo';
+import IntelligencePanel from './components/intelligence/IntelligencePanel';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'chart' | 'trades' | 'chat' | 'positions' | 'readme' | 'ai' | 'decisions' | 'performance'>('trades');
+  const [activeTab, setActiveTab] = useState<'chart' | 'trades' | 'chat' | 'positions' | 'readme' | 'ai' | 'decisions' | 'performance' | 'intelligence'>('trades');
   const [timeRange, setTimeRange] = useState<'all' | '72h'>('all');
   const [selectedModel, setSelectedModel] = useState<string>('all');
   const [apiStatus, setApiStatus] = useState({ status: 'checking', version: '0.0.0' });
@@ -322,6 +323,14 @@ export default function Home() {
                 >
                   性能仪表盘
                 </button>
+                <button 
+                  onClick={() => setActiveTab('intelligence')}
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                    activeTab === 'intelligence' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  🕵️‍♀️ 情报中心
+                </button>
               </div>
             </div>
             
@@ -389,28 +398,42 @@ export default function Home() {
                 <PerformanceDashboard />
               </div>
             )}
+
+            {activeTab === 'intelligence' && (
+              <div className="h-full overflow-y-auto p-4">
+                <IntelligencePanel />
+              </div>
+            )}
             {activeTab === 'readme' && (
-              <div className="h-full overflow-y-auto p-6 bg-white font-mono text-sm text-gray-800 leading-relaxed">
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-xl font-bold mb-4 text-gray-900">━━━ AI GHOST: AI交易系统 ━━━</h2>
-                    <p className="text-gray-700">
+              <div className="h-full overflow-y-auto p-6 bg-gradient-to-br from-slate-50 to-gray-100">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-6 shadow-lg">
+                    <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-slate-700 to-gray-900 bg-clip-text text-transparent">
+                      ━━━ AI GHOST: AI交易系统 ━━━
+                    </h2>
+                    <p className="text-gray-700 font-mono text-sm leading-relaxed">
                       实时测试AI在真实市场中的投资能力和决策水平。
                     </p>
                   </div>
 
-                  <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">🎯 系统概述</h3>
-                    <p className="text-gray-700">
+                  <div className="bg-gradient-to-br from-white to-blue-50 border border-blue-200 rounded-xl p-6 shadow-lg">
+                    <h3 className="font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3 flex items-center">
+                      <span className="text-2xl mr-2">🎯</span>
+                      系统概述
+                    </h3>
+                    <p className="text-gray-700 font-mono text-sm leading-relaxed">
                       DeepSeek AI 使用 <span className="font-bold text-green-600">$300</span> 真实资金在 Hyperliquid 主网进行交易。
                       目标：通过完全自主的交易决策最大化风险调整后收益。
                     </p>
                   </div>
 
-                  <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">🤖 AI模型</h3>
-                    <div className="space-y-2 text-gray-700">
-                      <div className="flex items-center space-x-2">
+                  <div className="bg-gradient-to-br from-white to-purple-50 border border-purple-200 rounded-xl p-6 shadow-lg">
+                    <h3 className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 flex items-center">
+                      <span className="text-2xl mr-2">🤖</span>
+                      AI模型
+                    </h3>
+                    <div className="space-y-2 text-gray-700 font-mono text-sm">
+                      <div className="flex items-center space-x-2 bg-white/60 p-3 rounded-lg">
                         <DeepSeekLogo size={20} />
                         <span className="font-semibold">DeepSeek Chat V3.1</span>
                         <span className="text-gray-500">- 高级推理模型</span>
@@ -418,9 +441,12 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">📋 系统配置</h3>
-                    <div className="space-y-2 text-gray-700">
+                  <div className="bg-gradient-to-br from-white to-green-50 border border-green-200 rounded-xl p-6 shadow-lg">
+                    <h3 className="font-bold text-lg bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-3 flex items-center">
+                      <span className="text-2xl mr-2">📋</span>
+                      系统配置
+                    </h3>
+                    <div className="space-y-2 text-gray-700 font-mono text-sm bg-white/60 p-4 rounded-lg">
                       <div>├─ <span className="font-semibold">初始资金:</span> $300 (共享钱包)</div>
                       <div>├─ <span className="font-semibold">市场:</span> 加密货币永续合约 (BTC, ETH, SOL, BNB, DOGE, XRP)</div>
                       <div>├─ <span className="font-semibold">平台:</span> Hyperliquid 主网</div>
@@ -432,33 +458,42 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">⚙️ 技术细节</h3>
-                    <div className="space-y-2 text-gray-700">
-                      <div><span className="font-semibold">前端:</span> Next.js 14 + TypeScript + TailwindCSS</div>
-                      <div><span className="font-semibold">后端:</span> FastAPI + Python</div>
-                      <div><span className="font-semibold">数据库:</span> PostgreSQL + Redis</div>
-                      <div><span className="font-semibold">图表引擎:</span> TradingView Lightweight Charts</div>
+                  <div className="bg-gradient-to-br from-white to-amber-50 border border-amber-200 rounded-xl p-6 shadow-lg">
+                    <h3 className="font-bold text-lg bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3 flex items-center">
+                      <span className="text-2xl mr-2">⚙️</span>
+                      技术细节
+                    </h3>
+                    <div className="space-y-2 text-gray-700 font-mono text-sm bg-white/60 p-4 rounded-lg">
+                      <div><span className="font-semibold text-amber-700">前端:</span> Next.js 14 + TypeScript + TailwindCSS</div>
+                      <div><span className="font-semibold text-amber-700">后端:</span> FastAPI + Python</div>
+                      <div><span className="font-semibold text-amber-700">数据库:</span> PostgreSQL + Redis</div>
+                      <div><span className="font-semibold text-amber-700">图表引擎:</span> TradingView Lightweight Charts</div>
                       <div><span className="font-semibold">实时通信:</span> WebSocket连接</div>
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">⚠️ 自主AI交易</h3>
-                    <div className="space-y-2 text-gray-700">
-                      <div>• <span className="font-semibold">仓位规模:</span> AI决定 (最多至余额)</div>
-                      <div>• <span className="font-semibold">杠杆:</span> AI决定 (Hyperliquid默认)</div>
-                      <div>• <span className="font-semibold">进出场:</span> AI独立决定时机</div>
-                      <div>• <span className="font-semibold">风险管理:</span> AI自我管理投资组合风险</div>
-                      <div>• <span className="font-semibold">止损/止盈:</span> AI决定目标</div>
-                      <div>• <span className="font-semibold">交易频率:</span> 无限制 (AI优化)</div>
-                      <div>• <span className="font-semibold">理念:</span> 完全自主 - 最小人工干预</div>
+                  <div className="bg-gradient-to-br from-white to-red-50 border border-red-200 rounded-xl p-6 shadow-lg">
+                    <h3 className="font-bold text-lg bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-3 flex items-center">
+                      <span className="text-2xl mr-2">⚠️</span>
+                      自主AI交易
+                    </h3>
+                    <div className="space-y-2 text-gray-700 font-mono text-sm bg-white/60 p-4 rounded-lg">
+                      <div>• <span className="font-semibold text-red-700">仓位规模:</span> AI决定 (最多至余额)</div>
+                      <div>• <span className="font-semibold text-red-700">杠杆:</span> AI决定 (Hyperliquid默认)</div>
+                      <div>• <span className="font-semibold text-red-700">进出场:</span> AI独立决定时机</div>
+                      <div>• <span className="font-semibold text-red-700">风险管理:</span> AI自我管理投资组合风险</div>
+                      <div>• <span className="font-semibold text-red-700">止损/止盈:</span> AI决定目标</div>
+                      <div>• <span className="font-semibold text-red-700">交易频率:</span> 无限制 (AI优化)</div>
+                      <div>• <span className="font-semibold text-red-700">理念:</span> 完全自主 - 最小人工干预</div>
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">📊 性能指标</h3>
-                    <div className="space-y-2 text-gray-700">
+                  <div className="bg-gradient-to-br from-white to-cyan-50 border border-cyan-200 rounded-xl p-6 shadow-lg">
+                    <h3 className="font-bold text-lg bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-3 flex items-center">
+                      <span className="text-2xl mr-2">📊</span>
+                      性能指标
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 text-gray-700 font-mono text-sm bg-white/60 p-4 rounded-lg">
                       <div>• 总收益率 (%)</div>
                       <div>• 总盈亏 ($)</div>
                       <div>• 胜率 (%)</div>
@@ -471,28 +506,33 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-300 pt-4">
-                    <h3 className="font-bold text-gray-900 mb-2">🔗 参考链接</h3>
-                    <div className="space-y-2 text-gray-700">
-                      <div>• 灵感来源: <a href="https://nof1.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">nof1.ai</a></div>
-                      <div>• Hyperliquid: <a href="https://hyperliquid.xyz" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">hyperliquid.xyz</a></div>
-                      <div>• DeepSeek: <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.deepseek.com</a></div>
+                  <div className="bg-gradient-to-br from-white to-indigo-50 border border-indigo-200 rounded-xl p-6 shadow-lg">
+                    <h3 className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3 flex items-center">
+                      <span className="text-2xl mr-2">🔗</span>
+                      参考链接
+                    </h3>
+                    <div className="space-y-2 text-gray-700 font-mono text-sm bg-white/60 p-4 rounded-lg">
+                      <div>• 灵感来源: <a href="https://nof1.ai" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 hover:underline font-semibold">nof1.ai</a></div>
+                      <div>• Hyperliquid: <a href="https://hyperliquid.xyz" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 hover:underline font-semibold">hyperliquid.xyz</a></div>
+                      <div>• DeepSeek: <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 hover:underline font-semibold">platform.deepseek.com</a></div>
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-300 pt-4 pb-4">
-                    <p className="text-gray-500 text-xs">
-                      ⚠️ 免责声明：这是一个实验性的AI交易系统。所有交易涉及真实资金和真实风险。
+                  <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-300 rounded-xl p-6 shadow-lg">
+                    <p className="text-gray-700 text-sm font-mono leading-relaxed">
+                      <span className="text-2xl mr-2">⚠️</span>
+                      <span className="font-bold text-orange-700">免责声明：</span>
+                      这是一个实验性的AI交易系统。所有交易涉及真实资金和真实风险。
                       过往表现不能保证未来结果。风险自负。
                     </p>
                   </div>
 
-                  <div className="text-center text-gray-400 text-xs">
-                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    <br />
-                    © 2025 AIcoin Trading System | Version 1.0.0
-                    <br />
-                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                  <div className="bg-gradient-to-br from-slate-100 to-gray-200 border border-slate-300 rounded-xl p-6 shadow-lg text-center">
+                    <div className="text-gray-600 text-xs font-mono space-y-2">
+                      <div className="text-slate-400">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                      <div className="font-semibold text-sm">© 2025 AIcoin Trading System | Version 1.0.0</div>
+                      <div className="text-slate-400">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                    </div>
                   </div>
                 </div>
               </div>

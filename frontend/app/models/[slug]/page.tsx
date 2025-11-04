@@ -48,8 +48,8 @@ export default function ModelDetailPage() {
       const performanceResponse = await axios.get(`${API_BASE}/performance/metrics`);
       const metrics = performanceResponse.data;
 
-      // 获取AI状态
-      const statusResponse = await axios.get(`${API_BASE}/status`);
+      // 获取AI状态 - 使用正确的endpoint
+      const statusResponse = await axios.get(`${API_BASE}/ai/status`);
       const orchestratorData = statusResponse.data.orchestrator || {};
 
       // 构建模型数据

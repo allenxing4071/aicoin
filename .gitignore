@@ -30,6 +30,8 @@
 .env
 .env.*.local
 .env.local
+.env.prod
+.env.testnet
 .idea/
 .next/
 .vscode/
@@ -44,3 +46,14 @@ logs/
 node_modules/
 out/
 venv/
+
+# PID files
+*.pid
+
+# Temporary markdown files
+*_20*.md
+
+# Temporary shell scripts  
+check_*.sh
+monitor_*.sh
+test_*.html

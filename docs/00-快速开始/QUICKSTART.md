@@ -27,51 +27,51 @@ curl -s http://localhost:8000/health | python3 -m json.tool
 
 ```bash
 # 启动系统（使用.env.testnet配置）
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet up -d
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet up -d
 
 # 停止系统
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet down
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet down
 
 # 重启backend
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet restart backend
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet restart backend
 
 # 紧急停止（关闭所有并提醒手动平仓）
-./stop_system_emergency.sh
+./scripts/stop_system_emergency.sh
 ```
 
 ### 日志查看
 
 ```bash
 # 实时查看所有日志
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet logs -f backend
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet logs -f backend
 
 # 只看决策日志
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet logs backend | grep "决策"
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet logs backend | grep "决策"
 
 # 只看权限变化
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet logs backend | grep "权限"
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet logs backend | grep "权限"
 
 # 只看错误
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet logs backend | grep "ERROR"
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet logs backend | grep "ERROR"
 
 # 只看emoji标记的关键信息
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet logs backend | grep -E "(🔄|✅|❌|⚠️|🤖)"
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet logs backend | grep -E "(🔄|✅|❌|⚠️|🤖)"
 ```
 
 ### 监控工具
 
 ```bash
 # 实时监控系统（推荐）
-./monitor_system.sh
+./scripts/monitor_system.sh
 
 # 后台告警监控
-./alert_config.sh daemon &
+./scripts/alert_config.sh daemon &
 
 # 查看告警日志
 tail -f logs/alerts.log
 
 # API端点测试
-./test_api_endpoints.sh
+./scripts/test_api_endpoints.sh
 ```
 
 ### API访问
@@ -107,7 +107,7 @@ vim .env.testnet
 DECISION_INTERVAL=300  # 改为你想要的秒数（如180=3分钟）
 
 # 重启生效
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet restart backend
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet restart backend
 ```
 
 ### 启用/禁用AI决策
@@ -120,8 +120,8 @@ vim .env.testnet
 TRADING_ENABLED=true   # true=启用AI决策，false=禁用
 
 # 完全重启生效
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet down
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet up -d
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet down
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet up -d
 ```
 
 ### 修改初始权限等级
@@ -134,7 +134,7 @@ vim .env.testnet
 INITIAL_PERMISSION_LEVEL=L1  # L1-L5，L1最保守
 
 # 重启生效
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet restart backend
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet restart backend
 ```
 
 ---
@@ -240,14 +240,14 @@ docker-compose -f docker-compose.testnet.yml --env-file .env.testnet up -d
 **解决**:
 ```bash
 # 查看错误日志
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet logs backend | tail -50
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet logs backend | tail -50
 
 # 重新构建镜像
-docker-compose -f docker-compose.testnet.yml build --no-cache backend
+docker-compose -f deploy/docker-compose.testnet.yml build --no-cache backend
 
 # 重启所有
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet down
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet up -d
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet down
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet up -d
 ```
 
 ---
@@ -257,11 +257,12 @@ docker-compose -f docker-compose.testnet.yml --env-file .env.testnet up -d
 | 文档 | 用途 |
 |------|------|
 | `README.md` | 项目总览 |
-| `docs/v2.0实现报告.md` | 技术实现细节 |
-| `docs/v2.0交付总结.md` | 完整交付清单 |
-| `docs/测试网部署指南.md` | 详细部署步骤 |
-| `test_report_*.md` | 测试报告 |
-| `docs/01-核心规则/AI交易规则文档.md` | 完整规则文档 |
+| `docs/00-文档导航.md` | 文档导航 |
+| `docs/01-核心规则/AI交易规则文档.md` | AI交易规则 |
+| `docs/03-技术架构/README.md` | 技术架构说明 |
+| `docs/07-部署运维/测试网部署指南.md` | 详细部署步骤 |
+| `docs/08-前端系统/README.md` | 前端系统说明 |
+| `docs/09-API接口文档/README.md` | API接口文档 |
 
 ---
 
@@ -291,10 +292,10 @@ docker-compose -f docker-compose.testnet.yml --env-file .env.testnet up -d
 
 ```bash
 # 开一个终端实时监控
-./monitor_system.sh
+./scripts/monitor_system.sh
 
 # 开另一个终端查看日志
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet logs -f backend
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet logs -f backend
 
 # 定期检查健康状态
 watch -n 60 'curl -s http://localhost:8000/health | python3 -m json.tool'
@@ -307,7 +308,7 @@ watch -n 60 'curl -s http://localhost:8000/health | python3 -m json.tool'
 tail -20 logs/alerts.log
 
 # 或启动后台监控
-./alert_config.sh daemon &
+./scripts/alert_config.sh daemon &
 ```
 
 ### 3. 记录重要事件
@@ -337,13 +338,13 @@ cp logs/alerts.log logs/alerts.log.backup.$(date +%Y%m%d)
 
 ```bash
 # 1. 立即停止Docker
-./stop_system_emergency.sh
+./scripts/stop_system_emergency.sh
 
 # 2. 手动登录Hyperliquid平仓
 open https://app.hyperliquid-testnet.xyz/
 
 # 3. 查看日志找原因
-docker-compose -f docker-compose.testnet.yml --env-file .env.testnet logs backend > emergency_log.txt
+docker-compose -f deploy/docker-compose.testnet.yml --env-file .env.testnet logs backend > emergency_log.txt
 
 # 4. 保存配置快照
 cp .env.testnet emergency_config.backup
@@ -379,7 +380,7 @@ cp .env.testnet emergency_config.backup
 系统已就绪，可以开始观察AI的决策过程！
 
 **建议的测试流程**:
-1. 运行 `./monitor_system.sh` 持续监控
+1. 运行 `./scripts/monitor_system.sh` 持续监控
 2. 观察AI每5分钟的决策
 3. 记录任何异常行为
 4. 24小时后评估系统稳定性

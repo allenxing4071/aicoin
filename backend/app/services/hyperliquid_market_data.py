@@ -25,8 +25,8 @@ class HyperliquidMarketData:
         self.info = None
         self.exchange = None  # 交易功能稍后实现
         
-        # 支持的币种
-        self.symbols = ['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'XRP']
+        # 支持的6个币种（根据用户图片配置）
+        self.symbols = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'BNB']
         
         # WebSocket 连接
         self.ws_url = "wss://api.hyperliquid-testnet.xyz/ws" if testnet else "wss://api.hyperliquid.xyz/ws"
@@ -38,14 +38,14 @@ class HyperliquidMarketData:
         self.kline_key = "hyperliquid:kline:{symbol}:{interval}"
         self.orderbook_key = "hyperliquid:orderbook:{symbol}"
         
-        # 模拟价格数据
+        # 模拟价格数据（基于用户提供的实际价格）
         self.mock_prices = {
-            'BTC': 95000.0,
-            'ETH': 3500.0,
-            'SOL': 180.0,
-            'BNB': 600.0,
-            'DOGE': 0.35,
-            'XRP': 0.50
+            'BTC': 107225.50,
+            'ETH': 3699.25,
+            'SOL': 174.79,
+            'XRP': 1014.05,
+            'DOGE': 0.17,
+            'BNB': 2.39
         }
         
     async def start(self):
@@ -401,3 +401,130 @@ class HyperliquidMarketData:
             if price_data:
                 prices[symbol] = price_data
         return prices
+    
+    # ========== API方法 (供API endpoint调用) ==========
+    
+    async def get_ticker(self, symbol: str) -> Dict[str, Any]:
+        """
+        获取单个币种的实时ticker数据
+        
+        Args:
+            symbol: 币种符号 (如 BTC, ETH)
+            
+        Returns:
+            ticker数据字典，包含price, change_24h等
+        """
+        try:
+            # 先尝试从缓存获取
+            cached = await self.get_cached_price(symbol)
+            if cached:
+                return {
+                    'symbol': symbol,
+                    'price': str(cached.get('price', 0)),
+                    'change_24h': str(cached.get('changePercent', 0)),
+                    'timestamp': cached.get('timestamp', datetime.now().isoformat())
+                }
+            
+            # 缓存没有，尝试实时获取
+            if self.info:
+                price_data = await self._fetch_latest_price(symbol)
+                if price_data:
+                    return {
+                        'symbol': symbol,
+                        'price': str(price_data.get('price', 0)),
+                        'change_24h': '0.0',
+                        'timestamp': price_data.get('timestamp', datetime.now().isoformat())
+                    }
+            
+            # 都失败了，返回模拟数据
+            mock = await self._get_mock_price(symbol)
+            return {
+                'symbol': symbol,
+                'price': str(mock.get('price', 0)),
+                'change_24h': str(mock.get('changePercent', 0)),
+                'timestamp': mock.get('timestamp', datetime.now().isoformat())
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting ticker for {symbol}: {e}")
+            # 返回默认值而不是抛出异常
+            return {
+                'symbol': symbol,
+                'price': '0',
+                'change_24h': '0',
+                'timestamp': datetime.now().isoformat()
+            }
+    
+    async def get_klines(self, symbol: str, interval: str = '1h', limit: int = 100) -> List[Dict[str, Any]]:
+        """
+        获取K线数据
+        
+        Args:
+            symbol: 币种符号
+            interval: K线周期 (1m, 5m, 1h, 4h, 1d)
+            limit: 返回数量
+            
+        Returns:
+            K线数据列表
+        """
+        try:
+            # 先尝试从缓存获取
+            cached = await self.get_cached_klines(symbol, interval)
+            if cached:
+                return cached[:limit]
+            
+            # 缓存没有，尝试实时获取
+            if self.info:
+                klines = await self._fetch_kline_data(symbol, interval)
+                if klines:
+                    return klines[:limit]
+            
+            # 返回空列表
+            return []
+            
+        except Exception as e:
+            logger.error(f"Error getting klines for {symbol}: {e}")
+            return []
+    
+    async def get_orderbook(self, symbol: str, depth: int = 20) -> Dict[str, Any]:
+        """
+        获取订单簿数据
+        
+        Args:
+            symbol: 币种符号
+            depth: 深度档位
+            
+        Returns:
+            订单簿数据
+        """
+        try:
+            if self.info:
+                l2_data = self.info.l2_snapshot(symbol)
+                if l2_data and 'levels' in l2_data:
+                    levels = l2_data['levels']
+                    bids = [[float(level['px']), float(level['sz'])] for level in levels[0][:depth]] if levels[0] else []
+                    asks = [[float(level['px']), float(level['sz'])] for level in levels[1][:depth]] if levels[1] else []
+                    
+                    return {
+                        'symbol': symbol,
+                        'bids': bids,
+                        'asks': asks,
+                        'timestamp': datetime.now().isoformat()
+                    }
+            
+            # 返回空订单簿
+            return {
+                'symbol': symbol,
+                'bids': [],
+                'asks': [],
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting orderbook for {symbol}: {e}")
+            return {
+                'symbol': symbol,
+                'bids': [],
+                'asks': [],
+                'timestamp': datetime.now().isoformat()
+            }

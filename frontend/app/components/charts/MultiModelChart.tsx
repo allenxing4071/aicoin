@@ -128,7 +128,7 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
       // }
       
       // 暂时使用模拟数据
-      generateInitialData();
+        generateInitialData();
     };
 
     fetchAccountHistory();

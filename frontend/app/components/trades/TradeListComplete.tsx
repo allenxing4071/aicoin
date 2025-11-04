@@ -50,8 +50,11 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
     try {
       const response = await axios.get(`${API_BASE}/trading/trades?limit=100`);
       
-      if (response.data && response.data.trades) {
-        const realTrades = response.data.trades.map((trade: any, index: number) => {
+      // API返回数组或对象都处理
+      const tradesData = Array.isArray(response.data) ? response.data : (response.data?.trades || []);
+      
+      if (tradesData.length > 0) {
+        const realTrades = tradesData.map((trade: any, index: number) => {
           // 找到对应的模型
           const modelData = models.find(m => m.slug === trade.model) || models[0];
           
@@ -71,12 +74,13 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
         });
         
         setTrades(realTrades);
-        setLoading(false);
       } else {
-        // 如果API返回空数据，保持加载状态
+        // API返回空数组，说明没有交易记录（正常情况）
         setTrades([]);
-        setLoading(true);
       }
+      
+      // 无论有没有数据，都设置loading为false
+      setLoading(false);
     } catch (error) {
       console.error('Failed to fetch trades:', error);
       // 如果API失败，保持加载状态
@@ -161,20 +165,26 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
       });
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-3 bg-white">
+    <div className="h-full overflow-y-auto p-4 space-y-3 bg-gradient-to-br from-gray-50 to-slate-50">
       {loading ? (
-        <div className="flex items-center justify-center h-full text-gray-400 animate-pulse">
-          加载交易记录中...
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-lg mb-2 animate-pulse">📊</div>
+            <div className="text-sm text-gray-600">加载交易记录中...</div>
+          </div>
         </div>
       ) : filteredTrades.length === 0 ? (
-        <div className="flex items-center justify-center h-full text-gray-500">
-          暂无交易记录
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-4xl mb-3">📭</div>
+            <div className="text-sm text-gray-500">暂无交易记录</div>
+          </div>
         </div>
       ) : (
         filteredTrades.map((trade) => (
         <div 
           key={trade.id} 
-          className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 hover:shadow-sm transition-all"
+          className="bg-gradient-to-br from-white to-gray-50/50 border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-lg transition-all duration-300"
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2">
@@ -219,7 +229,7 @@ export default function TradeListComplete({ selectedModel, models }: TradeListCo
 
           <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
             <span className="text-xs text-gray-500 font-mono">净盈亏:</span>
-            <span className={`text-lg font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`text-lg font-bold font-mono ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {trade.pnl >= 0 ? '+' : ''}${Math.abs(trade.pnl).toFixed(2)}
             </span>
           </div>

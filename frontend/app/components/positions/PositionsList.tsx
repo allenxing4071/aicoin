@@ -107,21 +107,21 @@ export default function PositionsList({ selectedModel = 'all' }: PositionsListPr
   });
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4 bg-white">
+    <div className="h-full overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-green-50 to-teal-50">
       {filteredGroups.map((group: any) => (
-        <div key={group.model} className="bg-white border border-gray-200 rounded-lg p-4">
+        <div key={group.model} className="bg-gradient-to-br from-white to-green-50/30 border border-green-200 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
           {/* 模型头部 */}
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-green-200">
             <div className="flex items-center space-x-3">
               <span className="text-2xl">{group.modelIcon}</span>
-              <span className="text-sm font-bold" style={{ color: group.modelColor }}>
+              <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
                 {group.model}
               </span>
             </div>
             <div className="flex items-center space-x-6">
               <div className="text-right">
-                <div className="text-xs text-gray-500">TOTAL UNREALIZED P&L:</div>
-                <div className={`text-sm font-bold ${group.totalUnrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="text-xs text-gray-500 font-semibold">总未实现盈亏:</div>
+                <div className={`text-base font-bold font-mono ${group.totalUnrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {group.totalUnrealizedPnL >= 0 ? '+' : ''}${Math.abs(group.totalUnrealizedPnL).toFixed(2)}
                 </div>
               </div>
@@ -141,7 +141,7 @@ export default function PositionsList({ selectedModel = 'all' }: PositionsListPr
           {/* 持仓列表 */}
           <div className="space-y-2">
             {group.positions.map((position: Position) => (
-              <div key={position.id} className="grid grid-cols-6 gap-4 items-center py-2 px-2 hover:bg-gray-50 rounded">
+              <div key={position.id} className="grid grid-cols-6 gap-4 items-center py-2 px-2 hover:bg-green-50/50 rounded-lg transition-colors">
                 <div className={`text-sm font-bold ${position.side === 'LONG' ? 'text-green-600' : 'text-red-600'}`}>
                   {position.side}
                 </div>
@@ -166,17 +166,20 @@ export default function PositionsList({ selectedModel = 'all' }: PositionsListPr
           </div>
 
           {/* 可用现金 */}
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <div className="text-xs text-gray-500">
-              AVAILABLE CASH: <span className="font-bold text-gray-900">${group.availableCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+          <div className="mt-4 pt-3 border-t border-green-200">
+            <div className="text-xs text-gray-600 font-semibold">
+              可用现金: <span className="font-bold text-green-700 font-mono">${group.availableCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>
       ))}
 
       {filteredGroups.length === 0 && (
-        <div className="flex items-center justify-center h-full text-gray-500">
-          暂无持仓记录
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-4xl mb-3">📊</div>
+            <div className="text-sm text-gray-500">暂无持仓记录</div>
+          </div>
         </div>
       )}
     </div>

@@ -59,7 +59,7 @@ class DecisionEngineV2:
         self.long_memory = LongTermMemory(
             qdrant_host=settings.QDRANT_HOST,
             qdrant_port=settings.QDRANT_PORT,
-            api_key=settings.OPENAI_API_KEY
+            embedding_provider="auto"  # 自动选择: Qwen > DeepSeek > OpenAI
         )
         self.knowledge_base = KnowledgeBase(db_session)
         

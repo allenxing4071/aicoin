@@ -12,15 +12,13 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def get_hyperliquid_client():
-    """获取Hyperliquid client实例（优先使用全局缓存的）"""
-    from app.main_v2 import hyperliquid_client_global, trading_service_global
-    if hyperliquid_client_global is not None:
-        return hyperliquid_client_global
-    # Fallback: 创建临时实例
-    logger.warning("⚠️ Global client not available, creating temporary instance (slow!)")
-    from app.services.market.hyperliquid_client import HyperliquidClient
-    return HyperliquidClient(trading_service=trading_service_global)
+def get_market_data_service():
+    """获取全局的market data service"""
+    from app.main import market_data_service
+    if market_data_service is None:
+        logger.error("❌ Market data service not initialized!")
+        raise HTTPException(status_code=503, detail="Market data service not available")
+    return market_data_service
 
 
 @router.get("/kline/{symbol}", response_model=List[KlineData])
@@ -41,8 +39,8 @@ async def get_kline(
         K线数据列表
     """
     try:
-        client = get_hyperliquid_client()
-        klines = await client.get_klines(symbol, interval, limit)
+        service = get_market_data_service()
+        klines = await service.get_klines(symbol, interval, limit)
         return [KlineData(**k) for k in klines]
         
     except Exception as e:
@@ -66,8 +64,8 @@ async def get_orderbook(
         订单簿数据
     """
     try:
-        client = get_hyperliquid_client()
-        orderbook = await client.get_orderbook(symbol, depth)
+        service = get_market_data_service()
+        orderbook = await service.get_orderbook(symbol, depth)
         return OrderbookData(**orderbook)
         
     except Exception as e:
@@ -87,8 +85,8 @@ async def get_ticker(symbol: str):
         实时价格数据
     """
     try:
-        client = get_hyperliquid_client()
-        ticker = await client.get_ticker(symbol)
+        service = get_market_data_service()
+        ticker = await service.get_ticker(symbol)
         return TickerData(**ticker)
         
     except Exception as e:
@@ -107,11 +105,11 @@ async def get_all_tickers():
     symbols = ["BTC", "ETH", "SOL", "BNB", "DOGE", "XRP"]
     
     try:
+        service = get_market_data_service()
         tickers = []
         for symbol in symbols:
             try:
-                client = get_hyperliquid_client()
-                ticker = await client.get_ticker(symbol)
+                ticker = await service.get_ticker(symbol)
                 tickers.append(TickerData(**ticker))
             except Exception as e:
                 logger.warning(f"Error fetching ticker for {symbol}: {e}")

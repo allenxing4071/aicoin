@@ -19,7 +19,11 @@ interface Decision {
   duration_ms: number;
 }
 
-export default function DecisionTimeline() {
+interface DecisionTimelineProps {
+  filter?: string; // 可选的外部过滤器（例如模型名称）
+}
+
+export default function DecisionTimeline({ filter: externalFilter }: DecisionTimelineProps = {}) {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [selectedDecisionId, setSelectedDecisionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,12 +95,12 @@ export default function DecisionTimeline() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
       {/* 错误提示 */}
       {error && (
-        <div className="bg-red-50 border border-red-200 p-3">
+        <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl p-4 shadow-md">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-red-600">
+            <div className="text-sm text-red-600 font-semibold">
               ⚠️ {error}
             </div>
             <button
@@ -105,7 +109,7 @@ export default function DecisionTimeline() {
                 setLoading(true);
                 fetchDecisions();
               }}
-              className="px-3 py-1 text-xs font-bold bg-red-600 text-white rounded hover:bg-red-700"
+              className="px-3 py-1 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all"
             >
               重试
             </button>
@@ -115,47 +119,52 @@ export default function DecisionTimeline() {
 
       {/* 决策详情查看器 */}
       {selectedDecisionId && (
-        <div className="bg-white border-2 border-blue-500">
-        <div className="px-3 py-2 bg-blue-50 border-b border-blue-500 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-gray-900">决策详情</h3>
+        <div className="bg-gradient-to-br from-white to-blue-50/50 border-2 border-blue-500 rounded-xl shadow-xl">
+        <div className="px-4 py-3 bg-gradient-to-r from-blue-100/50 to-indigo-100/50 border-b border-blue-500 rounded-t-xl flex items-center justify-between">
+          <h3 className="text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            决策详情
+          </h3>
           <button
             onClick={() => setSelectedDecisionId(null)}
-            className="text-xs font-bold text-blue-600 hover:text-blue-800"
+            className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:bg-blue-100 px-2 py-1 rounded transition-all"
           >
             ✕ 关闭
           </button>
         </div>
-          <div className="p-3 max-h-96 overflow-y-auto">
+          <div className="p-4 max-h-96 overflow-y-auto">
             <DecisionFlowViewer decisionId={selectedDecisionId} />
           </div>
         </div>
       )}
 
       {/* 决策时间轴 */}
-      <div className="bg-white border border-gray-200">
-        <div className="px-3 py-2 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-gray-900">决策时间轴</h3>
+      <div className="bg-gradient-to-br from-white to-blue-50/30 border border-blue-200 rounded-xl shadow-lg">
+        <div className="px-4 py-3 border-b border-blue-200 bg-gradient-to-r from-blue-100/50 to-indigo-100/50 rounded-t-xl flex items-center justify-between">
+          <h3 className="text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex items-center">
+            <span className="text-xl mr-2">📋</span>
+            决策时间轴
+          </h3>
           <div className="flex space-x-2">
             <button
               onClick={() => setFilter('all')}
-              className={`px-2 py-1 text-xs font-bold rounded ${
-                filter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-600'
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                filter === 'all' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50'
               }`}
             >
               全部
             </button>
             <button
               onClick={() => setFilter('approved')}
-              className={`px-2 py-1 text-xs font-bold rounded ${
-                filter === 'approved' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                filter === 'approved' ? 'bg-green-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50'
               }`}
             >
               已批准
             </button>
             <button
               onClick={() => setFilter('rejected')}
-              className={`px-2 py-1 text-xs font-bold rounded ${
-                filter === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-600'
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                filter === 'rejected' ? 'bg-red-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50'
               }`}
             >
               已拒绝
@@ -163,17 +172,18 @@ export default function DecisionTimeline() {
           </div>
         </div>
 
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-blue-100">
           {decisions.length === 0 ? (
-            <div className="p-4 text-sm text-gray-500 text-center">
-              暂无决策记录
+            <div className="p-6 text-center">
+              <div className="text-4xl mb-3">📭</div>
+              <div className="text-sm text-gray-500">暂无决策记录</div>
             </div>
           ) : (
             decisions.map((decision) => (
               <div
                 key={decision.decision_id}
                 onClick={() => setSelectedDecisionId(decision.decision_id)}
-                className="p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="p-3 hover:bg-blue-50/50 cursor-pointer transition-all duration-200"
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center space-x-2">

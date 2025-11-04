@@ -39,10 +39,11 @@ class PermissionManager:
     """
     权限管理器
     负责评估AI表现并动态调整权限等级
+    支持从数据库读取动态配置
     """
     
-    # 权限等级配置
-    LEVELS = {
+    # 默认权限等级配置（fallback）
+    DEFAULT_LEVELS = {
         "L0": PermissionLevel(
             level="L0",
             name="保护模式",
@@ -56,8 +57,8 @@ class PermissionManager:
             name="新手级",
             max_position_pct=0.10,
             max_leverage=2,
-            confidence_threshold=0.80,
-            max_daily_trades=1
+            confidence_threshold=0.50,
+            max_daily_trades=10
         ),
         "L2": PermissionLevel(
             level="L2",
@@ -89,12 +90,76 @@ class PermissionManager:
             max_position_pct=0.25,
             max_leverage=5,
             confidence_threshold=0.60,
-            max_daily_trades=999  # 无限制
+            max_daily_trades=999
         )
     }
     
     def __init__(self, db_session):
         self.db = db_session
+        self.levels_cache = None  # 缓存从数据库加载的配置
+        self.cache_timestamp = None
+    
+    async def load_levels_from_db(self) -> Dict[str, PermissionLevel]:
+        """从数据库加载权限等级配置"""
+        try:
+            from app.models.permission_config import PermissionLevelConfig
+            from sqlalchemy import select
+            from datetime import datetime, timedelta
+            
+            # 缓存5分钟
+            if self.levels_cache and self.cache_timestamp:
+                if datetime.now() - self.cache_timestamp < timedelta(minutes=5):
+                    return self.levels_cache
+            
+            # 从数据库加载
+            stmt = select(PermissionLevelConfig).where(
+                PermissionLevelConfig.is_active == True
+            ).order_by(PermissionLevelConfig.level)
+            
+            result = await self.db.execute(stmt)
+            configs = result.scalars().all()
+            
+            if not configs:
+                logger.warning("数据库中没有权限配置，使用默认配置")
+                return self.DEFAULT_LEVELS
+            
+            # 转换为PermissionLevel对象
+            levels = {}
+            for config in configs:
+                levels[config.level] = PermissionLevel(
+                    level=config.level,
+                    name=config.name,
+                    max_position_pct=config.max_position_pct,
+                    max_leverage=config.max_leverage,
+                    confidence_threshold=config.confidence_threshold,
+                    max_daily_trades=config.max_daily_trades
+                )
+            
+            # 更新缓存
+            self.levels_cache = levels
+            self.cache_timestamp = datetime.now()
+            
+            logger.info(f"已从数据库加载 {len(levels)} 个权限等级配置")
+            return levels
+        
+        except Exception as e:
+            logger.error(f"从数据库加载权限配置失败: {e}，使用默认配置")
+            return self.DEFAULT_LEVELS
+    
+    async def get_level_config(self, level: str) -> PermissionLevel:
+        """获取指定等级的配置"""
+        levels = await self.load_levels_from_db()
+        return levels.get(level, self.DEFAULT_LEVELS.get(level))
+    
+    async def get_all_levels(self) -> Dict[str, PermissionLevel]:
+        """获取所有等级配置"""
+        return await self.load_levels_from_db()
+    
+    def clear_cache(self):
+        """清除权限等级配置缓存"""
+        self.levels_cache = None
+        self.cache_timestamp = None
+        logger.info("权限等级配置缓存已清除")
     
     async def evaluate_permission_level(
         self,
@@ -210,9 +275,14 @@ class PermissionManager:
         
         return None
     
-    def get_permission(self, level: str) -> PermissionLevel:
-        """获取权限等级配置"""
-        return self.LEVELS.get(level, self.LEVELS["L1"])
+    async def get_permission(self, level: str) -> PermissionLevel:
+        """获取权限等级配置（异步，从数据库加载）"""
+        levels = await self.load_levels_from_db()
+        return levels.get(level, levels.get("L1", self.DEFAULT_LEVELS["L1"]))
+    
+    def get_permission_sync(self, level: str) -> PermissionLevel:
+        """获取权限等级配置（同步，使用默认配置）"""
+        return self.DEFAULT_LEVELS.get(level, self.DEFAULT_LEVELS["L1"])
     
     def validate_trade_request(
         self,
@@ -269,9 +339,9 @@ class PermissionManager:
         # TODO: 记录到数据库
         return True
     
-    def get_permission_summary(self, level: str) -> Dict[str, Any]:
+    async def get_permission_summary(self, level: str) -> Dict[str, Any]:
         """获取权限等级摘要（用于Prompt）"""
-        permission = self.get_permission(level)
+        permission = await self.get_permission(level)
         return {
             "level": permission.level,
             "name": permission.name,

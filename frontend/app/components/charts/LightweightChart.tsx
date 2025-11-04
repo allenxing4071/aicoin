@@ -116,14 +116,14 @@ export default function LightweightChart({ symbol = 'BTC-PERP', data }: Lightwei
     if (!data || data.length === 0) {
       fetchKlineData(symbol).then(klineData => {
         if (klineData && klineData.length > 0) {
-          candlestickSeries.setData(klineData);
+          candlestickSeries.setData(klineData as any);
         } else {
           const mockData = generateMockCandleData();
-          candlestickSeries.setData(mockData);
+          candlestickSeries.setData(mockData as any);
         }
       });
     } else {
-      candlestickSeries.setData(data);
+      candlestickSeries.setData(data as any);
     }
 
     // 自适应宽度
@@ -149,7 +149,7 @@ export default function LightweightChart({ symbol = 'BTC-PERP', data }: Lightwei
   // 当数据更新时更新图表
   useEffect(() => {
     if (candlestickSeriesRef.current && data && data.length > 0) {
-      candlestickSeriesRef.current.setData(data);
+      candlestickSeriesRef.current.setData(data as any);
     }
   }, [data]);
 

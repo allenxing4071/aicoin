@@ -177,18 +177,24 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4 bg-white">
+    <div className="h-full overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-indigo-50 to-purple-50">
       {loading ? (
-        <div className="flex items-center justify-center h-full text-gray-400 animate-pulse">
-          加载AI决策记录中...
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-lg mb-2 animate-pulse">💬</div>
+            <div className="text-sm text-gray-600">加载AI决策记录中...</div>
+          </div>
         </div>
       ) : filteredMessages.length === 0 ? (
-        <div className="flex items-center justify-center h-full text-gray-500">
-          暂无AI决策记录
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-4xl mb-3">🤖</div>
+            <div className="text-sm text-gray-500">暂无AI决策记录</div>
+          </div>
         </div>
       ) : (
         filteredMessages.map((message) => (
-        <div key={message.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all">
+        <div key={message.id} className="bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-200 rounded-xl p-4 hover:shadow-lg hover:border-indigo-300 transition-all duration-300">
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-2">
@@ -197,34 +203,33 @@ export default function AIDecisionChat({ selectedModel = 'all' }: AIDecisionChat
               ) : (
                 <span className="text-xl">{message.modelIcon || '🤖'}</span>
               )}
-              <span className="text-sm font-bold" style={{ color: message.modelColor }}>
+              <span className="text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 {message.model}
               </span>
             </div>
-            <span className="text-xs text-gray-500">{formatTime(message.timestamp)}</span>
+            <span className="text-xs text-gray-500 font-mono">{formatTime(message.timestamp)}</span>
           </div>
 
           {/* Action and Symbol */}
           <div className="flex items-center space-x-3 mb-3">
-            <span className={`text-sm font-bold ${
-              message.action.includes('BUY') ? 'text-green-600' : 
-              message.action.includes('SELL') ? 'text-red-600' : 
-              'text-gray-600'
+            <span className={`text-sm font-bold px-3 py-1 rounded-lg ${
+              message.action.includes('BUY') ? 'bg-green-100 text-green-700' : 
+              message.action.includes('SELL') ? 'bg-red-100 text-red-700' : 
+              'bg-gray-100 text-gray-700'
             }`}>
               {message.action}
             </span>
             <span className="text-sm text-gray-900 font-semibold">{message.symbol}</span>
-            <span className="text-xs text-gray-500">信心度: <span className="font-bold">{message.confidence}%</span></span>
+            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-semibold">
+              信心度: {message.confidence}%
+            </span>
           </div>
 
           {/* Reasoning */}
-          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+          <div className="bg-gradient-to-br from-gray-50 to-indigo-50/50 border border-indigo-100 rounded-lg p-3 shadow-sm">
             <p className="text-sm text-gray-700 leading-relaxed">
               {message.reasoning}
             </p>
-            <div className="mt-2 text-right">
-              <span className="text-xs text-gray-400 italic">click to expand</span>
-            </div>
           </div>
         </div>
       )))}

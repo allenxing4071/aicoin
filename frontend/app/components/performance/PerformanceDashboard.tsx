@@ -101,11 +101,14 @@ export default function PerformanceDashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="bg-white border border-gray-200 p-3">
-          <div className="text-sm text-gray-500">
-            加载性能数据中...
-            {retryCount > 0 && <span className="text-orange-600"> (重试 {retryCount}/3)</span>}
+      <div className="space-y-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+        <div className="bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 rounded-xl p-4 shadow-md">
+          <div className="text-center">
+            <div className="text-lg mb-2 animate-pulse">📊</div>
+            <div className="text-sm text-gray-600">
+              加载性能数据中...
+              {retryCount > 0 && <span className="text-orange-600 font-semibold"> (重试 {retryCount}/3)</span>}
+            </div>
           </div>
         </div>
         <PerformanceSkeleton />
@@ -115,9 +118,9 @@ export default function PerformanceDashboard() {
 
   if (error || !metrics) {
     return (
-      <div className="bg-red-50 border border-red-200 p-4">
+      <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl shadow-lg">
         <div className="flex items-center justify-between">
-          <div className="text-sm text-red-600">
+          <div className="text-sm text-red-600 font-semibold">
             ⚠️ {error || '加载性能数据失败'}
           </div>
           <button
@@ -126,7 +129,7 @@ export default function PerformanceDashboard() {
               setLoading(true);
               fetchMetrics();
             }}
-            className="px-3 py-1 text-xs font-bold bg-red-600 text-white rounded hover:bg-red-700"
+            className="px-3 py-1 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all"
           >
             重试
           </button>
@@ -136,20 +139,23 @@ export default function PerformanceDashboard() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
       {/* 期间选择器 */}
-      <div className="bg-white border border-gray-200 p-3">
+      <div className="bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 rounded-xl p-4 shadow-lg">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-gray-900">性能概览</h3>
+          <h3 className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center">
+            <span className="text-xl mr-2">📈</span>
+            性能概览
+          </h3>
           <div className="flex space-x-2">
             {[7, 30, 90].map((days) => (
               <button
                 key={days}
                 onClick={() => setPeriod(days)}
-                className={`px-3 py-1 text-xs font-bold rounded ${
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                   period === days
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:bg-purple-50'
                 }`}
               >
                 {days}天
@@ -208,9 +214,12 @@ export default function PerformanceDashboard() {
       </div>
 
       {/* 胜率与交易统计 */}
-      <div className="bg-white border border-gray-200">
-        <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-xs font-bold text-gray-900">交易统计</h3>
+      <div className="bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 rounded-xl shadow-lg">
+        <div className="px-4 py-3 border-b border-purple-200 bg-gradient-to-r from-purple-100/50 to-pink-100/50 rounded-t-xl">
+          <h3 className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center">
+            <span className="text-xl mr-2">📊</span>
+            交易统计
+          </h3>
         </div>
         <div className="p-3 grid grid-cols-2 gap-3">
           <div>

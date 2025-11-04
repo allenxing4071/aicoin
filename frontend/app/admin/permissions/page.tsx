@@ -1,0 +1,458 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+interface TradingParams {
+  max_position_pct: number;
+  max_leverage: number;
+  confidence_threshold: number;
+  max_daily_trades: number;
+}
+
+interface UpgradeConditions {
+  win_rate_7d?: number;
+  win_rate_30d?: number;
+  sharpe_ratio?: number;
+  min_trades?: number;
+  min_days?: number;
+}
+
+interface DowngradeConditions {
+  max_drawdown?: number;
+  consecutive_losses?: number;
+  win_rate_7d?: number;
+}
+
+interface PermissionLevel {
+  id: number;
+  level: string;
+  name: string;
+  description?: string;
+  trading_params: TradingParams;
+  upgrade_conditions: UpgradeConditions;
+  downgrade_conditions: DowngradeConditions;
+  is_active: boolean;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export default function PermissionsAdmin() {
+  const [levels, setLevels] = useState<PermissionLevel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editingLevel, setEditingLevel] = useState<PermissionLevel | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [currentAILevel, setCurrentAILevel] = useState<string>('L1'); // AI当前使用的权限等级
+
+  useEffect(() => {
+    fetchLevels();
+    fetchCurrentAILevel();
+    const interval = setInterval(fetchCurrentAILevel, 10000); // 每10秒更新AI当前等级
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchLevels = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE}/api/v1/admin/permissions/levels`);
+      setLevels(response.data);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || '获取权限配置失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCurrentAILevel = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/api/v1/ai/status`);
+      if (response.data?.orchestrator?.permission_level) {
+        setCurrentAILevel(response.data.orchestrator.permission_level);
+      }
+    } catch (err) {
+      console.error('获取AI当前权限等级失败:', err);
+    }
+  };
+
+  const handleEdit = (level: PermissionLevel) => {
+    setEditingLevel({ ...level });
+    setShowEditModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!editingLevel) return;
+
+    try {
+      await axios.put(
+        `${API_BASE}/api/v1/admin/permissions/levels/${editingLevel.level}`,
+        {
+          name: editingLevel.name,
+          description: editingLevel.description,
+          trading_params: editingLevel.trading_params,
+          upgrade_conditions: editingLevel.upgrade_conditions,
+          downgrade_conditions: editingLevel.downgrade_conditions,
+          is_active: editingLevel.is_active,
+          is_default: editingLevel.is_default
+        }
+      );
+      setShowEditModal(false);
+      setEditingLevel(null);
+      fetchLevels();
+    } catch (err: any) {
+      alert(`保存失败: ${err.message}`);
+    }
+  };
+
+  const handleSetDefault = async (level: string) => {
+    try {
+      await axios.post(`${API_BASE}/api/v1/admin/permissions/levels/${level}/set-default`);
+      fetchLevels();
+    } catch (err: any) {
+      alert(`设置默认等级失败: ${err.message}`);
+    }
+  };
+
+  const handleInitDefaults = async () => {
+    if (!confirm('确认初始化默认权限配置？这将创建L0-L5的默认配置。')) return;
+
+    try {
+      await axios.post(`${API_BASE}/api/v1/admin/permissions/levels/init-defaults`);
+      fetchLevels();
+      alert('默认配置初始化成功！');
+    } catch (err: any) {
+      alert(`初始化失败: ${err.message}`);
+    }
+  };
+
+  const getLevelColor = (level: string) => {
+    const colors: { [key: string]: string } = {
+      'L0': 'bg-gray-100 text-gray-800',
+      'L1': 'bg-green-100 text-green-800',
+      'L2': 'bg-blue-100 text-blue-800',
+      'L3': 'bg-purple-100 text-purple-800',
+      'L4': 'bg-orange-100 text-orange-800',
+      'L5': 'bg-red-100 text-red-800',
+    };
+    return colors[level] || 'bg-gray-100 text-gray-800';
+  };
+
+  if (loading) return <div className="p-6">加载中...</div>;
+  if (error) return <div className="p-6 text-red-500">错误: {error}</div>;
+
+  const currentLevelData = levels.find(l => l.level === currentAILevel);
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">权限等级配置管理</h1>
+          <p className="text-gray-600 mt-2">管理AI交易系统的权限等级和参数</p>
+        </div>
+        <button
+          onClick={handleInitDefaults}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          初始化默认配置
+        </button>
+      </div>
+
+      {/* 当前AI使用的权限等级指示器 */}
+      {currentLevelData && (
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🤖</span>
+                <div>
+                  <div className="text-sm text-gray-600 font-medium">AI当前使用的权限等级</div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className={`px-4 py-2 rounded-full font-bold text-lg ${getLevelColor(currentAILevel)}`}>
+                      {currentAILevel}
+                    </span>
+                    <span className="text-xl font-bold text-gray-900">{currentLevelData.name}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-4 text-center">
+              <div className="bg-white rounded-lg p-3 shadow">
+                <div className="text-xs text-gray-600">最大仓位</div>
+                <div className="text-lg font-bold text-blue-700">{(currentLevelData.trading_params.max_position_pct * 100).toFixed(0)}%</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 shadow">
+                <div className="text-xs text-gray-600">最大杠杆</div>
+                <div className="text-lg font-bold text-blue-700">{currentLevelData.trading_params.max_leverage}x</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 shadow">
+                <div className="text-xs text-gray-600">置信度阈值</div>
+                <div className="text-lg font-bold text-blue-700">{(currentLevelData.trading_params.confidence_threshold * 100).toFixed(0)}%</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 shadow">
+                <div className="text-xs text-gray-600">每日最大交易</div>
+                <div className="text-lg font-bold text-blue-700">{currentLevelData.trading_params.max_daily_trades}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-4">
+        <h2 className="text-xl font-bold text-gray-900">所有权限等级配置</h2>
+        <p className="text-sm text-gray-600 mt-1">以下是系统中所有权限等级的配置，可以编辑每个等级的参数</p>
+      </div>
+
+      <div className="grid gap-6">
+        {levels.map((level) => (
+          <div
+            key={level.id}
+            className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${
+              level.level === currentAILevel ? 'ring-2 ring-blue-400' : ''
+            }`}
+            style={{
+              borderLeftColor: level.level === currentAILevel ? '#3b82f6' : level.is_default ? '#10b981' : '#e5e7eb'
+            }}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-3">
+                <span className={`px-3 py-1 rounded-full font-bold ${getLevelColor(level.level)}`}>
+                  {level.level}
+                </span>
+                <div>
+                  <h3 className="text-xl font-bold">{level.name}</h3>
+                  {level.description && (
+                    <p className="text-gray-600 text-sm">{level.description}</p>
+                  )}
+                </div>
+                {level.level === currentAILevel && (
+                  <span className="px-3 py-1 bg-blue-500 text-white text-xs rounded font-bold animate-pulse">
+                    ⚡ 当前使用
+                  </span>
+                )}
+                {level.is_default && (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                    默认等级
+                  </span>
+                )}
+                {!level.is_active && (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                    已禁用
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {!level.is_default && (
+                  <button
+                    onClick={() => handleSetDefault(level.level)}
+                    className="px-3 py-1 text-sm text-green-600 hover:text-green-700 border border-green-600 rounded"
+                  >
+                    设为默认
+                  </button>
+                )}
+                <button
+                  onClick={() => handleEdit(level)}
+                  className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 rounded"
+                >
+                  编辑
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="text-xs text-gray-500">最大仓位</div>
+                <div className="text-lg font-bold">{(level.trading_params.max_position_pct * 100).toFixed(0)}%</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="text-xs text-gray-500">最大杠杆</div>
+                <div className="text-lg font-bold">{level.trading_params.max_leverage}x</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="text-xs text-gray-500">置信度门槛</div>
+                <div className="text-lg font-bold">{(level.trading_params.confidence_threshold * 100).toFixed(0)}%</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="text-xs text-gray-500">每日交易限制</div>
+                <div className="text-lg font-bold">{level.trading_params.max_daily_trades}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <h4 className="font-semibold text-gray-700 mb-2">🔼 升级条件</h4>
+                <div className="space-y-1 text-gray-600">
+                  {level.upgrade_conditions.win_rate_7d && (
+                    <div>• 7日胜率 ≥ {(level.upgrade_conditions.win_rate_7d * 100).toFixed(0)}%</div>
+                  )}
+                  {level.upgrade_conditions.win_rate_30d && (
+                    <div>• 30日胜率 ≥ {(level.upgrade_conditions.win_rate_30d * 100).toFixed(0)}%</div>
+                  )}
+                  {level.upgrade_conditions.sharpe_ratio && (
+                    <div>• 夏普比率 ≥ {level.upgrade_conditions.sharpe_ratio.toFixed(1)}</div>
+                  )}
+                  {level.upgrade_conditions.min_trades && (
+                    <div>• 最少交易 {level.upgrade_conditions.min_trades} 笔</div>
+                  )}
+                  {level.upgrade_conditions.min_days && (
+                    <div>• 运行天数 ≥ {level.upgrade_conditions.min_days} 天</div>
+                  )}
+                  {!level.upgrade_conditions.win_rate_7d && !level.upgrade_conditions.win_rate_30d && (
+                    <div className="text-gray-400">无升级条件</div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-700 mb-2">🔽 降级条件</h4>
+                <div className="space-y-1 text-gray-600">
+                  {level.downgrade_conditions.max_drawdown && (
+                    <div>• 最大回撤 {'>'} {(level.downgrade_conditions.max_drawdown * 100).toFixed(0)}%</div>
+                  )}
+                  {level.downgrade_conditions.consecutive_losses && (
+                    <div>• 连续亏损 {'>'} {level.downgrade_conditions.consecutive_losses} 次</div>
+                  )}
+                  {level.downgrade_conditions.win_rate_7d && (
+                    <div>• 7日胜率 {'<'} {(level.downgrade_conditions.win_rate_7d * 100).toFixed(0)}%</div>
+                  )}
+                  {!level.downgrade_conditions.max_drawdown && !level.downgrade_conditions.consecutive_losses && (
+                    <div className="text-gray-400">无降级条件</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 编辑模态框 */}
+      {showEditModal && editingLevel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-4">编辑权限等级: {editingLevel.level}</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">等级名称</label>
+                <input
+                  type="text"
+                  value={editingLevel.name}
+                  onChange={(e) => setEditingLevel({ ...editingLevel, name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">描述</label>
+                <textarea
+                  value={editingLevel.description || ''}
+                  onChange={(e) => setEditingLevel({ ...editingLevel, description: e.target.value })}
+                  className="w-full px-3 py-2 border rounded"
+                  rows={2}
+                />
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3">交易参数</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">最大仓位 (%)</label>
+                    <input
+                      type="number"
+                      value={(editingLevel.trading_params.max_position_pct * 100).toFixed(0)}
+                      onChange={(e) => setEditingLevel({
+                        ...editingLevel,
+                        trading_params: {
+                          ...editingLevel.trading_params,
+                          max_position_pct: parseFloat(e.target.value) / 100
+                        }
+                      })}
+                      className="w-full px-3 py-2 border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">最大杠杆</label>
+                    <input
+                      type="number"
+                      value={editingLevel.trading_params.max_leverage}
+                      onChange={(e) => setEditingLevel({
+                        ...editingLevel,
+                        trading_params: {
+                          ...editingLevel.trading_params,
+                          max_leverage: parseInt(e.target.value)
+                        }
+                      })}
+                      className="w-full px-3 py-2 border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">置信度门槛 (%)</label>
+                    <input
+                      type="number"
+                      value={(editingLevel.trading_params.confidence_threshold * 100).toFixed(0)}
+                      onChange={(e) => setEditingLevel({
+                        ...editingLevel,
+                        trading_params: {
+                          ...editingLevel.trading_params,
+                          confidence_threshold: parseFloat(e.target.value) / 100
+                        }
+                      })}
+                      className="w-full px-3 py-2 border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">每日交易限制</label>
+                    <input
+                      type="number"
+                      value={editingLevel.trading_params.max_daily_trades}
+                      onChange={(e) => setEditingLevel({
+                        ...editingLevel,
+                        trading_params: {
+                          ...editingLevel.trading_params,
+                          max_daily_trades: parseInt(e.target.value)
+                        }
+                      })}
+                      className="w-full px-3 py-2 border rounded"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editingLevel.is_active}
+                    onChange={(e) => setEditingLevel({ ...editingLevel, is_active: e.target.checked })}
+                  />
+                  <span>启用此等级</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={handleSave}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                保存
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingLevel(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
