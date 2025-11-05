@@ -10,7 +10,7 @@ from app.core.database import init_db
 from app.core.redis_client import redis_client
 from app.api.v1 import market, account, performance, ai, admin_db, constraints, intelligence
 from app.api.v1 import exchanges, market_extended  # v3.1 新增
-from app.api.v1.endpoints import intelligence_storage, intelligence_platforms, model_performance
+from app.api.v1.endpoints import intelligence_storage, intelligence_platforms, model_performance, ai_journal
 from app.api.v1.admin import permissions as admin_permissions
 from app.api.v1.admin import database as admin_database
 from app.api.v1.admin import memory as admin_memory
@@ -260,6 +260,13 @@ app.include_router(
     market_extended.router,
     prefix=f"{settings.API_V1_PREFIX}/market",
     tags=["Market Data - Extended"]
+)
+
+# AI日记系统 - 双引擎协作可视化
+app.include_router(
+    ai_journal.router,
+    prefix=f"{settings.API_V1_PREFIX}/ai-journal",
+    tags=["AI Journal - Qwen & DeepSeek Diary"]
 )
 
 
