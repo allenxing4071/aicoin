@@ -108,7 +108,7 @@ export default function AILessonsPage() {
         <div className="flex items-center space-x-2">
           <div className="w-16 bg-gray-200 rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full"
+              className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full"
               style={{ width: `${value * 100}%` }}
             ></div>
           </div>

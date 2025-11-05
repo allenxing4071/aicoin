@@ -11,8 +11,11 @@ asyncpg==0.29.0
 psycopg2-binary==2.9.9
 
 # Redis dependencies
-redis==5.0.1
+redis==4.6.0
 hiredis==2.2.3
+
+# Celery dependencies (for v3.0 intelligence learning tasks)
+celery[redis]==5.3.4
 
 # Vector Database dependencies
 qdrant-client==1.7.0
@@ -23,6 +26,7 @@ anthropic==0.7.7
 
 # Trading dependencies
 hyperliquid-python-sdk==0.20.0
+python-binance==1.0.19
 
 # HTTP client dependencies
 httpx==0.25.2
@@ -31,6 +35,7 @@ aiohttp==3.9.1
 # Authentication dependencies
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
 python-dotenv==1.0.0
 
 # Data processing dependencies
@@ -40,6 +45,7 @@ numpy==1.26.2
 # Configuration dependencies
 pydantic==2.5.2
 pydantic-settings==2.1.0
+email-validator==2.1.0
 tenacity==8.2.3
 pytz==2023.3
 

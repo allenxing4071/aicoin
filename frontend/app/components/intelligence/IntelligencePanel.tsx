@@ -126,7 +126,7 @@ export default function IntelligencePanel() {
 
         {/* Market Sentiment */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg p-4 shadow">
+          <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm text-gray-600 mb-1">市场情绪</div>
             <div className={`text-2xl font-bold ${sentimentColor} flex items-center`}>
               {sentimentEmoji} {report.market_sentiment}
@@ -136,7 +136,7 @@ export default function IntelligencePanel() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-4 shadow">
+          <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm text-gray-600 mb-1">置信度</div>
             <div className="text-2xl font-bold text-blue-600">
               {(report.confidence * 100).toFixed(0)}%
@@ -149,7 +149,7 @@ export default function IntelligencePanel() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-4 shadow">
+          <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm text-gray-600 mb-1">更新时间</div>
             <div className="text-lg font-semibold text-gray-800">
               {new Date(report.timestamp).toLocaleTimeString('zh-CN', {
@@ -179,7 +179,7 @@ export default function IntelligencePanel() {
               }[news.sentiment] || '➡️';
 
               return (
-                <div key={index} className="bg-white rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div key={index} className="bg-white rounded-xl p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start">
                     <span className="text-2xl mr-3">{sentimentIcon}</span>
                     <div className="flex-1">
@@ -193,7 +193,7 @@ export default function IntelligencePanel() {
                       </a>
                       <div className="flex items-center gap-3 mt-2 text-sm text-gray-600">
                         <span className="font-medium">{news.source}</span>
-                        <span className="px-2 py-1 bg-gray-100 rounded">{news.impact}</span>
+                        <span className="px-2 py-1 bg-gray-50 rounded">{news.impact}</span>
                         <span>{new Date(news.published_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     </div>
@@ -222,7 +222,7 @@ export default function IntelligencePanel() {
               }[whale.action] || '⚪';
 
               return (
-                <div key={index} className="bg-white rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div key={index} className="bg-white rounded-xl p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{actionEmoji}</span>
@@ -259,7 +259,7 @@ export default function IntelligencePanel() {
           <ul className="space-y-2">
             {report.risk_factors.length > 0 ? (
               report.risk_factors.map((risk, index) => (
-                <li key={index} className="bg-white rounded-lg p-3 flex items-start">
+                <li key={index} className="bg-white rounded-xl p-3 flex items-start">
                   <span className="text-red-500 mr-2">•</span>
                   <span className="text-gray-700">{risk}</span>
                 </li>
@@ -278,7 +278,7 @@ export default function IntelligencePanel() {
           <ul className="space-y-2">
             {report.opportunities.length > 0 ? (
               report.opportunities.map((opp, index) => (
-                <li key={index} className="bg-white rounded-lg p-3 flex items-start">
+                <li key={index} className="bg-white rounded-xl p-3 flex items-start">
                   <span className="text-green-500 mr-2">✓</span>
                   <span className="text-gray-700">{opp}</span>
                 </li>
@@ -296,7 +296,7 @@ export default function IntelligencePanel() {
           <h3 className="text-xl font-bold bg-gradient-to-r from-gray-700 to-slate-700 bg-clip-text text-transparent mb-4 flex items-center">
             📝 Qwen综合分析
           </h3>
-          <div className="bg-white rounded-lg p-4 text-gray-700 leading-relaxed">
+          <div className="bg-white rounded-xl p-4 text-gray-700 leading-relaxed">
             {report.qwen_analysis}
           </div>
         </div>

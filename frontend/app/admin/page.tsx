@@ -192,7 +192,7 @@ export default function AdminPage() {
   return (
     <div className="space-y-8">
       {/* 交易控制区域 */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg p-6">
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">🎮 交易控制中心</h2>
         <p className="text-gray-600 mb-4">控制AI是否可以建仓和平仓</p>
         
@@ -216,7 +216,7 @@ export default function AdminPage() {
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value)}
-              className="px-4 py-2 border-2 border-purple-300 rounded-lg font-medium text-gray-900 focus:outline-none focus:border-purple-500"
+              className="px-4 py-2 border-2 border-purple-300 rounded-xl font-medium text-gray-900 focus:outline-none focus:border-purple-500"
               disabled={controlLoading}
             >
               {permissionLevels.length > 0 ? permissionLevels.map((level) => (
@@ -238,7 +238,7 @@ export default function AdminPage() {
             <button
               onClick={() => handleToggleTrading(true)}
               disabled={controlLoading || tradingEnabled === true}
-              className={`px-8 py-4 rounded-lg font-bold text-white shadow-lg transition-all transform hover:scale-105 ${
+              className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition-all transform hover:scale-105 ${
                 tradingEnabled === true
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700 active:scale-95'
@@ -266,7 +266,7 @@ export default function AdminPage() {
             <button
               onClick={() => handleToggleTrading(false)}
               disabled={controlLoading || tradingEnabled === false}
-              className={`px-8 py-4 rounded-lg font-bold text-white shadow-lg transition-all transform hover:scale-105 ${
+              className={`px-8 py-4 rounded-xl font-bold text-white shadow-lg transition-all transform hover:scale-105 ${
                 tradingEnabled === false
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-red-600 hover:bg-red-700 active:scale-95'
@@ -292,7 +292,7 @@ export default function AdminPage() {
           </div>
         </div>
         
-        <div className="mt-4 bg-white rounded-lg p-4 border border-purple-200">
+        <div className="mt-4 bg-white rounded-xl p-4 border border-purple-200">
           <h3 className="font-semibold text-gray-900 mb-2">💡 说明</h3>
           <ul className="text-sm text-gray-600 space-y-1">
             <li>• <strong>选择权限等级</strong>：先选择AI运行的权限等级（L0-L5），不同等级有不同的策略参数（仓位、杠杆、置信度、交易频率等）</li>
@@ -331,13 +331,13 @@ export default function AdminPage() {
 
         {stats?.latest_account_balance && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-xl shadow p-6">
               <div className="text-sm text-gray-500 mb-1">最新账户余额</div>
               <div className="text-2xl font-bold text-gray-900">
                 ${parseFloat(stats.latest_account_balance).toFixed(2)}
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-xl shadow p-6">
               <div className="text-sm text-gray-500 mb-1">最新账户净值</div>
               <div className="text-2xl font-bold text-gray-900">
                 ${parseFloat(stats.latest_account_equity || "0").toFixed(2)}
@@ -364,7 +364,7 @@ export default function AdminPage() {
           {/* 权限管理 */}
           <Link
             href="/admin/permissions"
-            className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+            className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
           >
             <div className="text-3xl mb-2">🔐</div>
             <h3 className="text-lg font-semibold text-purple-900 mb-2">权限管理</h3>
@@ -376,7 +376,7 @@ export default function AdminPage() {
           {/* 三层记忆系统 */}
           <Link
             href="/admin/memory"
-            className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+            className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
           >
             <div className="text-3xl mb-2">🧠</div>
             <h3 className="text-lg font-semibold text-green-900 mb-2">三层记忆系统</h3>
@@ -388,7 +388,7 @@ export default function AdminPage() {
           {/* Qwen情报系统 */}
           <Link
             href="/admin/intelligence"
-            className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+            className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
           >
             <div className="text-3xl mb-2">🕵️‍♀️</div>
             <h3 className="text-lg font-semibold text-orange-900 mb-2">Qwen情报系统</h3>
@@ -402,7 +402,7 @@ export default function AdminPage() {
       {/* 底部区域：API文档 + 数据库管理 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 左侧：API文档 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-blue-900 mb-2">
             📚 API 文档
           </h3>
@@ -415,7 +415,7 @@ export default function AdminPage() {
                 href="http://localhost:8000/docs"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center font-medium"
+                className="block px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-colors text-center font-medium"
               >
                 Swagger UI
               </a>
@@ -423,7 +423,7 @@ export default function AdminPage() {
                 href="http://localhost:8000/redoc"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center font-medium"
+                className="block px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-colors text-center font-medium"
               >
                 ReDoc
               </a>
@@ -450,7 +450,7 @@ export default function AdminPage() {
         </div>
 
         {/* 右侧：数据库管理 */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-green-900 mb-2">
             📊 数据库管理
           </h3>
@@ -460,7 +460,7 @@ export default function AdminPage() {
           <div className="space-y-3">
             <Link
               href="/admin/database"
-              className="block w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-center font-medium"
+              className="block w-full px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-center font-medium"
             >
               🔍 打开数据库管理器
             </Link>
@@ -508,7 +508,7 @@ function StatCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-xl shadow p-6">
       <div className="text-sm text-gray-500 mb-1">{title}</div>
       <div className={`text-3xl font-bold ${colorClasses[color as keyof typeof colorClasses]}`}>
         {value.toLocaleString()}
@@ -533,7 +533,7 @@ function TableCard({ table }: { table: TableInfo }) {
   return (
     <Link
       href={getTablePath(table.name)}
-      className="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+      className="block bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-6"
     >
       <div className="flex items-start justify-between mb-2">
         <h3 className="text-lg font-semibold text-gray-900">

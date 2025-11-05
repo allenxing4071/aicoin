@@ -16,6 +16,51 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/latest")
+async def get_latest_intelligence():
+    """获取最新情报（快捷路径）"""
+    try:
+        report = await intelligence_storage.get_latest_report()
+        if not report:
+            raise HTTPException(status_code=404, detail="暂无最新情报报告")
+        
+        return {
+            "success": True,
+            "data": report.to_dict()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取最新情报失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/refresh")
+async def refresh_intelligence():
+    """手动触发情报收集"""
+    try:
+        # 导入并调用情报收集服务
+        from app.services.intelligence.qwen_engine import qwen_intelligence_officer
+        
+        logger.info("🔄 手动触发情报收集...")
+        
+        # 执行情报收集
+        report = await qwen_intelligence_officer.collect_intelligence()
+        
+        if not report:
+            raise HTTPException(status_code=500, detail="情报收集失败，请检查日志")
+        
+        return {
+            "success": True,
+            "message": "情报收集成功",
+            "data": report.to_dict()
+        }
+    
+    except Exception as e:
+        logger.error(f"手动收集情报失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/reports/latest")
 async def get_latest_report():
     """获取最新的情报报告（来自Redis缓存）"""

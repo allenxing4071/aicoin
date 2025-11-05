@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import DataTable from "@/app/components/admin/DataTable";
 import FilterBar from "@/app/components/admin/FilterBar";
+import PageHeader from '../../components/common/PageHeader';
 
 export default function TradesPage() {
   const [data, setData] = useState([]);
@@ -126,8 +127,13 @@ export default function TradesPage() {
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">交易记录</h1>
+    <div className="space-y-6">
+      <PageHeader
+        icon="💰"
+        title="交易记录"
+        description="查看所有交易的详细记录"
+        color="pink"
+      />
 
       <FilterBar
         fields={filterFields}

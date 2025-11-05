@@ -1,7 +1,7 @@
 """add permission level configs table
 
 Revision ID: 003
-Revises: 002
+Revises: None
 Create Date: 2025-11-03
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 
 # revision identifiers
 revision = '003'
-down_revision = '002'
+down_revision = None
 branch_labels = None
 depends_on = None
 

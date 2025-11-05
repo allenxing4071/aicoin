@@ -2,12 +2,19 @@
 
 from fastapi import APIRouter, HTTPException
 import logging
+import json
+from typing import Optional
 
 from app.schemas.account import AccountInfo, PositionInfo
 from app.services.market.hyperliquid_client import hyperliquid_client
+from app.core.redis_client import redis_client
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# 账户信息缓存配置
+ACCOUNT_CACHE_KEY = "account:info"
+ACCOUNT_CACHE_TTL = 2  # 缓存2秒，平衡实时性和性能
 
 
 def get_trading_service():
@@ -20,36 +27,67 @@ def get_trading_service():
 
 
 @router.get("/info", response_model=AccountInfo)
-async def get_account_info():
+async def get_account_info(force_refresh: bool = False):
     """
-    获取账户信息
+    获取账户信息（带Redis缓存优化）
+    
+    Args:
+        force_refresh: 是否强制刷新缓存
     
     Returns:
         账户信息(余额、持仓等)
     """
     try:
-        service = get_trading_service()
+        # 1. 尝试从缓存获取（除非强制刷新）
+        if not force_refresh:
+            try:
+                cached_json = await redis_client.get(ACCOUNT_CACHE_KEY)
+                if cached_json:
+                    logger.debug(f"✅ 账户信息命中缓存")
+                    # Redis客户端的get方法已经解析JSON，直接返回dict
+                    if isinstance(cached_json, str):
+                        cached_data = json.loads(cached_json)
+                    else:
+                        cached_data = cached_json
+                    return AccountInfo(**cached_data)
+            except Exception as cache_err:
+                logger.warning(f"缓存读取失败，从源获取: {cache_err}")
         
-        # 获取账户状态
+        # 2. 从Hyperliquid API获取最新数据
+        service = get_trading_service()
         account_state = await service.get_account_state()
         
-        # 正确解析Hyperliquid返回的数据结构
+        # 3. 解析数据
         margin_summary = account_state.get('marginSummary', {})
         balance = str(margin_summary.get('accountValue', '0'))
         equity = str(margin_summary.get('accountValue', '0'))
         unrealized_pnl = str(margin_summary.get('totalNtlPos', '0'))
         
-        # 解析持仓
         asset_positions = account_state.get('assetPositions', [])
         positions = [PositionInfo(**p) for p in asset_positions] if asset_positions else []
         
-        return AccountInfo(
+        account_info = AccountInfo(
             balance=balance,
             equity=equity,
             unrealized_pnl=unrealized_pnl,
             realized_pnl='0',
             positions=positions
         )
+        
+        # 4. 写入缓存（使用json()方法避免Decimal序列化问题）
+        try:
+            # 使用Pydantic的json()方法，它会正确处理Decimal类型
+            account_json_str = account_info.json()
+            await redis_client.set(
+                ACCOUNT_CACHE_KEY,
+                json.loads(account_json_str),  # 转为dict存储
+                expire=ACCOUNT_CACHE_TTL
+            )
+            logger.debug(f"💾 账户信息已缓存 {ACCOUNT_CACHE_TTL}秒")
+        except Exception as cache_err:
+            logger.warning(f"缓存写入失败: {cache_err}")
+        
+        return account_info
         
     except Exception as e:
         logger.error(f"Error fetching account info: {e}")

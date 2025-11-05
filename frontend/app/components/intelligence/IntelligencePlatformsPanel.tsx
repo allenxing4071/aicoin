@@ -1,0 +1,381 @@
+"use client";
+
+/**
+ * 云平台管理面板组件 (卡片展开式布局)
+ * 
+ * 功能:
+ * - 显示已配置的云平台列表
+ * - 卡片式展开显示详细信息
+ * - 启用/禁用平台
+ * - 添加新的云平台
+ */
+
+import { useState, useEffect } from "react";
+
+interface CloudPlatform {
+  id: number;
+  name: string;
+  provider: string;
+  platform_type: string;
+  enabled: boolean;
+  base_url: string;
+  performance: {
+    total_calls: number;
+    success_rate: number;
+    avg_response_time: number | null;
+    total_cost: number;
+  };
+  health: {
+    status: string | null;
+    last_check: string | null;
+  };
+}
+
+export default function IntelligencePlatformsPanel() {
+  const [platforms, setPlatforms] = useState<CloudPlatform[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    provider: "qwen",
+    platform_type: "qwen_search",
+    api_key: "",
+    base_url: "",
+    enabled: true
+  });
+
+  useEffect(() => {
+    fetchPlatforms();
+    
+    // 每30秒刷新一次
+    const interval = setInterval(fetchPlatforms, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchPlatforms = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms");
+      const data = await response.json();
+      setPlatforms(data.platforms || []);
+    } catch (error) {
+      console.error("获取平台列表失败:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const togglePlatform = async (id: number, enabled: boolean) => {
+    setUpdating(true);
+    try {
+      await fetch(`http://localhost:8000/api/v1/intelligence/platforms/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled })
+      });
+      fetchPlatforms();
+      alert(`平台已${enabled ? '启用' : '禁用'}`);
+    } catch (error) {
+      console.error("切换平台状态失败:", error);
+      alert("操作失败");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleAddPlatform = async () => {
+    if (!formData.name || !formData.base_url) {
+      alert("请填写必填字段:平台名称和Base URL");
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      
+      if (response.ok) {
+        setShowAddForm(false);
+        setFormData({
+          name: "",
+          provider: "qwen",
+          platform_type: "qwen_search",
+          api_key: "",
+          base_url: "",
+          enabled: true
+        });
+        fetchPlatforms();
+        alert("✅ 平台添加成功!");
+      } else {
+        const error = await response.json();
+        alert(`❌ 添加失败: ${error.detail || "未知错误"}`);
+      }
+    } catch (error) {
+      console.error("添加平台失败:", error);
+      alert("添加平台失败,请检查网络连接");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const getProviderIcon = (provider: string) => {
+    const icons: Record<string, string> = {
+      baidu: "🟦",
+      tencent: "🟩",
+      volcano: "🟧",
+      aws: "🟨",
+      qwen: "🟪"
+    };
+    return icons[provider] || "⚪";
+  };
+
+  const getPlatformTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      qwen_search: "Qwen Search (搜索增强)",
+      qwen_deep: "Qwen Deep (深度推理)",
+      free: "免费API"
+    };
+    return labels[type] || type;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 云平台配置卡片 */}
+      <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-800">☁️ 云平台管理</h3>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            disabled={updating}
+            className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className="text-xl text-white">{showAddForm ? '❌' : '➕'}</span>
+            <span className="text-white">{showAddForm ? '取消添加' : '添加平台'}</span>
+          </button>
+        </div>
+
+        {/* 添加平台表单 */}
+        {showAddForm && (
+          <div className="mb-6 bg-white/90 border-2 border-orange-300 rounded-xl p-6 shadow-lg">
+            <h4 className="text-md font-bold text-gray-800 mb-4">➕ 添加云平台</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 平台名称 */}
+              <div>
+                <label className="block text-sm font-medium text-orange-900 mb-2">
+                  <span className="text-red-500">*</span> 平台名称
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  placeholder="例如: Qwen主平台"
+                  className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* 服务商 */}
+              <div>
+                <label className="block text-sm font-medium text-orange-900 mb-2">
+                  服务商
+                </label>
+                <select
+                  value={formData.provider}
+                  onChange={(e) => setFormData({...formData, provider: e.target.value})}
+                  className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                >
+                  <option value="qwen">🟪 Qwen (阿里云)</option>
+                  <option value="baidu">🟦 百度千帆</option>
+                  <option value="tencent">🟩 腾讯混元</option>
+                  <option value="volcano">🟧 火山引擎</option>
+                  <option value="aws">🟨 AWS Bedrock</option>
+                </select>
+              </div>
+
+              {/* 平台类型 */}
+              <div>
+                <label className="block text-sm font-medium text-orange-900 mb-2">
+                  平台类型
+                </label>
+                <select
+                  value={formData.platform_type}
+                  onChange={(e) => setFormData({...formData, platform_type: e.target.value})}
+                  className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                >
+                  <option value="qwen_search">Qwen Search (搜索增强)</option>
+                  <option value="qwen_deep">Qwen Deep (深度推理)</option>
+                  <option value="free">免费API</option>
+                </select>
+              </div>
+
+              {/* Base URL */}
+              <div>
+                <label className="block text-sm font-medium text-orange-900 mb-2">
+                  <span className="text-red-500">*</span> Base URL
+                </label>
+                <input
+                  type="text"
+                  value={formData.base_url}
+                  onChange={(e) => setFormData({...formData, base_url: e.target.value})}
+                  placeholder="https://api.example.com/v1"
+                  className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* API Key */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-orange-900 mb-2">
+                  API Key (可选)
+                </label>
+                <input
+                  type="password"
+                  value={formData.api_key}
+                  onChange={(e) => setFormData({...formData, api_key: e.target.value})}
+                  placeholder="留空表示不需要认证"
+                  className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* 是否启用 */}
+              <div className="md:col-span-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="enabled"
+                  checked={formData.enabled}
+                  onChange={(e) => setFormData({...formData, enabled: e.target.checked})}
+                  className="w-4 h-4 text-orange-600 border-orange-300 rounded focus:ring-orange-500"
+                />
+                <label htmlFor="enabled" className="text-sm font-medium text-orange-900">
+                  添加后立即启用
+                </label>
+              </div>
+            </div>
+
+            {/* 提示信息 */}
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs text-blue-800">
+                💡 <strong>提示:</strong> 新闻源通常支持RSS feed,无需API Key。巨鲸监控和链上数据需要API认证。 建议先添加测试平台进行连接测试。
+              </p>
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleAddPlatform}
+                disabled={updating || !formData.name || !formData.base_url}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+              >
+                {updating ? '添加中...' : '✅ 确认添加'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddForm(false);
+                  setFormData({
+                    name: "",
+                    provider: "qwen",
+                    platform_type: "qwen_search",
+                    api_key: "",
+                    base_url: "",
+                    enabled: true
+                  });
+                }}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all font-medium"
+              >
+                ✖️ 取消
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 平台列表 */}
+        <div className="space-y-3">
+          {platforms.length === 0 ? (
+            <div className="bg-white/70 rounded-lg p-8 text-center">
+              <div className="text-4xl mb-3">☁️</div>
+              <p className="text-gray-600 mb-2">暂无云平台配置</p>
+              <p className="text-sm text-gray-500">
+                点击"添加平台"按钮配置第一个云平台,<br/>
+                支持AWS、Qwen等多种云平台API
+              </p>
+            </div>
+          ) : (
+            platforms.map((platform) => (
+              <div
+                key={platform.id}
+                className="bg-white/70 rounded-lg border border-orange-200 p-4 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  {/* 左侧信息 */}
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="text-3xl">{getProviderIcon(platform.provider)}</div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-bold text-gray-900">{platform.name}</h4>
+                        <span className={`px-2 py-0.5 text-xs rounded ${
+                          platform.enabled
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }`}>
+                          {platform.enabled ? "启用" : "禁用"}
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div>
+                          <span className="font-medium">类型:</span> {getPlatformTypeLabel(platform.platform_type)}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span>
+                            <span className="font-medium">调用:</span> {platform.performance.total_calls}
+                          </span>
+                          <span>
+                            <span className="font-medium">成功率:</span> {(platform.performance.success_rate * 100).toFixed(1)}%
+                          </span>
+                          {platform.performance.avg_response_time && (
+                            <span>
+                              <span className="font-medium">响应:</span> {platform.performance.avg_response_time.toFixed(2)}s
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {platform.base_url}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 右侧操作 */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => togglePlatform(platform.id, !platform.enabled)}
+                      disabled={updating}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        platform.enabled
+                          ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg"
+                      } disabled:opacity-50`}
+                    >
+                      {platform.enabled ? '停用' : '启用'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

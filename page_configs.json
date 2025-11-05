@@ -1,0 +1,56 @@
+{
+  "ai-decisions/page.tsx": {
+    "icon": "🎯",
+    "title": "AI决策记录",
+    "description": "查看AI交易决策的历史记录和分析",
+    "color": "purple"
+  },
+  "model-performance/page.tsx": {
+    "icon": "📈",
+    "title": "模型性能监控",
+    "description": "监控AI模型的性能指标和准确率",
+    "color": "cyan"
+  },
+  "trades/page.tsx": {
+    "icon": "💰",
+    "title": "交易记录",
+    "description": "查看所有交易的详细记录",
+    "color": "pink"
+  },
+  "orders/page.tsx": {
+    "icon": "📋",
+    "title": "订单记录",
+    "description": "查看所有订单的详细信息",
+    "color": "pink"
+  },
+  "accounts/page.tsx": {
+    "icon": "💼",
+    "title": "账户快照",
+    "description": "查看账户余额和净值的历史快照",
+    "color": "green"
+  },
+  "market-data/page.tsx": {
+    "icon": "📊",
+    "title": "K线数据管理",
+    "description": "查看和管理市场K线数据",
+    "color": "green"
+  },
+  "risk-events/page.tsx": {
+    "icon": "⚠️",
+    "title": "风控事件监控",
+    "description": "监控和管理风险控制事件",
+    "color": "orange"
+  },
+  "permissions/page.tsx": {
+    "icon": "🔐",
+    "title": "权限管理",
+    "description": "管理用户角色和权限配置",
+    "color": "purple"
+  },
+  "users/page.tsx": {
+    "icon": "👥",
+    "title": "用户管理",
+    "description": "管理系统用户和账户",
+    "color": "blue"
+  }
+}

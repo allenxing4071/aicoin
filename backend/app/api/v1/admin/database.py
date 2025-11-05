@@ -140,8 +140,31 @@ async def get_table_data(
         if not table_name.replace("_", "").isalnum():
             raise HTTPException(status_code=400, detail="无效的表名")
         
+        # 检查表是否有id列
+        columns_check = await db.execute(text(
+            """
+            SELECT column_name 
+            FROM information_schema.columns
+            WHERE table_schema = 'public' 
+              AND table_name = :table_name
+            ORDER BY ordinal_position
+            """
+        ), {"table_name": table_name})
+        
+        column_names = [row[0] for row in columns_check]
+        
+        if not column_names:
+            raise HTTPException(status_code=404, detail=f"表 {table_name} 不存在")
+        
+        # 根据是否有id列决定排序方式
+        if 'id' in column_names:
+            order_clause = "ORDER BY id DESC"
+        else:
+            # 使用第一列排序
+            order_clause = f"ORDER BY {column_names[0]} DESC"
+        
         # 查询数据
-        query = text(f"SELECT * FROM {table_name} ORDER BY id DESC LIMIT :limit OFFSET :offset")
+        query = text(f"SELECT * FROM {table_name} {order_clause} LIMIT :limit OFFSET :offset")
         result = await db.execute(query, {"limit": limit, "offset": offset})
         
         # 将结果转换为字典列表

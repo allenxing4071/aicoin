@@ -63,13 +63,14 @@ class DecisionEngineV2:
         )
         self.knowledge_base = KnowledgeBase(db_session)
         
-        # 当前权限等级 - 从数据库加载默认等级
-        self.current_permission_level = self._load_default_permission_level()
+        # 当前权限等级 - 使用配置文件默认值（避免在__init__中进行异步数据库查询）
+        self.current_permission_level = settings.INITIAL_PERMISSION_LEVEL
+        self._permission_loaded_from_db = False
         
         logger.info(f"✅ DecisionEngineV2 initialized at level {self.current_permission_level}")
     
-    def _load_default_permission_level(self) -> str:
-        """从数据库加载默认权限等级"""
+    async def _load_default_permission_level(self) -> str:
+        """从数据库加载默认权限等级（异步）"""
         try:
             from app.models.permission_config import PermissionLevelConfig
             from sqlalchemy import select
@@ -80,7 +81,7 @@ class DecisionEngineV2:
                 PermissionLevelConfig.is_active == True
             ).limit(1)
             
-            result = self.db_session.execute(stmt)
+            result = await self.db_session.execute(stmt)
             default_config = result.scalars().first()
             
             if default_config:
@@ -122,6 +123,11 @@ class DecisionEngineV2:
         decision_id = f"dec_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
         try:
+            # 首次调用时从数据库加载默认权限
+            if not self._permission_loaded_from_db:
+                self.current_permission_level = await self._load_default_permission_level()
+                self._permission_loaded_from_db = True
+            
             # === 第1步：权限检查 ===
             logger.info(f"🔑 当前权限等级: {self.current_permission_level}")
             

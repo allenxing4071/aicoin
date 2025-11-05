@@ -135,6 +135,18 @@ class RedisClient:
             return False
         await self.redis.ltrim(key, start, end)
         return True
+    
+    async def keys(self, pattern: str) -> list:
+        """Get keys matching pattern"""
+        if not self.redis:
+            return []
+        return await self.redis.keys(pattern)
+    
+    async def ping(self) -> bool:
+        """Ping Redis server"""
+        if not self.redis:
+            return False
+        return await self.redis.ping()
 
 
 # Global Redis client instance

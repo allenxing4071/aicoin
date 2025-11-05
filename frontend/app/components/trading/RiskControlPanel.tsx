@@ -1,0 +1,48 @@
+"use client";
+
+/**
+ * 风险控制面板
+ * 
+ * 功能:
+ * - 仓位管理
+ * - 止损/止盈设置
+ * - 风险指标监控
+ * - 风控规则配置
+ */
+
+export default function RiskControlPanel() {
+  return (
+    <div className="space-y-6">
+      {/* 开发中提示 */}
+      <div className="bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200 p-12 text-center">
+        <div className="text-4xl mb-4">🛡️</div>
+        <h3 className="text-lg font-medium text-pink-900 mb-2">风险控制模块</h3>
+        <p className="text-sm text-pink-700 mb-6">
+          该模块正在开发中...<br/>
+          将提供仓位管理、止损设置、风险指标监控
+        </p>
+        
+        {/* 预览功能列表 */}
+        <div className="max-w-2xl mx-auto mt-8 grid grid-cols-2 gap-4 text-left">
+          <div className="bg-gray-700/30 rounded-lg p-4">
+            <div className="text-yellow-400 mb-2">💰 仓位管理</div>
+            <div className="text-xs text-pink-700">单品种/总仓位限制和分配</div>
+          </div>
+          <div className="bg-gray-700/30 rounded-lg p-4">
+            <div className="text-yellow-400 mb-2">🎯 止损止盈</div>
+            <div className="text-xs text-pink-700">自动止损和止盈规则</div>
+          </div>
+          <div className="bg-gray-700/30 rounded-lg p-4">
+            <div className="text-yellow-400 mb-2">📊 风险指标</div>
+            <div className="text-xs text-pink-700">VaR、最大回撤、波动率</div>
+          </div>
+          <div className="bg-gray-700/30 rounded-lg p-4">
+            <div className="text-yellow-400 mb-2">⚙️ 风控规则</div>
+            <div className="text-xs text-pink-700">自定义风控触发条件</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import DataTable from "@/app/components/admin/DataTable";
 import FilterBar from "@/app/components/admin/FilterBar";
+import PageHeader from '../../components/common/PageHeader';
 
 export default function AccountsPage() {
   const [data, setData] = useState([]);
@@ -127,8 +128,8 @@ export default function AccountsPage() {
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">账户快照</h1>
+    <div className="space-y-6">
+      <PageHeader icon="💼" title="账户快照" description="查看账户余额和净值的历史快照" color="green" />
 
       <FilterBar
         fields={filterFields}

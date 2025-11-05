@@ -44,11 +44,11 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
       <div className="max-w-md w-full mx-4">
         {/* Logo和标题 */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full mb-4 shadow-lg">
             <svg
               className="w-8 h-8 text-white"
               fill="none"
@@ -63,16 +63,16 @@ export default function AdminLoginPage() {
               />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">AIcoin 管理后台</h1>
-          <p className="text-gray-400">请登录以继续访问</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">AIcoin 管理后台</h1>
+          <p className="text-gray-600">请登录以继续访问</p>
         </div>
 
         {/* 登录表单 */}
-        <div className="bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
+        <div className="bg-white rounded-xl shadow-xl p-8 border border-gray-200">
           <form onSubmit={handleLogin} className="space-y-6">
             {/* 用户名输入 */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
                 用户名
               </label>
               <input
@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="请输入用户名"
                 required
                 autoComplete="username"
@@ -89,7 +89,7 @@ export default function AdminLoginPage() {
 
             {/* 密码输入 */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 密码
               </label>
               <input
@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="请输入密码"
                 required
                 autoComplete="current-password"
@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
 
             {/* 错误提示 */}
             {error && (
-              <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
                 <div className="flex items-center">
                   <svg
                     className="w-5 h-5 mr-2"
@@ -128,7 +128,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm hover:shadow-md font-medium py-3 px-4 rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg"
             >
               {loading ? (
                 <>
@@ -159,14 +159,6 @@ export default function AdminLoginPage() {
               )}
             </button>
           </form>
-
-          {/* 默认账号提示 */}
-          <div className="mt-6 p-4 bg-gray-700/50 rounded-lg border border-gray-600">
-            <p className="text-xs text-gray-400 text-center">
-              默认账号: <span className="text-gray-300 font-mono">admin</span> / 
-              密码: <span className="text-gray-300 font-mono">admin123</span>
-            </p>
-          </div>
         </div>
 
         {/* 底部信息 */}

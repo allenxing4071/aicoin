@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import DataTable from "@/app/components/admin/DataTable";
 import FilterBar from "@/app/components/admin/FilterBar";
+import PageHeader from '../../components/common/PageHeader';
 
 export default function AIDecisionsPage() {
   const [data, setData] = useState([]);
@@ -112,8 +113,13 @@ export default function AIDecisionsPage() {
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">AI决策日志</h1>
+    <div className="space-y-6">
+      <PageHeader
+        icon="🎯"
+        title="AI决策记录"
+        description="查看AI交易决策的历史记录和分析"
+        color="purple"
+      />
 
       <FilterBar
         fields={filterFields}

@@ -1,0 +1,48 @@
+"use client";
+
+/**
+ * 策略管理面板
+ * 
+ * 功能:
+ * - 交易策略列表
+ * - 策略参数配置
+ * - 策略回测结果
+ * - 策略启用/停用
+ */
+
+export default function TradingStrategyPanel() {
+  return (
+    <div className="space-y-6">
+      {/* 开发中提示 */}
+      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-12 text-center">
+        <div className="text-4xl mb-4">🎯</div>
+        <h3 className="text-lg font-medium text-white mb-2">策略管理模块</h3>
+        <p className="text-sm text-gray-400 mb-6">
+          该模块正在开发中...<br/>
+          将提供交易策略配置、参数调整、回测功能
+        </p>
+        
+        {/* 预览功能列表 */}
+        <div className="max-w-2xl mx-auto mt-8 grid grid-cols-2 gap-4 text-left">
+          <div className="bg-gray-700/30 rounded-lg p-4">
+            <div className="text-blue-400 mb-2">📋 策略列表</div>
+            <div className="text-xs text-gray-400">查看和管理所有交易策略</div>
+          </div>
+          <div className="bg-gray-700/30 rounded-lg p-4">
+            <div className="text-blue-400 mb-2">⚙️ 参数配置</div>
+            <div className="text-xs text-gray-400">调整策略参数和触发条件</div>
+          </div>
+          <div className="bg-gray-700/30 rounded-lg p-4">
+            <div className="text-blue-400 mb-2">🔬 策略回测</div>
+            <div className="text-xs text-gray-400">历史数据验证策略效果</div>
+          </div>
+          <div className="bg-gray-700/30 rounded-lg p-4">
+            <div className="text-blue-400 mb-2">📊 绩效预估</div>
+            <div className="text-xs text-gray-400">预测策略收益和风险</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

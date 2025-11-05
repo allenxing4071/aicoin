@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import DataTable from "@/app/components/admin/DataTable";
 import FilterBar from "@/app/components/admin/FilterBar";
+import PageHeader from '../../components/common/PageHeader';
 
 export default function RiskEventsPage() {
   const [data, setData] = useState([]);
@@ -139,8 +140,13 @@ export default function RiskEventsPage() {
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">风控事件</h1>
+    <div className="space-y-6">
+      <PageHeader
+        icon="⚠️"
+        title="风控事件监控"
+        description="监控和管理风险控制事件"
+        color="orange"
+      />
 
       <FilterBar
         fields={filterFields}

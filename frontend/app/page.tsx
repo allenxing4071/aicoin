@@ -3,19 +3,53 @@
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import PriceTicker from './components/ticker/PriceTicker';
 import MultiModelChart from './components/charts/MultiModelChart';
-import TradeListComplete from './components/trades/TradeListComplete';
-import AIDecisionChat from './components/chat/AIDecisionChat';
 import ModelCard from './components/models/ModelCard';
-import TradingChart from './components/charts/TradingChart';
-import PositionsList from './components/positions/PositionsList';
-import AIStatusPanel from './components/ai/AIStatusPanel';
-import PermissionIndicator from './components/ai/PermissionIndicator';
-import DecisionTimeline from './components/ai/DecisionTimeline';
-import PerformanceDashboard from './components/performance/PerformanceDashboard';
 import DeepSeekLogo from './components/common/DeepSeekLogo';
-import IntelligencePanel from './components/intelligence/IntelligencePanel';
+import PermissionIndicator from './components/ai/PermissionIndicator';
+
+// ✨ 性能优化: 懒加载非关键组件,减少首屏加载时间
+const TradeListComplete = dynamic(() => import('./components/trades/TradeListComplete'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载交易列表...</div></div>
+});
+
+const AIDecisionChat = dynamic(() => import('./components/chat/AIDecisionChat'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载AI聊天...</div></div>
+});
+
+const TradingChart = dynamic(() => import('./components/charts/TradingChart'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载图表...</div></div>
+});
+
+const PositionsList = dynamic(() => import('./components/positions/PositionsList'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载持仓...</div></div>
+});
+
+const AIStatusPanel = dynamic(() => import('./components/ai/AIStatusPanel'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载AI状态...</div></div>
+});
+
+const DecisionTimeline = dynamic(() => import('./components/ai/DecisionTimeline'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载决策时间线...</div></div>
+});
+
+const PerformanceDashboard = dynamic(() => import('./components/performance/PerformanceDashboard'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载性能面板...</div></div>
+});
+
+const IntelligencePanel = dynamic(() => import('./components/intelligence/IntelligencePanel'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载情报面板...</div></div>
+});
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
@@ -41,45 +75,43 @@ export default function Home() {
   const totalValue = modelsWithData.length > 0 ? modelsWithData[0].value : 0;
   const currentModel = modelsWithData.length > 0 ? modelsWithData[0] : null;
 
+  // ✨ 性能优化: 使用统一的仪表板API
   useEffect(() => {
-    checkApiStatus();
-    fetchAccountData();
-    fetchModelsData();
-    fetchAiHealth();
+    fetchDashboardData();
     const interval = setInterval(() => {
-      checkApiStatus();
-      fetchAccountData();
-      fetchModelsData();
-      fetchAiHealth();
-    }, 10000);
+      fetchDashboardData();
+    }, 30000); // 优化: 30秒刷新一次 (原10秒)
     return () => clearInterval(interval);
   }, []);
 
-  const checkApiStatus = async () => {
+  // ✨ 新方法: 一次性获取所有仪表板数据 (优化: 4个请求 → 1个请求)
+  const fetchDashboardData = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/health');
-      setApiStatus(response.data);
-    } catch (error) {
-      setApiStatus({ status: 'unavailable', version: 'N/A' });
-    }
-  };
-
-  const fetchAccountData = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/account/info`);
-      setAccountData(response.data);
-    } catch (error) {
-      console.log('Using mock data for account info');
-    }
-  };
-
-  const fetchAiHealth = async () => {
-    try {
-      // 获取系统状态（包含orchestrator信息）
-      const response = await axios.get(`${API_BASE}/status`);
-      if (response.data) {
-        // 解析orchestrator状态
-        const orchestratorData = response.data.orchestrator || {};
+      console.log('📊 Fetching dashboard data...');
+      const response = await axios.get(`${API_BASE}/dashboard/summary`, {
+        timeout: 5000 // 5秒超时
+      });
+      
+      if (response.data.success) {
+        const { api_status, account, models, ai_health } = response.data.data;
+        
+        // 设置API状态
+        setApiStatus(api_status || { status: 'unavailable', version: 'N/A' });
+        
+        // 设置账户数据
+        setAccountData(account || null);
+        
+        // 设置模型数据
+        if (models && models.length > 0) {
+          setModelsData(models);
+          setLoadingModels(false);
+        } else {
+          setLoadingModels(true);
+        }
+        
+        // 设置AI健康状态
+        if (ai_health) {
+          const orchestratorData = ai_health.orchestrator || {};
         setAiHealth({
           success: true,
           orchestrator_running: orchestratorData.is_running || false,
@@ -88,45 +120,23 @@ export default function Home() {
             successful_trades: orchestratorData.approved_decisions || 0,
           },
           permission_level: orchestratorData.permission_level || 'L0',
-          ...response.data
+            orchestrator: orchestratorData
         });
+        }
+        
+        console.log('✅ Dashboard data loaded successfully');
       }
-    } catch (error) {
-      console.log('Failed to fetch AI health:', error);
-      // Fallback to default values
+    } catch (error: any) {
+      console.error('❌ Failed to fetch dashboard data:', error);
+      
+      // 降级处理: 使用默认值
+      setApiStatus({ status: 'unavailable', version: 'N/A' });
       setAiHealth({
         success: false,
         orchestrator_running: false,
         stats: { total_trades: 0, successful_trades: 0 },
         permission_level: 'L0'
       });
-    }
-  };
-
-  const fetchModelsData = async () => {
-    try {
-      // 从Hyperliquid获取真实账户余额
-      const accountResponse = await axios.get(`${API_BASE}/account/info`);
-      const realBalance = parseFloat(accountResponse.data.equity || accountResponse.data.balance || 0);
-      
-      // 计算收益率（暂时使用简单的计算方式）
-      // TODO: 从数据库获取历史初始值来计算真实收益率
-      const deepseekChange = 0; // 暂时设为0，等待实现历史记录API
-      
-      setModelsData([
-        { 
-          name: 'DEEPSEEK CHAT V3.1', 
-          slug: 'deepseek-chat-v3.1', 
-          value: realBalance,  // 使用Hyperliquid真实余额
-          change: deepseekChange, 
-          color: '#3b82f6', 
-          icon: 'deepseek' // 使用DeepSeek logo
-        },
-      ]);
-      setLoadingModels(false);
-    } catch (error) {
-      console.log('Failed to fetch models data:', error);
-      // API失败时，保持加载状态
       setLoadingModels(true);
     }
   };
@@ -263,73 +273,81 @@ export default function Home() {
         </div>
 
         {/* Right - Content Area */}
-        <div className="w-[500px] bg-white flex flex-col">
+        <div className="w-[600px] bg-white flex flex-col">
           <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-2">
                 <button 
                   onClick={() => setActiveTab('trades')}
-                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
                     activeTab === 'trades' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  已完成交易
+                  <span>✅</span>
+                  <span>已完成交易</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('chat')}
-                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
                     activeTab === 'chat' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  模型对话
+                  <span>💬</span>
+                  <span>挂单对话</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('positions')}
-                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
                     activeTab === 'positions' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  持仓
+                  <span>📊</span>
+                  <span>持仓</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('readme')}
-                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
                     activeTab === 'readme' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  关于项目
+                  <span>📖</span>
+                  <span>关于项目</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('ai')}
-                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
                     activeTab === 'ai' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  AI状态
+                  <span>🤖</span>
+                  <span>AI状态</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('decisions')}
-                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
                     activeTab === 'decisions' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  决策历史
+                  <span>📋</span>
+                  <span>决策历史</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('performance')}
-                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
                     activeTab === 'performance' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  性能仪表盘
+                  <span>📈</span>
+                  <span>性能仪表盘</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('intelligence')}
-                  className={`px-3 py-2 text-xs font-bold rounded transition-colors ${
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
                     activeTab === 'intelligence' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  🕵️‍♀️ 情报中心
+                  <span>🕵️‍♀️</span>
+                  <span>情报中心</span>
                 </button>
               </div>
             </div>

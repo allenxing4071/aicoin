@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import PageHeader from "../../components/common/PageHeader";
 
 interface MemoryOverview {
   short_term_memory: {
@@ -20,13 +21,46 @@ interface MemoryOverview {
   knowledge_base_patterns: number;
 }
 
+interface QwenStorageStats {
+  l1_redis: {
+    total_reports: number;
+    cache_hit_rate: number;
+    today_reports: number;
+    avg_query_time_ms: number;
+  };
+  l2_analyzer: {
+    sources_tracked: number;
+    avg_weight: number;
+    behavior_records: number;
+    last_optimization: string | null;
+  };
+  l3_postgres: {
+    total_reports: number;
+    oldest_report: string;
+    storage_size_mb: number;
+  };
+  l4_qdrant: {
+    vectorized_count: number;
+    collection_size: number;
+    last_vectorization: string;
+  };
+}
+
+type ViewMode = "deepseek" | "qwen";
+
 export default function MemorySystemPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("deepseek");
   const [overview, setOverview] = useState<MemoryOverview | null>(null);
+  const [qwenStats, setQwenStats] = useState<QwenStorageStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchOverview();
-  }, []);
+    if (viewMode === "deepseek") {
+      fetchOverview();
+    } else {
+      fetchQwenStats();
+    }
+  }, [viewMode]);
 
   const fetchOverview = async () => {
     try {
@@ -45,6 +79,23 @@ export default function MemorySystemPage() {
     }
   };
 
+  const fetchQwenStats = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "http://localhost:8000/api/v1/intelligence/storage/stats"
+      );
+      const result = await response.json();
+      if (result.success) {
+        setQwenStats(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch Qwen storage stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -54,23 +105,51 @@ export default function MemorySystemPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          三层记忆系统
-        </h1>
-        <p className="text-gray-600">
-          查看AI的短期记忆(Redis)、长期记忆(Qdrant)和知识库(PostgreSQL)
-        </p>
+    <div className="space-y-6">
+      {/* 页头 - 统一风格 */}
+      <PageHeader
+        icon="🤖"
+        title="AI记忆系统"
+        description="查看DeepSeek交易员和Qwen情报员的多层存储状态"
+        color="purple"
+      />
+
+      {/* 标签页切换 */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          <button
+            onClick={() => setViewMode("deepseek")}
+            className={`${
+              viewMode === "deepseek"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            🤖 DeepSeek交易员记忆 (3层)
+          </button>
+          <button
+            onClick={() => setViewMode("qwen")}
+            className={`${
+              viewMode === "qwen"
+                ? "border-purple-500 text-purple-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            🕵️ Qwen情报员存储 (4层)
+          </button>
+        </nav>
       </div>
 
-      {/* 系统架构图 */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          📐 三层记忆架构
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-4 shadow">
+      {/* DeepSeek交易员视图 */}
+      {viewMode === "deepseek" && (
+        <>
+          {/* 系统架构图 */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              📐 DeepSeek三层记忆架构
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm font-medium text-blue-600 mb-2">
               L1: 短期记忆 (Redis)
             </div>
@@ -97,7 +176,7 @@ export default function MemorySystemPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-4 shadow">
+          <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm font-medium text-purple-600 mb-2">
               L2: 长期记忆 (Qdrant)
             </div>
@@ -130,7 +209,7 @@ export default function MemorySystemPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-4 shadow">
+          <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm font-medium text-green-600 mb-2">
               L3: 知识库 (PostgreSQL)
             </div>
@@ -169,7 +248,7 @@ export default function MemorySystemPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
             href="/admin/memory/lessons"
-            className="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+            className="block bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-6"
           >
             <div className="flex items-start justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -189,7 +268,7 @@ export default function MemorySystemPage() {
 
           <Link
             href="/admin/memory/strategies"
-            className="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+            className="block bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-6"
           >
             <div className="flex items-start justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -209,7 +288,7 @@ export default function MemorySystemPage() {
 
           <Link
             href="/admin/memory/patterns"
-            className="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+            className="block bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-6"
           >
             <div className="flex items-start justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -229,26 +308,221 @@ export default function MemorySystemPage() {
         </div>
       </div>
 
-      {/* 说明文档 */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-yellow-900 mb-3">
-          💡 关于三层记忆系统
-        </h3>
-        <div className="space-y-2 text-sm text-yellow-800">
-          <p>
-            <strong>L1 短期记忆 (Redis)</strong>: 存储最近的决策和实时性能指标,提供毫秒级查询速度。
-          </p>
-          <p>
-            <strong>L2 长期记忆 (Qdrant)</strong>: 将所有历史决策向量化存储,支持语义搜索相似市场情况。
-          </p>
-          <p>
-            <strong>L3 知识库 (PostgreSQL)</strong>: 存储结构化的经验教训、策略评估和市场模式,支持复杂查询和统计分析。
-          </p>
-          <p className="mt-3 pt-3 border-t border-yellow-300">
-            <strong>核心价值</strong>: AI可以从历史中学习,避免重复错误,参考成功经验做出更明智的决策。
-          </p>
-        </div>
-      </div>
+          {/* 说明文档 */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-yellow-900 mb-3">
+              💡 关于DeepSeek三层记忆系统
+            </h3>
+            <div className="space-y-2 text-sm text-yellow-800">
+              <p>
+                <strong>L1 短期记忆 (Redis)</strong>: 存储最近的决策和实时性能指标,提供毫秒级查询速度。
+              </p>
+              <p>
+                <strong>L2 长期记忆 (Qdrant)</strong>: 将所有历史决策向量化存储,支持语义搜索相似市场情况。
+              </p>
+              <p>
+                <strong>L3 知识库 (PostgreSQL)</strong>: 存储结构化的经验教训、策略评估和市场模式,支持复杂查询和统计分析。
+              </p>
+              <p className="mt-3 pt-3 border-t border-yellow-300">
+                <strong>核心价值</strong>: AI可以从历史中学习,避免重复错误,参考成功经验做出更明智的决策。
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Qwen情报员视图 */}
+      {viewMode === "qwen" && (
+        <>
+          {/* 系统架构图 */}
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              📐 Qwen四层智能存储架构
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* L1: Redis短期缓存 */}
+              <div className="bg-white rounded-xl p-4 shadow">
+                <div className="text-sm font-medium text-pink-600 mb-2">
+                  L1: 短期缓存 (Redis)
+                </div>
+                <div className="text-xs text-gray-600 mb-3">
+                  原始情报数据、快速访问
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">最近情报:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l1_redis.total_reports || 0} 条
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">缓存命中率:</span>
+                    <span className="font-medium text-green-600">
+                      {((qwenStats?.l1_redis.cache_hit_rate || 0) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">今日新增:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l1_redis.today_reports || 0} 条
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">查询速度:</span>
+                    <span className="text-green-600 font-medium">
+                      &lt;{qwenStats?.l1_redis.avg_query_time_ms || 10}ms
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* L2: 中期分析 */}
+              <div className="bg-white rounded-xl p-4 shadow">
+                <div className="text-sm font-medium text-blue-600 mb-2">
+                  L2: 中期分析层
+                </div>
+                <div className="text-xs text-gray-600 mb-3">
+                  行为分析、权重计算
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">信息源:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l2_analyzer.sources_tracked || 0} 个
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">平均权重:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l2_analyzer.avg_weight.toFixed(2) || "0.00"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">行为记录:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l2_analyzer.behavior_records || 0} 条
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">最后优化:</span>
+                    <span className="text-green-600 font-medium text-[10px]">
+                      {qwenStats?.l2_analyzer.last_optimization
+                        ? new Date(qwenStats.l2_analyzer.last_optimization).toLocaleString("zh-CN", {
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "未知"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* L3: PostgreSQL长期存储 */}
+              <div className="bg-white rounded-xl p-4 shadow">
+                <div className="text-sm font-medium text-green-600 mb-2">
+                  L3: 长期存储 (PG)
+                </div>
+                <div className="text-xs text-gray-600 mb-3">
+                  历史情报报告、结构化查询
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">历史报告:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l3_postgres.total_reports || 0} 条
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">最早记录:</span>
+                    <span className="font-medium text-[10px]">
+                      {qwenStats?.l3_postgres.oldest_report
+                        ? new Date(qwenStats.l3_postgres.oldest_report).toLocaleDateString("zh-CN")
+                        : "无"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">存储大小:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l3_postgres.storage_size_mb.toFixed(1) || "0.0"} MB
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">保留策略:</span>
+                    <span className="text-blue-600 font-medium">永久</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* L4: Qdrant向量知识库 */}
+              <div className="bg-white rounded-xl p-4 shadow">
+                <div className="text-sm font-medium text-purple-600 mb-2">
+                  L4: 向量知识库
+                </div>
+                <div className="text-xs text-gray-600 mb-3">
+                  语义搜索、模式识别
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">向量化数量:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l4_qdrant.vectorized_count || 0} 条
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">向量维度:</span>
+                    <span className="font-medium">
+                      {qwenStats?.l4_qdrant.collection_size || 1536}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">最后向量化:</span>
+                    <span className="font-medium text-[10px]">
+                      {qwenStats?.l4_qdrant.last_vectorization
+                        ? new Date(qwenStats.l4_qdrant.last_vectorization).toLocaleString("zh-CN", {
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "未知"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">功能:</span>
+                    <span className="text-purple-600 font-medium">相似检索</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 说明文档 */}
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-purple-900 mb-3">
+              💡 关于Qwen四层智能存储系统
+            </h3>
+            <div className="space-y-2 text-sm text-purple-800">
+              <p>
+                <strong>L1 短期缓存 (Redis)</strong>: 存储原始情报数据和最近的情报报告，提供毫秒级快速访问，24小时TTL。
+              </p>
+              <p>
+                <strong>L2 中期分析层</strong>: 分析用户行为，为信息源打分加权，计算有效性评分，支持智能学习。
+              </p>
+              <p>
+                <strong>L3 长期存储 (PostgreSQL)</strong>: 永久存储历史情报报告，支持结构化查询、时间范围筛选和统计分析。
+              </p>
+              <p>
+                <strong>L4 向量知识库 (Qdrant)</strong>: 将情报内容向量化，支持语义相似度检索和市场模式识别。
+              </p>
+              <p className="mt-3 pt-3 border-t border-purple-300">
+                <strong>核心价值</strong>: 通过智能分层存储和持续学习，优化信息源优先级，减少无效检索，提高情报质量。
+              </p>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

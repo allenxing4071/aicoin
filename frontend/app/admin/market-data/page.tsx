@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import DataTable from "@/app/components/admin/DataTable";
 import FilterBar from "@/app/components/admin/FilterBar";
+import PageHeader from '../../components/common/PageHeader';
 
 export default function MarketDataPage() {
   const [data, setData] = useState([]);
@@ -108,7 +109,7 @@ export default function MarketDataPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">K线数据</h1>
+      <PageHeader icon="📊" title="K线数据管理" description="查看和管理市场K线数据" color="green" />
 
       <FilterBar
         fields={filterFields}

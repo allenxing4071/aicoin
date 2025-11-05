@@ -4,12 +4,18 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 from decimal import Decimal
 import logging
+import json
 
 from app.schemas.market import KlineData, OrderbookData, TickerData
 from app.services.market.hyperliquid_client import hyperliquid_client
+from app.core.redis_client import redis_client
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# 市场数据缓存配置
+TICKERS_CACHE_KEY = "market:tickers:all"
+TICKERS_CACHE_TTL = 1  # 缓存1秒，高频调用优化
 
 
 def get_market_data_service():
@@ -95,18 +101,32 @@ async def get_ticker(symbol: str):
 
 
 @router.get("/tickers", response_model=List[TickerData])
-async def get_all_tickers():
+async def get_all_tickers(force_refresh: bool = False):
     """
-    获取所有交易对的实时价格
+    获取所有交易对的实时价格（带Redis缓存优化）
+    
+    Args:
+        force_refresh: 是否强制刷新缓存
     
     Returns:
         所有交易对的实时价格列表
     """
-    symbols = ["BTC", "ETH", "SOL", "BNB", "DOGE", "XRP"]
-    
     try:
+        # 1. 尝试从缓存获取（除非强制刷新）
+        if not force_refresh:
+            try:
+                cached_data = await redis_client.get(TICKERS_CACHE_KEY)
+                if cached_data:
+                    logger.debug(f"✅ 行情数据命中缓存")
+                    return [TickerData(**t) for t in cached_data]
+            except Exception as cache_err:
+                logger.warning(f"缓存读取失败: {cache_err}")
+        
+        # 2. 从市场服务获取最新数据
+        symbols = ["BTC", "ETH", "SOL", "BNB", "DOGE", "XRP"]
         service = get_market_data_service()
         tickers = []
+        
         for symbol in symbols:
             try:
                 ticker = await service.get_ticker(symbol)
@@ -114,6 +134,18 @@ async def get_all_tickers():
             except Exception as e:
                 logger.warning(f"Error fetching ticker for {symbol}: {e}")
                 continue
+        
+        # 3. 写入缓存
+        if tickers:
+            try:
+                await redis_client.set(
+                    TICKERS_CACHE_KEY,
+                    [t.dict() for t in tickers],
+                    expire=TICKERS_CACHE_TTL
+                )
+                logger.debug(f"💾 行情数据已缓存 {TICKERS_CACHE_TTL}秒")
+            except Exception as cache_err:
+                logger.warning(f"缓存写入失败: {cache_err}")
         
         return tickers
         

@@ -9,10 +9,14 @@ from app.core.config import settings
 from app.core.database import init_db
 from app.core.redis_client import redis_client
 from app.api.v1 import market, account, performance, ai, admin_db, constraints, intelligence
+from app.api.v1 import exchanges, market_extended  # v3.1 新增
+from app.api.v1.endpoints import intelligence_storage, intelligence_platforms, model_performance
 from app.api.v1.admin import permissions as admin_permissions
 from app.api.v1.admin import database as admin_database
 from app.api.v1.admin import memory as admin_memory
 from app.api.v1.admin import intelligence_config as admin_intelligence
+from app.api.v1.admin import auth as admin_auth
+from app.api.v1.admin import users as admin_users
 from app.api import websocket, market_data
 from app.api import trading as hyperliquid_trading
 from app.services.hyperliquid_market_data import HyperliquidMarketData
@@ -141,6 +145,14 @@ app.add_middleware(
 )
 
 # Include API routers
+# Dashboard API - 性能优化: 合并多个API调用
+from app.api.v1 import dashboard
+app.include_router(
+    dashboard.router,
+    prefix=f"{settings.API_V1_PREFIX}/dashboard",
+    tags=["Dashboard - Performance Optimized"]
+)
+
 app.include_router(
     market.router,
     prefix=f"{settings.API_V1_PREFIX}/market",
@@ -208,9 +220,46 @@ app.include_router(
     tags=["Intelligence - Qwen"]
 )
 app.include_router(
+    intelligence_storage.router,
+    prefix=f"{settings.API_V1_PREFIX}/intelligence/storage",
+    tags=["Intelligence - Storage"]
+)
+app.include_router(
+    intelligence_platforms.router,
+    prefix=f"{settings.API_V1_PREFIX}/intelligence",
+    tags=["Intelligence - Platforms"]
+)
+app.include_router(
+    model_performance.router,
+    prefix=f"{settings.API_V1_PREFIX}/decision",
+    tags=["Decision - Performance"]
+)
+app.include_router(
     admin_intelligence.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/intelligence",
     tags=["Admin - Intelligence Config"]
+)
+app.include_router(
+    admin_auth.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Auth"]
+)
+app.include_router(
+    admin_users.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/users",
+    tags=["Admin - Users"]
+)
+
+# v3.1: 交易所管理与多时间框架K线
+app.include_router(
+    exchanges.router,
+    prefix=f"{settings.API_V1_PREFIX}/exchanges",
+    tags=["Exchanges - Multi-Exchange Support"]
+)
+app.include_router(
+    market_extended.router,
+    prefix=f"{settings.API_V1_PREFIX}/market",
+    tags=["Market Data - Extended"]
 )
 
 

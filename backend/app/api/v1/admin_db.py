@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 # JWT配置
-SECRET_KEY = "aicoin-admin-secret-key-2025"  # 生产环境应使用环境变量
+SECRET_KEY = "your-secret-key-here-change-in-production"  # 与auth.py统一
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8小时
 

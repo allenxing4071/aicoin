@@ -51,7 +51,7 @@ services:
   backend:
     build: ../backend
     container_name: aicoin-backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://aicoin:aicoin_secure_password_2024@postgres:5432/aicoin}
       REDIS_URL: redis://redis:6379
@@ -66,7 +66,8 @@ services:
       HYPERLIQUID_PRIVATE_KEY: ${HYPERLIQUID_PRIVATE_KEY:-}
       HYPERLIQUID_VAULT_ADDRESS: ${HYPERLIQUID_VAULT_ADDRESS:-}
       HYPERLIQUID_TESTNET: ${HYPERLIQUID_TESTNET:-false}
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      SECRET_KEY: ${SECRET_KEY:-your-unified-secret-key-change-in-production}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-unified-secret-key-change-in-production}
       TRADING_ENABLED: ${TRADING_ENABLED:-false}
     depends_on:
       postgres:
@@ -106,9 +107,13 @@ services:
   celery_beat:
     build: ../backend
     container_name: aicoin-celery-beat
-    command: celery -A app.core.celery_app beat -l info
+    command: python -m celery -A app.tasks.intelligence_learning beat -l info
     environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://aicoin:aicoin_secure_password_2024@postgres:5432/aicoin}
       REDIS_URL: redis://redis:6379
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
       TRADING_ENABLED: ${TRADING_ENABLED:-false}
     depends_on:
       - redis

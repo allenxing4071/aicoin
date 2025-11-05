@@ -310,28 +310,28 @@ export default function IntelligenceConfigPanel() {
         {config && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white/70 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">系统状态</div>
+              <div className="text-sm text-orange-700 mb-1">系统状态</div>
               <div className={`text-2xl font-bold ${config.enabled ? 'text-green-600' : 'text-red-600'}`}>
                 {config.enabled ? '✅ 运行中' : '⏸️ 已停止'}
               </div>
             </div>
             
             <div className="bg-white/70 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">更新频率</div>
+              <div className="text-sm text-orange-700 mb-1">更新频率</div>
               <div className="text-2xl font-bold text-indigo-600">
                 {Math.floor(config.update_interval / 60)}分钟
               </div>
             </div>
             
             <div className="bg-white/70 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">AI模型</div>
+              <div className="text-sm text-orange-700 mb-1">AI模型</div>
               <div className="text-lg font-bold text-purple-600">
                 {config.qwen_model}
               </div>
             </div>
             
             <div className="bg-white/70 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">数据模式</div>
+              <div className="text-sm text-orange-700 mb-1">数据模式</div>
               <div className={`text-lg font-bold ${config.mock_mode ? 'text-orange-600' : 'text-green-600'}`}>
                 {config.mock_mode ? '🧪 模拟数据' : '🌐 真实数据'}
               </div>
@@ -347,22 +347,22 @@ export default function IntelligenceConfigPanel() {
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">总收集次数</div>
+              <div className="text-xs text-orange-700 mb-1">总收集次数</div>
               <div className="text-xl font-bold text-blue-600">{stats.total_collections}</div>
             </div>
             
             <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">成功次数</div>
+              <div className="text-xs text-orange-700 mb-1">成功次数</div>
               <div className="text-xl font-bold text-green-600">{stats.successful_collections}</div>
             </div>
             
             <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">失败次数</div>
+              <div className="text-xs text-orange-700 mb-1">失败次数</div>
               <div className="text-xl font-bold text-red-600">{stats.failed_collections}</div>
             </div>
             
             <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">成功率</div>
+              <div className="text-xs text-orange-700 mb-1">成功率</div>
               <div className="text-xl font-bold text-purple-600">
                 {stats.total_collections > 0 
                   ? Math.round((stats.successful_collections / stats.total_collections) * 100) 
@@ -371,7 +371,7 @@ export default function IntelligenceConfigPanel() {
             </div>
             
             <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">最后收集</div>
+              <div className="text-xs text-orange-700 mb-1">最后收集</div>
               <div className="text-sm font-semibold text-gray-800">
                 {stats.last_collection_time 
                   ? new Date(stats.last_collection_time).toLocaleTimeString('zh-CN')
@@ -398,8 +398,8 @@ export default function IntelligenceConfigPanel() {
             onClick={() => setShowAddForm(!showAddForm)}
             className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
           >
-            <span className="text-xl">{showAddForm ? '❌' : '➕'}</span>
-            <span>{showAddForm ? '取消添加' : '添加数据源'}</span>
+            <span className="text-xl text-white">{showAddForm ? '❌' : '➕'}</span>
+            <span className="text-white">{showAddForm ? '取消添加' : '添加数据源'}</span>
           </button>
         </div>
 
@@ -509,7 +509,7 @@ export default function IntelligenceConfigPanel() {
               <button
                 onClick={addNewSource}
                 disabled={updating || !newSource.name || !newSource.url}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-orange-900 rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
               >
                 {updating ? '添加中...' : '✅ 确认添加'}
               </button>
@@ -559,7 +559,7 @@ export default function IntelligenceConfigPanel() {
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                       source.status === 'active' ? 'bg-green-100 text-green-700' :
                       source.status === 'error' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-700'
+                      'bg-gray-50 text-gray-700'
                     }`}>
                       {source.status === 'active' ? '✅ 活跃' : 
                        source.status === 'error' ? '❌ 错误' : 
@@ -570,12 +570,12 @@ export default function IntelligenceConfigPanel() {
                     </span>
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-2">{source.description}</p>
+                  <p className="text-sm text-orange-700 mb-2">{source.description}</p>
                   
                   {source.data_source_url && (
                     <div className="mb-2">
                       <span className="text-xs text-gray-500">数据源URL：</span>
-                      <code className="text-xs bg-gray-100 px-2 py-1 rounded ml-1">
+                      <code className="text-xs bg-gray-50 px-2 py-1 rounded ml-1">
                         {source.data_source_url}
                       </code>
                     </div>
@@ -645,7 +645,7 @@ export default function IntelligenceConfigPanel() {
                           </button>
                           {config?.data_sources.find(s => s.name === source.name)?.api_key && (
                             <>
-                              <span className="text-xs text-gray-400">|</span>
+                              <span className="text-xs text-orange-700">|</span>
                               <button
                                 onClick={() => testConnection(source.name)}
                                 disabled={updating}
@@ -718,7 +718,7 @@ export default function IntelligenceConfigPanel() {
             <strong className="text-amber-700">⚙️ 配置方法：</strong>
             <p className="ml-4 mt-1">
               目前配置需要通过API完成。未来版本将提供可视化配置界面。
-              <br />API端点: <code className="bg-gray-100 px-1 py-0.5 rounded">POST /api/v1/admin/intelligence/config</code>
+              <br />API端点: <code className="bg-gray-50 px-1 py-0.5 rounded">POST /api/v1/admin/intelligence/config</code>
             </p>
           </div>
           

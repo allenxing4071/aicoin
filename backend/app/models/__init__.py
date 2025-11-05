@@ -7,6 +7,8 @@ from app.models.ai_decision import AIDecision
 from app.models.market_data import MarketDataKline
 from app.models.risk_event import RiskEvent
 from app.models.intelligence import IntelligenceReport
+from app.models.admin_user import AdminUser
+from app.models.exchange_config import ExchangeConfig
 
 __all__ = [
     'Trade',
@@ -16,5 +18,7 @@ __all__ = [
     'MarketDataKline',
     'RiskEvent',
     'IntelligenceReport',
+    'AdminUser',
+    'ExchangeConfig',
 ]
 

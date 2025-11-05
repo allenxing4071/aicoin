@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import PageHeader from '../../components/common/PageHeader';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -147,23 +148,25 @@ export default function PermissionsAdmin() {
   const currentLevelData = levels.find(l => l.level === currentAILevel);
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">权限等级配置管理</h1>
-          <p className="text-gray-600 mt-2">管理AI交易系统的权限等级和参数</p>
-        </div>
-        <button
-          onClick={handleInitDefaults}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          初始化默认配置
-        </button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon="🔐"
+        title="权限管理"
+        description="管理用户角色和权限配置"
+        color="purple"
+        actions={
+          <button
+            onClick={handleInitDefaults}
+            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 shadow-sm hover:shadow-md transition-all"
+          >
+            初始化默认配置
+          </button>
+        }
+      />
 
       {/* 当前AI使用的权限等级指示器 */}
       {currentLevelData && (
-        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 shadow-lg">
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -180,19 +183,19 @@ export default function PermissionsAdmin() {
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4 text-center">
-              <div className="bg-white rounded-lg p-3 shadow">
+              <div className="bg-white rounded-xl p-3 shadow">
                 <div className="text-xs text-gray-600">最大仓位</div>
                 <div className="text-lg font-bold text-blue-700">{(currentLevelData.trading_params.max_position_pct * 100).toFixed(0)}%</div>
               </div>
-              <div className="bg-white rounded-lg p-3 shadow">
+              <div className="bg-white rounded-xl p-3 shadow">
                 <div className="text-xs text-gray-600">最大杠杆</div>
                 <div className="text-lg font-bold text-blue-700">{currentLevelData.trading_params.max_leverage}x</div>
               </div>
-              <div className="bg-white rounded-lg p-3 shadow">
+              <div className="bg-white rounded-xl p-3 shadow">
                 <div className="text-xs text-gray-600">置信度阈值</div>
                 <div className="text-lg font-bold text-blue-700">{(currentLevelData.trading_params.confidence_threshold * 100).toFixed(0)}%</div>
               </div>
-              <div className="bg-white rounded-lg p-3 shadow">
+              <div className="bg-white rounded-xl p-3 shadow">
                 <div className="text-xs text-gray-600">每日最大交易</div>
                 <div className="text-lg font-bold text-blue-700">{currentLevelData.trading_params.max_daily_trades}</div>
               </div>
@@ -210,7 +213,7 @@ export default function PermissionsAdmin() {
         {levels.map((level) => (
           <div
             key={level.id}
-            className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${
+            className={`bg-white rounded-xl shadow-md p-6 border-l-4 ${
               level.level === currentAILevel ? 'ring-2 ring-blue-400' : ''
             }`}
             style={{
@@ -301,7 +304,7 @@ export default function PermissionsAdmin() {
                     <div>• 运行天数 ≥ {level.upgrade_conditions.min_days} 天</div>
                   )}
                   {!level.upgrade_conditions.win_rate_7d && !level.upgrade_conditions.win_rate_30d && (
-                    <div className="text-gray-400">无升级条件</div>
+                    <div className="text-gray-600">无升级条件</div>
                   )}
                 </div>
               </div>
@@ -318,7 +321,7 @@ export default function PermissionsAdmin() {
                     <div>• 7日胜率 {'<'} {(level.downgrade_conditions.win_rate_7d * 100).toFixed(0)}%</div>
                   )}
                   {!level.downgrade_conditions.max_drawdown && !level.downgrade_conditions.consecutive_losses && (
-                    <div className="text-gray-400">无降级条件</div>
+                    <div className="text-gray-600">无降级条件</div>
                   )}
                 </div>
               </div>
@@ -330,7 +333,7 @@ export default function PermissionsAdmin() {
       {/* 编辑模态框 */}
       {showEditModal && editingLevel && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">编辑权限等级: {editingLevel.level}</h2>
 
             <div className="space-y-4">
@@ -435,7 +438,7 @@ export default function PermissionsAdmin() {
             <div className="flex gap-2 mt-6">
               <button
                 onClick={handleSave}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-gray-900 rounded hover:from-blue-600 hover:to-blue-700"
               >
                 保存
               </button>

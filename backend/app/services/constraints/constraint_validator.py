@@ -138,7 +138,7 @@ class ConstraintValidator:
         ai_decision = self._apply_confidence_threshold(ai_decision, current_level)
         
         # 2. 交易频率指导
-        ai_decision = self._apply_frequency_guidance(ai_decision, current_level, daily_trade_count)
+        ai_decision = await self._apply_frequency_guidance(ai_decision, current_level, daily_trade_count)
         
         return ai_decision
     
@@ -180,7 +180,7 @@ class ConstraintValidator:
             logger.info(f"置信度不足，拒绝交易: {confidence:.2f} < {threshold:.2f}")
             return ai_decision
     
-    def _apply_frequency_guidance(
+    async def _apply_frequency_guidance(
         self,
         ai_decision: Dict[str, Any],
         current_level: str,
@@ -192,7 +192,7 @@ class ConstraintValidator:
         from app.services.constraints.permission_manager import PermissionManager
         
         permission_mgr = PermissionManager(None)
-        permission = permission_mgr.get_permission(current_level)
+        permission = await permission_mgr.get_permission(current_level)
         
         max_daily_trades = permission.max_daily_trades
         
