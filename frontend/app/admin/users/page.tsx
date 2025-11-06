@@ -192,6 +192,12 @@ export default function UsersPage() {
   };
 
   const handleToggleActive = async (user: User) => {
+    // 不允许禁用默认管理员
+    if (user.username === "admin" && user.is_active) {
+      alert("⚠️ 不能禁用默认管理员账户");
+      return;
+    }
+    
     try {
       const token = localStorage.getItem("admin_token");
       
@@ -210,6 +216,11 @@ export default function UsersPage() {
       if (response.status === 401) {
         localStorage.removeItem("admin_token");
         router.push("/admin/login");
+        return;
+      }
+      
+      if (response.status === 403) {
+        alert("⚠️ 权限不足或不能禁用默认管理员账户");
         return;
       }
       
@@ -465,21 +476,23 @@ export default function UsersPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button
-                        onClick={() => handleToggleActive(user)}
-                        className={user.is_active ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
-                        title={user.is_active ? "禁用" : "启用"}
-                      >
-                        {user.is_active ? (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        )}
-                      </button>
+                      {!(user.username === "admin" && user.is_active) && (
+                        <button
+                          onClick={() => handleToggleActive(user)}
+                          className={user.is_active ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
+                          title={user.is_active ? "禁用" : "启用"}
+                        >
+                          {user.is_active ? (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
                       {user.username !== "admin" && (
                         <button
                           onClick={() => handleDeleteUser(user)}

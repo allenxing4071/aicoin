@@ -37,6 +37,7 @@ export default function AIJournalPage() {
   const [journal, setJournal] = useState<JournalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statsOpen, setStatsOpen] = useState(true); // 数据统计默认展开
 
   useEffect(() => {
     fetchJournal();
@@ -181,40 +182,19 @@ export default function AIJournalPage() {
         </div>
       </div>
 
-      {/* Qwen情报官的日记 */}
-      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-6 shadow-lg border border-orange-200">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-3xl">🕵️</span>
-          <h3 className="text-xl font-bold text-orange-900">Qwen情报官的日记</h3>
-        </div>
-        <div className="prose prose-orange max-w-none">
-          <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
-{journal?.qwen_journal || "今天没有记录"}
-          </pre>
-        </div>
-      </div>
-
-      {/* DeepSeek交易官的日记 */}
-      <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-6 shadow-lg border border-pink-200">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-3xl">🤖</span>
-          <h3 className="text-xl font-bold text-pink-900">DeepSeek交易官的日记</h3>
-        </div>
-        <div className="prose prose-pink max-w-none">
-          <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
-{journal?.deepseek_journal || "今天没有记录"}
-          </pre>
-        </div>
-      </div>
-
-      {/* 数据统计（可折叠） */}
+      {/* 数据统计（可折叠） - 移到顶部，默认展开 */}
       {journal?.data_summary && (
-        <details className="bg-white rounded-xl p-6 shadow border border-gray-200">
-          <summary className="cursor-pointer text-gray-900 font-bold text-lg hover:text-pink-600 transition-colors">
-            📊 查看原始数据统计
-          </summary>
-          <div className="mt-6 space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-6 shadow border border-gray-200 mb-4">
+          <div 
+            className="cursor-pointer text-gray-900 font-bold text-lg hover:text-pink-600 transition-colors flex items-center justify-between"
+            onClick={() => setStatsOpen(!statsOpen)}
+          >
+            <span>📊 查看原始数据统计</span>
+            <span className="text-gray-500">{statsOpen ? '▼' : '▶'}</span>
+          </div>
+          {statsOpen && (
+          <div className="mt-4">
+            <div className="grid grid-cols-8 gap-3">
               <StatCard 
                 label="情报报告" 
                 value={journal.data_summary.qwen_reports_count} 
@@ -265,8 +245,38 @@ export default function AIJournalPage() {
               />
             </div>
           </div>
-        </details>
+          )}
+        </div>
       )}
+
+      {/* 日记区域 - 左右结构 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Qwen情报官的日记 - 左侧 */}
+        <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-6 shadow-lg border border-orange-200">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-3xl">🕵️</span>
+            <h3 className="text-xl font-bold text-orange-900">Qwen情报官的日记</h3>
+          </div>
+          <div className="prose prose-orange max-w-none">
+            <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
+{journal?.qwen_journal || "今天没有记录"}
+            </pre>
+          </div>
+        </div>
+
+        {/* DeepSeek交易官的日记 - 右侧 */}
+        <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-6 shadow-lg border border-pink-200">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-3xl">🤖</span>
+            <h3 className="text-xl font-bold text-pink-900">DeepSeek交易官的日记</h3>
+          </div>
+          <div className="prose prose-pink max-w-none">
+            <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
+{journal?.deepseek_journal || "今天没有记录"}
+            </pre>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

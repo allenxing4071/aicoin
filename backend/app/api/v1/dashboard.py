@@ -41,24 +41,38 @@ async def get_api_status_data() -> Dict[str, Any]:
 
 
 async def get_account_data(db: AsyncSession) -> Dict[str, Any]:
-    """获取账户信息"""
+    """获取账户信息 (带缓存优化)"""
     try:
         from app.services.hyperliquid_trading import HyperliquidTradingService
         from app.core.redis_client import redis_client
         from app.core.config import settings
         
+        # 尝试从缓存获取 (30秒缓存)
+        cache_key = "dashboard:account_info"
+        cached_data = await redis_client.get(cache_key)
+        if cached_data:
+            logger.debug("✅ 从缓存获取账户数据")
+            return cached_data
+        
+        # 缓存未命中,查询数据
         testnet = getattr(settings, 'HYPERLIQUID_TESTNET', False)
         trading_service = HyperliquidTradingService(redis_client, testnet=testnet)
         await trading_service.initialize()
         account_info = trading_service.get_account_info()
         
-        return {
+        result = {
             "equity": account_info.get("equity", 0),
             "balance": account_info.get("balance", 0),
             "margin_used": account_info.get("margin_used", 0),
             "unrealized_pnl": account_info.get("unrealized_pnl", 0),
             "total_return": account_info.get("total_return", 0)
         }
+        
+        # 缓存结果 (30秒)
+        await redis_client.set(cache_key, result, expire=30)
+        logger.debug("✅ 账户数据已缓存")
+        
+        return result
     except Exception as e:
         logger.error(f"获取账户数据失败: {e}")
         return {

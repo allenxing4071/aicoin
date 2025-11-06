@@ -4,7 +4,7 @@ import React, { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import AuthGuard from "./AuthGuard";
-import { Layout, Menu, Avatar, Dropdown, Space } from "antd";
+import { Layout, Menu, Space } from "antd";
 import {
   DashboardOutlined,
   SwapOutlined,
@@ -55,136 +55,117 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return <AuthGuard>{children}</AuthGuard>;
   }
 
-  // 菜单项配置
+  // 菜单项配置 - 智能化命名
   const menuItems: MenuProps["items"] = [
     {
       key: "/admin",
       icon: <DashboardOutlined />,
-      label: <Link href="/admin">概览</Link>,
+      label: <Link href="/admin">智能驾驶舱</Link>,
     },
     {
       key: "exchange-group",
       icon: <SwapOutlined />,
-      label: "交易所管理",
+      label: "交易网关",
       children: [
         {
           key: "/admin/exchanges",
-          label: <Link href="/admin/exchanges">交易所配置</Link>,
+          label: <Link href="/admin/exchanges">交易所接入</Link>,
         },
       ],
     },
     {
       key: "intelligence-group",
       icon: <FileSearchOutlined />,
-      label: "情报系统",
+      label: "情报中枢",
       children: [
         {
           key: "/admin/intelligence",
-          label: <Link href="/admin/intelligence">情报配置</Link>,
+          label: <Link href="/admin/intelligence">情报源配置</Link>,
         },
       ],
     },
     {
       key: "trading-group",
       icon: <LineChartOutlined />,
-      label: "交易系统",
+      label: "交易引擎",
       children: [
         {
           key: "/admin/trading",
-          label: <Link href="/admin/trading">交易管理</Link>,
+          label: <Link href="/admin/trading">AI工作日志</Link>,
         },
         {
           key: "/admin/trades",
-          label: <Link href="/admin/trades">交易记录</Link>,
+          label: <Link href="/admin/trades">成交明细</Link>,
         },
         {
           key: "/admin/orders",
-          label: <Link href="/admin/orders">订单记录</Link>,
+          label: <Link href="/admin/orders">订单追踪</Link>,
         },
         {
           key: "/admin/accounts",
-          label: <Link href="/admin/accounts">账户快照</Link>,
+          label: <Link href="/admin/accounts">资产快照</Link>,
         },
       ],
     },
     {
       key: "memory-group",
       icon: <BulbOutlined />,
-      label: "记忆系统",
+      label: "神经网络",
       children: [
         {
           key: "/admin/memory",
-          label: <Link href="/admin/memory">AI记忆管理</Link>,
+          label: <Link href="/admin/memory">记忆矩阵</Link>,
         },
       ],
     },
     {
       key: "ai-decision-group",
       icon: <RobotOutlined />,
-      label: "AI决策",
+      label: "智能决策",
       children: [
         {
           key: "/admin/ai-decisions",
-          label: <Link href="/admin/ai-decisions">决策记录</Link>,
+          label: <Link href="/admin/ai-decisions">决策轨迹</Link>,
         },
         {
           key: "/admin/model-performance",
-          label: <Link href="/admin/model-performance">模型性能</Link>,
+          label: <Link href="/admin/model-performance">模型评估</Link>,
         },
       ],
     },
     {
       key: "data-management-group",
       icon: <DatabaseOutlined />,
-      label: "数据管理",
+      label: "数据湖",
       children: [
         {
           key: "/admin/market-data",
-          label: <Link href="/admin/market-data">K线数据</Link>,
+          label: <Link href="/admin/market-data">市场行情</Link>,
         },
       ],
     },
     {
       key: "system-management-group",
       icon: <SettingOutlined />,
-      label: "系统管理",
+      label: "系统控制",
       children: [
         {
           key: "/admin/risk-events",
-          label: <Link href="/admin/risk-events">风控事件</Link>,
+          label: <Link href="/admin/risk-events">风控预警</Link>,
         },
         {
           key: "/admin/permissions",
-          label: <Link href="/admin/permissions">权限管理</Link>,
+          label: <Link href="/admin/permissions">权限矩阵</Link>,
         },
         {
           key: "/admin/users",
-          label: <Link href="/admin/users">用户管理</Link>,
+          label: <Link href="/admin/users">用户中心</Link>,
         },
       ],
     },
   ];
 
-  const userDropdownMenu: MenuProps = {
-    items: [
-      {
-        key: "profile",
-        icon: <UserOutlined />,
-        label: "个人中心",
-      },
-      {
-        key: "home",
-        icon: <HomeOutlined />,
-        label: <Link href="/">返回主页</Link>,
-      },
-      {
-        key: "logout",
-        icon: <LogoutOutlined />,
-        label: "退出登录",
-        onClick: handleLogout,
-      },
-    ],
-  };
+  // 移除下拉菜单，改为顶部按钮
 
   return (
     <AuthGuard>
@@ -368,30 +349,117 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               background: "#ffffff",
               borderBottom: "1px solid #f0f0f0",
               display: "flex",
-              justifyContent: "flex-end",
+              justifyContent: "space-between",
               alignItems: "center",
               boxShadow: "0 1px 2px rgba(0, 0, 0, 0.03)",
               userSelect: "none",
               transition: "left 0.2s",
             }}
           >
-            <Space size="large">
-              {username && (
-                <span style={{ color: "#595959", fontSize: "14px" }}>
-                  欢迎, <span style={{ fontWeight: 600, color: "#262626" }}>{username}</span>
-                </span>
-              )}
-              <Dropdown menu={userDropdownMenu} placement="bottomRight">
-                <div style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Avatar
-                    style={{
-                      background: "linear-gradient(135deg, #1677ff 0%, #0958d9 100%)",
-                      boxShadow: "0 2px 8px rgba(22, 119, 255, 0.2)",
-                    }}
-                    icon={<UserOutlined />}
-                  />
-                </div>
-              </Dropdown>
+            {/* 左侧：欢迎信息 */}
+            {username && (
+              <span style={{ color: "#595959", fontSize: "14px" }}>
+                欢迎, <span style={{ fontWeight: 600, color: "#262626" }}>{username}</span>
+              </span>
+            )}
+
+            {/* 右侧：操作按钮 */}
+            <Space size="small">
+              {/* 打开首页按钮 */}
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "4px 12px",
+                  borderRadius: "4px",
+                  border: "1px solid #d9d9d9",
+                  background: "#ffffff",
+                  color: "#262626",
+                  fontSize: "13px",
+                  textDecoration: "none",
+                  transition: "all 0.2s",
+                  cursor: "pointer",
+                  height: "28px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#1677ff";
+                  e.currentTarget.style.color = "#1677ff";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#d9d9d9";
+                  e.currentTarget.style.color = "#262626";
+                }}
+              >
+                <HomeOutlined style={{ fontSize: "12px" }} />
+                <span>打开首页</span>
+              </a>
+
+              {/* 个人中心按钮 */}
+              <button
+                onClick={() => {
+                  // TODO: 跳转到个人中心页面
+                  console.log("跳转到个人中心");
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "4px 12px",
+                  borderRadius: "4px",
+                  border: "1px solid #d9d9d9",
+                  background: "#ffffff",
+                  color: "#262626",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  height: "28px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#1677ff";
+                  e.currentTarget.style.color = "#1677ff";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#d9d9d9";
+                  e.currentTarget.style.color = "#262626";
+                }}
+              >
+                <UserOutlined style={{ fontSize: "12px" }} />
+                <span>个人中心</span>
+              </button>
+
+              {/* 退出登录按钮 */}
+              <button
+                onClick={handleLogout}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "4px 12px",
+                  borderRadius: "4px",
+                  border: "1px solid #ff4d4f",
+                  background: "#ffffff",
+                  color: "#ff4d4f",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  height: "28px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#ff4d4f";
+                  e.currentTarget.style.color = "#ffffff";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.color = "#ff4d4f";
+                }}
+                >
+                <LogoutOutlined style={{ fontSize: "12px" }} />
+                <span>退出登录</span>
+              </button>
             </Space>
           </Header>
 
@@ -409,7 +477,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               minHeight: "calc(100vh - 112px)",
             }}
           >
-            {children}
+          {children}
           </Content>
         </Layout>
       </Layout>

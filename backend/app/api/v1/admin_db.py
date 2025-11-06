@@ -271,6 +271,12 @@ async def get_system_stats(db: AsyncSession = Depends(get_db)):
     返回系统整体统计信息,包括各表记录数、最新账户状态等
     """
     try:
+        # 获取数据库表总数
+        total_tables_result = await db.execute(
+            text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")
+        )
+        total_tables = total_tables_result.scalar()
+        
         # 获取各表统计
         total_trades = await get_table_count(db, Trade)
         total_orders = await get_table_count(db, Order)
@@ -338,6 +344,7 @@ async def get_system_stats(db: AsyncSession = Depends(get_db)):
             total_risk_events=total_risk_events,
             latest_account_balance=latest_balance,
             latest_account_equity=latest_equity,
+            total_tables=total_tables,
             tables=table_stats
         )
         

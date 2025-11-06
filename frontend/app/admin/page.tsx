@@ -19,6 +19,7 @@ interface SystemStats {
   latest_account_balance: string | null;
   latest_account_equity: string | null;
   database_size_mb: number | null;
+  total_tables?: number;
 }
 
 interface PermissionLevel {
@@ -39,6 +40,7 @@ export default function AdminPage() {
   const [permissionLevels, setPermissionLevels] = useState<PermissionLevel[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<string>('L1');
   const [currentLevel, setCurrentLevel] = useState<string>('L1');
+  const [totalTableCount, setTotalTableCount] = useState<number>(0);
 
   useEffect(() => {
     fetchData();
@@ -63,6 +65,10 @@ export default function AdminPage() {
       const statsData = await statsRes.json();
       if (statsData.success) {
         setStats(statsData.data);
+        // 从统计信息中获取总表数
+        if (statsData.data.total_tables) {
+          setTotalTableCount(statsData.data.total_tables);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch admin data:", error);
@@ -431,7 +437,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="bg-white rounded p-3 border border-blue-200">
                 <div className="text-gray-600 text-xs">API版本</div>
-                <div className="font-semibold text-blue-800">v1.0</div>
+                <div className="font-semibold text-blue-800">v3.1</div>
               </div>
               <div className="bg-white rounded p-3 border border-blue-200">
                 <div className="text-gray-600 text-xs">文档状态</div>
@@ -475,7 +481,7 @@ export default function AdminPage() {
               </div>
               <div className="bg-white rounded p-3 border border-green-200">
                 <div className="text-gray-600 text-xs">数据表数量</div>
-                <div className="font-semibold text-green-800">{tables.length} 张</div>
+                <div className="font-semibold text-green-800">{totalTableCount || tables.length} 张</div>
               </div>
               <div className="bg-white rounded p-3 border border-green-200">
                 <div className="text-gray-600 text-xs">总记录数</div>

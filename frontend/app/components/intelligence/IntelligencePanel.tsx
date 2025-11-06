@@ -22,12 +22,21 @@ interface WhaleActivity {
   exchange: string | null;
 }
 
+interface OnChainMetrics {
+  exchange_net_flow?: number;
+  active_addresses?: number;
+  gas_price?: number;
+  transaction_volume?: number;
+  timestamp?: string;
+}
+
 interface IntelligenceReport {
   timestamp: string;
   market_sentiment: string;
   sentiment_score: number;
   key_news: NewsItem[];
   whale_signals: WhaleActivity[];
+  on_chain_metrics?: OnChainMetrics;
   risk_factors: string[];
   opportunities: string[];
   qwen_analysis: string;
@@ -248,6 +257,58 @@ export default function IntelligencePanel() {
           )}
         </div>
       </div>
+
+      {/* On-Chain Metrics */}
+      {report.on_chain_metrics && Object.keys(report.on_chain_metrics).length > 0 && (
+        <div className="bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-200 rounded-xl shadow-lg p-6">
+          <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent mb-4 flex items-center">
+            ⛓️ 链上指标
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {report.on_chain_metrics.exchange_net_flow !== undefined && (
+              <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="text-sm text-gray-600 mb-1">交易所净流入</div>
+                <div className={`text-2xl font-bold ${report.on_chain_metrics.exchange_net_flow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {report.on_chain_metrics.exchange_net_flow >= 0 ? '+' : ''}{(report.on_chain_metrics.exchange_net_flow / 1000000).toFixed(2)}M
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {report.on_chain_metrics.exchange_net_flow >= 0 ? '资金流入' : '资金流出'}
+                </div>
+              </div>
+            )}
+            
+            {report.on_chain_metrics.active_addresses !== undefined && (
+              <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="text-sm text-gray-600 mb-1">活跃地址数</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {(report.on_chain_metrics.active_addresses / 1000).toFixed(1)}K
+                </div>
+                <div className="text-xs text-gray-500 mt-1">24小时</div>
+              </div>
+            )}
+            
+            {report.on_chain_metrics.gas_price !== undefined && (
+              <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="text-sm text-gray-600 mb-1">Gas价格</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {report.on_chain_metrics.gas_price.toFixed(0)}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Gwei</div>
+              </div>
+            )}
+            
+            {report.on_chain_metrics.transaction_volume !== undefined && (
+              <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="text-sm text-gray-600 mb-1">交易量</div>
+                <div className="text-2xl font-bold text-orange-600">
+                  ${(report.on_chain_metrics.transaction_volume / 1000000000).toFixed(2)}B
+                </div>
+                <div className="text-xs text-gray-500 mt-1">24小时</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Risk & Opportunities */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

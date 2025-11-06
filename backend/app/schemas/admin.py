@@ -162,6 +162,7 @@ class SystemStats(BaseModel):
     latest_account_balance: Optional[Decimal] = Field(None, description="最新账户余额")
     latest_account_equity: Optional[Decimal] = Field(None, description="最新账户净值")
     database_size_mb: Optional[float] = Field(None, description="数据库大小(MB)")
+    total_tables: Optional[int] = Field(None, description="数据库表总数")
     tables: List[TableStats] = Field(default_factory=list, description="各表统计")
 
 

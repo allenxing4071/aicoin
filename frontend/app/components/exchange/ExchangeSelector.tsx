@@ -46,14 +46,29 @@ export default function ExchangeSelector() {
   const handleSwitchExchange = async (exchange: string, market: string) => {
     setSwitching(true);
     try {
+      // 智能选择市场类型
+      let targetMarket = market;
+      
+      // 如果切换到Binance且当前市场类型是perpetual,默认使用spot
+      if (exchange === 'binance' && market === 'perpetual') {
+        targetMarket = 'spot';
+      }
+      
+      // 如果切换到Hyperliquid,只支持perpetual
+      if (exchange === 'hyperliquid') {
+        targetMarket = 'perpetual';
+      }
+      
       const response = await axios.post(
-        `${API_BASE}/exchanges/switch?exchange_name=${exchange}&market_type=${market}`
+        `${API_BASE}/exchanges/switch?exchange_name=${exchange}&market_type=${targetMarket}`
       );
       
       if (response.data.success) {
         // 刷新当前交易所信息
         await fetchActiveExchange();
         alert('✅ 切换成功!');
+        // 刷新页面以确保所有组件都使用新的交易所
+        window.location.reload();
       }
     } catch (error: any) {
       const errorMsg = error.response?.data?.detail || '切换失败';

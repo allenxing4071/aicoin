@@ -134,11 +134,6 @@ export default function ModelDetailPage() {
               <span>←</span>
               <span>返回主页</span>
             </Link>
-            <div className="flex gap-4">
-              <Link href="/" className="text-gray-600 hover:text-gray-900">实时交易</Link>
-              <span className="text-gray-300">|</span>
-              <Link href="/models" className="text-gray-600 hover:text-gray-900">模型</Link>
-            </div>
           </div>
           
           <div className="flex items-center justify-between">
