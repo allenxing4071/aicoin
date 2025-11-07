@@ -35,16 +35,24 @@ const parseTableComment = (comment: string | null): { icon: string; description:
     return { icon: "📊", description: "暂无说明" };
   }
   
-  // 提取 emoji（通常是第一个字符）
-  // 使用更兼容的正则表达式，匹配常见的 emoji 范围
-  const emojiRegex = /^[\u2600-\u27BF\uD83C-\uDBFF\uDC00-\uDFFF]+/;
-  const emojiMatch = comment.match(emojiRegex);
-  const icon = emojiMatch ? emojiMatch[0] : "📊";
+  // 简单粗暴：提取第一个非空格字符作为 emoji，其余作为描述
+  const trimmed = comment.trim();
   
-  // 提取描述（去掉 emoji 后的内容）
-  const description = comment.replace(emojiRegex, "").trim();
+  // 获取第一个字符（可能是多字节 emoji）
+  const firstChar = Array.from(trimmed)[0] || "📊";
   
-  return { icon, description };
+  // 检查第一个字符是否像是 emoji（非 ASCII 字符）
+  const isEmoji = firstChar.charCodeAt(0) > 255;
+  
+  if (isEmoji) {
+    // 第一个字符是 emoji，提取它和剩余描述
+    const icon = firstChar;
+    const description = trimmed.substring(firstChar.length).trim();
+    return { icon, description };
+  } else {
+    // 没有 emoji，使用默认图标
+    return { icon: "📊", description: trimmed };
+  }
 };
 
 // 字段说明配置（针对account_snapshots表）
