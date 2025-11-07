@@ -93,9 +93,9 @@ export default function IntelligencePlatformsPanel() {
       console.log("🔍 正在获取平台列表...");
       setError(null);
       
-      // 添加超时控制
+      // 添加超时控制（增加到30秒，给后端足够的初始化时间）
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
       
       const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms", {
         signal: controller.signal
@@ -114,7 +114,7 @@ export default function IntelligencePlatformsPanel() {
     } catch (error: any) {
       console.error("❌ 获取平台列表失败:", error);
       if (error.name === 'AbortError') {
-        setError("请求超时，请检查后端服务是否正常运行");
+        setError("请求超时（30秒），后端服务可能正在启动中，请稍后刷新页面重试");
       } else {
         setError(error.message || "获取平台列表失败");
       }
