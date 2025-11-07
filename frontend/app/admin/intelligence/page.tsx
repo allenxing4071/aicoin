@@ -41,7 +41,7 @@ export default function IntelligenceAdminPage() {
               : 'text-gray-600 border-transparent hover:text-blue-600'
           }`}
         >
-          📊 数据源配置
+          📊 数据源状态
         </button>
         <button
           onClick={() => setActiveTab('platforms')}
@@ -51,7 +51,7 @@ export default function IntelligenceAdminPage() {
               : 'text-gray-600 border-transparent hover:text-blue-600'
           }`}
         >
-          ☁️ 云平台管理
+          ☁️ Qwen配置
         </button>
       </div>
 
