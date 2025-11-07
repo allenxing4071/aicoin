@@ -330,6 +330,12 @@ async def startup_event():
         hyperliquid_trading.set_ai_orchestrator(ai_orchestrator)
         logger.info("✅ AI trading orchestrator V2 initialized (global variable set)")
         
+        # Set intelligence coordinator instance for platform management
+        if hasattr(ai_orchestrator, 'intelligence_engine'):
+            from app.api.v1.endpoints.intelligence_platforms import set_coordinator_instance
+            set_coordinator_instance(ai_orchestrator.intelligence_engine)
+            logger.info("✅ Intelligence coordinator instance set for platform management")
+        
         # Start the trading loop in background
         import asyncio
         asyncio.create_task(ai_orchestrator.start())
