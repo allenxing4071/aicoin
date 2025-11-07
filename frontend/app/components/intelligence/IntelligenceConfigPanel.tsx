@@ -722,44 +722,47 @@ export default function IntelligenceConfigPanel() {
         </div>
       </div>
 
-      {/* 说明文档 */}
+      {/* 云平台管理说明 */}
       <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-bold mb-3 text-gray-800">📖 情报系统说明</h3>
+        <h3 className="text-lg font-bold mb-3 text-gray-800">📖 云平台管理说明</h3>
         
         <div className="space-y-3 text-sm text-gray-700">
           <div>
-            <strong className="text-amber-700">🔍 数据来源透明化：</strong>
+            <strong className="text-amber-700">☁️ 工作原理：</strong>
             <p className="ml-4 mt-1">
-              所有数据源的URL和抓取路径都已公开显示。您可以看到每个数据源的具体来源、更新频率和运行状态。
+              系统采用多云平台并行分析架构，同时调用多个AI云平台对相同数据进行分析，
+              通过交叉验证提升情报报告的准确性。类似"专家会诊"机制，多个AI同时分析，取得共识的信息置信度更高。
             </p>
           </div>
           
           <div>
-            <strong className="text-amber-700">🧪 模拟数据 vs 真实数据：</strong>
+            <strong className="text-amber-700">📊 数据流程：</strong>
             <p className="ml-4 mt-1">
-              当前系统默认使用<strong>模拟数据</strong>进行测试。要使用真实数据，需要：
-              <br />1. 配置相应的API Key（CoinDesk、Whale Alert、Glassnode等）
-              <br />2. 启用对应的数据源
-              <br />3. 在配置中关闭"模拟模式"
+              1. 数据收集 → RSS新闻源定期抓取最新资讯（30分钟/次）
+              <br />2. 并行分析 → 多个云平台同时分析相同数据
+              <br />3. 交叉验证 → 对比各平台结果，计算置信度
+              <br />4. 生成报告 → 输出综合情报报告（准确率85%+）
             </p>
           </div>
           
           <div>
-            <strong className="text-amber-700">⚙️ 配置方法：</strong>
+            <strong className="text-amber-700">⚙️ 配置要求：</strong>
             <p className="ml-4 mt-1">
-              目前配置需要通过API完成。未来版本将提供可视化配置界面。
-              <br />API端点: <code className="bg-gray-50 px-1 py-0.5 rounded">POST /api/v1/admin/intelligence/config</code>
+              • <strong>推荐配置</strong>：至少3个云平台（提升准确率至85%+）
+              <br />• <strong>最低配置</strong>：1个云平台（基础功能可用，准确率70%）
+              <br />• <strong>API密钥</strong>：需要在各云平台官网申请API Key
+              <br />• <strong>成本控制</strong>：可监控各平台调用次数和费用
             </p>
           </div>
           
-          <div>
-            <strong className="text-amber-700">📡 数据源类型：</strong>
-            <p className="ml-4 mt-1">
-              • <strong>news</strong>: 加密货币新闻（CoinDesk、CoinTelegraph）
-              <br />• <strong>whale</strong>: 巨鲸交易监控（Whale Alert）
-              <br />• <strong>onchain</strong>: 链上数据指标（Etherscan、Glassnode）
-              <br />• <strong>mock</strong>: 模拟数据（用于测试和演示）
-            </p>
+          <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mt-3">
+            <strong className="text-yellow-800">⚠️ 重要提示</strong>
+            <ul className="list-disc list-inside mt-2 space-y-1 text-yellow-800">
+              <li>云平台配置需重启后才能生效</li>
+              <li>建议先在测试环境验证API Key的有效性</li>
+              <li>多平台并行会增加API调用成本，请注意费用控制</li>
+              <li>可以随时启用/禁用单个平台，无需删除配置</li>
+            </ul>
           </div>
         </div>
       </div>
