@@ -19,7 +19,7 @@ import PageHeader from '../../components/common/PageHeader';
 type TabType = 'datasources' | 'platforms';
 
 export default function IntelligenceAdminPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('datasources');
+  const [activeTab, setActiveTab] = useState<TabType>('platforms');
 
   return (
     <div className="space-y-6">
