@@ -6,8 +6,8 @@
  * 路径: /admin/intelligence
  * 
  * 功能：
- * - 数据源配置: RSS新闻源、巨鲸监控、链上数据等数据源状态
- * - 云平台管理: Qwen情报系统配置、收集统计、云平台说明
+ * - 数据源状态: 显示数据源配置（RSS、巨鲸监控、链上数据等）
+ * - Qwen配置: 显示云平台管理（Qwen、腾讯混元、火山引擎等）
  */
 
 import React, { useState } from 'react';
@@ -58,9 +58,9 @@ export default function IntelligenceAdminPage() {
       {/* Tab内容 */}
       <div>
         {activeTab === 'datasources' ? (
-          <IntelligencePlatformsPanel />
-        ) : (
           <IntelligenceConfigPanel />
+        ) : (
+          <IntelligencePlatformsPanel />
         )}
       </div>
     </div>
