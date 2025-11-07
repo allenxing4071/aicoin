@@ -369,80 +369,6 @@ export default function IntelligencePlatformsPanel() {
         </div>
       )}
 
-      {/* 系统说明 */}
-      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-300 rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <span>📖</span>
-          <span>云平台管理说明</span>
-        </h3>
-
-        <div className="space-y-4">
-          {/* 工作原理 */}
-          <div>
-            <div className="flex items-start gap-2 mb-2">
-              <span className="text-xl">🔄</span>
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-900 mb-1">工作原理：</h4>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  系统采用<strong>多云平台并行分析</strong>架构，同时调用多个AI云平台对相同数据进行分析，
-                  通过<strong>交叉验证</strong>提升情报准确性。类似"专家会诊"机制，多个AI同时分析，取得共识的信息置信度更高。
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* 数据流程 */}
-          <div>
-            <div className="flex items-start gap-2 mb-2">
-              <span className="text-xl">📊</span>
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-900 mb-1">数据流程：</h4>
-                <div className="text-sm text-gray-700 space-y-1">
-                  <p><strong>1. 数据收集</strong> → RSS新闻源定期抓取最新资讯（30分钟/次）</p>
-                  <p><strong>2. 并行分析</strong> → 多个云平台同时分析相同数据</p>
-                  <p><strong>3. 交叉验证</strong> → 对比各平台结果，计算置信度</p>
-                  <p><strong>4. 生成报告</strong> → 输出综合情报报告（准确率85%+）</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 平台配置 */}
-          <div>
-            <div className="flex items-start gap-2 mb-2">
-              <span className="text-xl">⚙️</span>
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-900 mb-1">配置要求：</h4>
-                <div className="text-sm text-gray-700 space-y-1">
-                  <p>• <strong>推荐配置</strong>：至少3个云平台（提升准确率至85%+）</p>
-                  <p>• <strong>最低配置</strong>：1个云平台（基础功能可用，准确率70%）</p>
-                  <p>• <strong>API密钥</strong>：需要在各云平台官网申请API Key</p>
-                  <p>• <strong>成本控制</strong>：可监控各平台调用次数和费用</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 注意事项 */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <span className="text-orange-600 text-lg">⚠️</span>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-orange-800 mb-1">
-                  重要提示
-                </p>
-                <ul className="text-xs text-orange-700 space-y-1 list-disc list-inside">
-                  <li>云平台配置需要重启后端服务才能生效</li>
-                  <li>建议先在测试环境验证API Key的有效性</li>
-                  <li>多平台并行会增加API调用成本，请注意费用控制</li>
-                  <li>可以随时启用/禁用单个平台，无需删除配置</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* 云平台配置卡片 */}
       <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
@@ -677,6 +603,80 @@ export default function IntelligencePlatformsPanel() {
               </div>
             ))
           )}
+        </div>
+      </div>
+
+      {/* 云平台管理说明 */}
+      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-300 rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <span>📖</span>
+          <span>云平台管理说明</span>
+        </h3>
+
+        <div className="space-y-4">
+          {/* 工作原理 */}
+          <div>
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-xl">🔄</span>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-900 mb-1">工作原理：</h4>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  系统采用<strong>多云平台并行分析</strong>架构，同时调用多个AI云平台对相同数据进行分析，
+                  通过<strong>交叉验证</strong>提升情报准确性。类似"专家会诊"机制，多个AI同时分析，取得共识的信息置信度更高。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 数据流程 */}
+          <div>
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-xl">📊</span>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-900 mb-1">数据流程：</h4>
+                <div className="text-sm text-gray-700 space-y-1">
+                  <p><strong>1. 数据收集</strong> → RSS新闻源定期抓取最新资讯（30分钟/次）</p>
+                  <p><strong>2. 并行分析</strong> → 多个云平台同时分析相同数据</p>
+                  <p><strong>3. 交叉验证</strong> → 对比各平台结果，计算置信度</p>
+                  <p><strong>4. 生成报告</strong> → 输出综合情报报告（准确率85%+）</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 平台配置 */}
+          <div>
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-xl">⚙️</span>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-900 mb-1">配置要求：</h4>
+                <div className="text-sm text-gray-700 space-y-1">
+                  <p>• <strong>推荐配置</strong>：至少3个云平台（提升准确率至85%+）</p>
+                  <p>• <strong>最低配置</strong>：1个云平台（基础功能可用，准确率70%）</p>
+                  <p>• <strong>API密钥</strong>：需要在各云平台官网申请API Key</p>
+                  <p>• <strong>成本控制</strong>：可监控各平台调用次数和费用</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 注意事项 */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <span className="text-orange-600 text-lg">⚠️</span>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-orange-800 mb-1">
+                  重要提示
+                </p>
+                <ul className="text-xs text-orange-700 space-y-1 list-disc list-inside">
+                  <li>云平台配置需要重启后端服务才能生效</li>
+                  <li>建议先在测试环境验证API Key的有效性</li>
+                  <li>多平台并行会增加API调用成本，请注意费用控制</li>
+                  <li>可以随时启用/禁用单个平台，无需删除配置</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
