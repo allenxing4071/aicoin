@@ -554,7 +554,7 @@ export default function IntelligenceConfigPanel() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="text-lg font-semibold">{source.name}</span>
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                       source.status === 'active' ? 'bg-green-100 text-green-700' :
@@ -568,6 +568,18 @@ export default function IntelligenceConfigPanel() {
                     <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full font-medium">
                       {source.type}
                     </span>
+                    {/* API Key配置状态标记 */}
+                    {source.type !== 'news' && source.type !== 'mock' && (
+                      config?.data_sources.find(s => s.name === source.name)?.api_key ? (
+                        <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                          🔑 已配置密钥
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full font-medium animate-pulse">
+                          ⚠️ 需要配置API Key
+                        </span>
+                      )
+                    )}
                   </div>
                   
                   <p className="text-sm text-orange-700 mb-2">{source.description}</p>
@@ -598,6 +610,24 @@ export default function IntelligenceConfigPanel() {
                   {/* API Key配置区域 */}
                   {source.type !== 'mock' && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
+                      {/* 未配置API Key的警告提示 */}
+                      {source.type !== 'news' && !config?.data_sources.find(s => s.name === source.name)?.api_key && editingSource !== source.name && (
+                        <div className="mb-3 bg-orange-50 border border-orange-200 rounded-lg p-3">
+                          <div className="flex items-start gap-2">
+                            <span className="text-orange-600 text-lg">⚠️</span>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-orange-800 mb-1">
+                                此数据源需要配置API Key才能使用
+                              </p>
+                              <p className="text-xs text-orange-600">
+                                {source.type === 'whale' && '巨鲸监控服务需要Whale Alert API密钥'}
+                                {source.type === 'onchain' && '链上数据服务需要Etherscan或Glassnode API密钥'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {editingSource === source.name ? (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">

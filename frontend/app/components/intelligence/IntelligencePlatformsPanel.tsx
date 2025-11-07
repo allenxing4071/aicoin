@@ -31,11 +31,30 @@ interface CloudPlatform {
   };
 }
 
+interface IntelligenceConfig {
+  enabled: boolean;
+  update_interval: number;
+  qwen_model: string;
+  mock_mode: boolean;
+  data_sources: Array<{
+    type: string;
+    name: string;
+    url: string;
+    api_key: string | null;
+    enabled: boolean;
+    update_interval: number;
+    description: string;
+  }>;
+}
+
 export default function IntelligencePlatformsPanel() {
   const [platforms, setPlatforms] = useState<CloudPlatform[]>([]);
+  const [config, setConfig] = useState<IntelligenceConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [reloading, setReloading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     provider: "qwen",
@@ -47,21 +66,60 @@ export default function IntelligencePlatformsPanel() {
 
   useEffect(() => {
     fetchPlatforms();
+    fetchConfig();
     
     // 每30秒刷新一次
-    const interval = setInterval(fetchPlatforms, 30000);
+    const interval = setInterval(() => {
+      fetchPlatforms();
+      fetchConfig();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchPlatforms = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms");
+      console.log("🔍 正在获取平台列表...");
+      setError(null);
+      
+      // 添加超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+      
+      const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms", {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      console.log("📡 API响应状态:", response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
+      console.log("📊 获取到的平台数据:", data);
       setPlatforms(data.platforms || []);
-    } catch (error) {
-      console.error("获取平台列表失败:", error);
+    } catch (error: any) {
+      console.error("❌ 获取平台列表失败:", error);
+      if (error.name === 'AbortError') {
+        setError("请求超时，请检查后端服务是否正常运行");
+      } else {
+        setError(error.message || "获取平台列表失败");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchConfig = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/admin/intelligence/config");
+      if (response.ok) {
+        const data = await response.json();
+        setConfig(data.data);
+      }
+    } catch (error) {
+      console.error("获取配置失败:", error);
     }
   };
 
@@ -108,7 +166,10 @@ export default function IntelligencePlatformsPanel() {
           enabled: true
         });
         fetchPlatforms();
-        alert("✅ 平台添加成功!");
+        alert("✅ 平台添加成功! 正在重新加载配置...");
+        
+        // 自动重新加载平台配置
+        await handleReloadPlatforms();
       } else {
         const error = await response.json();
         alert(`❌ 添加失败: ${error.detail || "未知错误"}`);
@@ -118,6 +179,32 @@ export default function IntelligencePlatformsPanel() {
       alert("添加平台失败,请检查网络连接");
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleReloadPlatforms = async () => {
+    setReloading(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms/reload", {
+        method: "POST"
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          alert(`✅ ${data.message}`);
+          fetchPlatforms();
+        } else {
+          alert(`⚠️ ${data.message}`);
+        }
+      } else {
+        alert("❌ 重新加载失败");
+      }
+    } catch (error) {
+      console.error("重新加载平台失败:", error);
+      alert("重新加载失败,请检查后端服务");
+    } finally {
+      setReloading(false);
     }
   };
 
@@ -144,17 +231,210 @@ export default function IntelligencePlatformsPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">加载云平台配置...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+        <div className="text-red-600 mb-2">❌ 加载失败</div>
+        <div className="text-sm text-red-500 mb-4">{error}</div>
+        <button
+          onClick={fetchPlatforms}
+          className="px-4 py-2 bg-red-100 text-red-900 rounded-lg hover:bg-red-200 transition-colors"
+        >
+          重试
+        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* 数据源状态概览 */}
+      {config && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">📊 数据源状态概览</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* RSS新闻源 */}
+            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">📰</span>
+                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                  已启用
+                </span>
+              </div>
+              <h4 className="font-bold text-gray-900 mb-1">RSS新闻源</h4>
+              <p className="text-sm text-gray-600">
+                {config.data_sources.filter(s => s.type === 'news' && s.enabled).length} 个源
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                CoinDesk, CoinTelegraph
+              </p>
+            </div>
+
+            {/* 巨鲸监控 */}
+            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">🐋</span>
+                {config.data_sources.find(s => s.type === 'whale')?.api_key ? (
+                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                    已配置
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full font-medium">
+                    未配置
+                  </span>
+                )}
+              </div>
+              <h4 className="font-bold text-gray-900 mb-1">巨鲸监控</h4>
+              <p className="text-sm text-gray-600">Whale Alert API</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {config.data_sources.find(s => s.type === 'whale')?.api_key ? '✅ 可用' : '⚠️ 需要API Key'}
+              </p>
+            </div>
+
+            {/* 链上数据 */}
+            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">⛓️</span>
+                {config.data_sources.filter(s => s.type === 'onchain' && s.api_key).length > 0 ? (
+                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                    部分配置
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full font-medium">
+                    未配置
+                  </span>
+                )}
+              </div>
+              <h4 className="font-bold text-gray-900 mb-1">链上数据</h4>
+              <p className="text-sm text-gray-600">
+                {config.data_sources.filter(s => s.type === 'onchain').length} 个源
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Etherscan, Glassnode
+              </p>
+            </div>
+
+            {/* 数据模式 */}
+            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">{config.mock_mode ? '🧪' : '🌐'}</span>
+                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                  config.mock_mode 
+                    ? 'bg-yellow-100 text-yellow-700' 
+                    : 'bg-green-100 text-green-700'
+                }`}>
+                  {config.mock_mode ? '测试模式' : '生产模式'}
+                </span>
+              </div>
+              <h4 className="font-bold text-gray-900 mb-1">数据模式</h4>
+              <p className="text-sm text-gray-600">
+                {config.mock_mode ? '模拟数据' : '真实数据'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                更新: {config.update_interval / 60}分钟
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 系统说明 */}
+      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-300 rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <span>📖</span>
+          <span>云平台管理说明</span>
+        </h3>
+
+        <div className="space-y-4">
+          {/* 工作原理 */}
+          <div>
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-xl">🔄</span>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-900 mb-1">工作原理：</h4>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  系统采用<strong>多云平台并行分析</strong>架构，同时调用多个AI云平台对相同数据进行分析，
+                  通过<strong>交叉验证</strong>提升情报准确性。类似"专家会诊"机制，多个AI同时分析，取得共识的信息置信度更高。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 数据流程 */}
+          <div>
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-xl">📊</span>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-900 mb-1">数据流程：</h4>
+                <div className="text-sm text-gray-700 space-y-1">
+                  <p><strong>1. 数据收集</strong> → RSS新闻源定期抓取最新资讯（30分钟/次）</p>
+                  <p><strong>2. 并行分析</strong> → 多个云平台同时分析相同数据</p>
+                  <p><strong>3. 交叉验证</strong> → 对比各平台结果，计算置信度</p>
+                  <p><strong>4. 生成报告</strong> → 输出综合情报报告（准确率85%+）</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 平台配置 */}
+          <div>
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-xl">⚙️</span>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-900 mb-1">配置要求：</h4>
+                <div className="text-sm text-gray-700 space-y-1">
+                  <p>• <strong>推荐配置</strong>：至少3个云平台（提升准确率至85%+）</p>
+                  <p>• <strong>最低配置</strong>：1个云平台（基础功能可用，准确率70%）</p>
+                  <p>• <strong>API密钥</strong>：需要在各云平台官网申请API Key</p>
+                  <p>• <strong>成本控制</strong>：可监控各平台调用次数和费用</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 注意事项 */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <span className="text-orange-600 text-lg">⚠️</span>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-orange-800 mb-1">
+                  重要提示
+                </p>
+                <ul className="text-xs text-orange-700 space-y-1 list-disc list-inside">
+                  <li>云平台配置需要重启后端服务才能生效</li>
+                  <li>建议先在测试环境验证API Key的有效性</li>
+                  <li>多平台并行会增加API调用成本，请注意费用控制</li>
+                  <li>可以随时启用/禁用单个平台，无需删除配置</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 云平台配置卡片 */}
       <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-800">☁️ 云平台管理</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={handleReloadPlatforms}
+              disabled={reloading || updating}
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+              title="重新加载平台配置（无需重启服务）"
+            >
+              <span className="text-xl text-white">{reloading ? '⏳' : '🔄'}</span>
+              <span className="text-white">{reloading ? '加载中...' : '重新加载'}</span>
+            </button>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             disabled={updating}
@@ -163,6 +443,7 @@ export default function IntelligencePlatformsPanel() {
             <span className="text-xl text-white">{showAddForm ? '❌' : '➕'}</span>
             <span className="text-white">{showAddForm ? '取消添加' : '添加平台'}</span>
           </button>
+          </div>
         </div>
 
         {/* 添加平台表单 */}

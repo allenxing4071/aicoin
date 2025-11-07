@@ -59,20 +59,23 @@ async def get_all_tables(db: AsyncSession = Depends(get_db)):
     获取数据库中所有表的列表及其基本信息
     """
     try:
-        # 首先获取所有表名
+        # 首先获取所有表名和注释
         tables_result = await db.execute(text(
             """
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = 'public' 
-              AND table_type = 'BASE TABLE'
-            ORDER BY table_name
+            SELECT 
+                t.table_name,
+                obj_description((t.table_schema||'.'||t.table_name)::regclass) as table_comment
+            FROM information_schema.tables t
+            WHERE t.table_schema = 'public' 
+              AND t.table_type = 'BASE TABLE'
+            ORDER BY t.table_name
             """
         ))
         
         tables = []
         for row in tables_result:
             table_name = row[0]
+            table_comment = row[1]
             
             # 获取行数（每个表单独查询，更安全）
             try:
@@ -109,6 +112,7 @@ async def get_all_tables(db: AsyncSession = Depends(get_db)):
             
             tables.append({
                 "table_name": table_name,
+                "table_comment": table_comment,
                 "row_count": row_count,
                 "columns": columns
             })

@@ -9,6 +9,12 @@ class Trade(Base):
     """交易记录表"""
     
     __tablename__ = "trades"
+    __table_args__ = (
+        Index('idx_trades_timestamp', 'timestamp'),
+        Index('idx_trades_symbol', 'symbol'),
+        Index('idx_trades_side', 'side'),
+        {'comment': '💰 成交记录 - 记录所有已成交的交易明细，包括价格、数量、盈亏、AI决策依据等完整信息'}
+    )
     
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
@@ -23,13 +29,6 @@ class Trade(Base):
     model = Column(String(50), nullable=True, index=True)  # AI model name (deepseek-chat-v3.1, qwen3-max)
     timestamp = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Indexes
-    __table_args__ = (
-        Index('idx_trades_timestamp', 'timestamp'),
-        Index('idx_trades_symbol', 'symbol'),
-        Index('idx_trades_side', 'side'),
-    )
     
     def __repr__(self):
         return f"<Trade(id={self.id}, symbol={self.symbol}, side={self.side}, price={self.price})>"

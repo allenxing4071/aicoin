@@ -9,8 +9,12 @@ from datetime import datetime
 import logging
 import asyncio
 from collections import Counter
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import AsyncSessionLocal
+from app.models.intelligence_platform import IntelligencePlatform
 from .platforms.cloud_adapters import (
     BaiduQwenAdapter,
     TencentQwenAdapter,
@@ -61,13 +65,107 @@ class CloudPlatformCoordinator:
     """
     
     def __init__(self):
-        """初始化云平台协调器"""
+        """初始化云平台协调器（同步初始化，异步加载在首次使用时）"""
         self.platforms: Dict[str, Any] = {}
-        self._initialize_platforms()
-        logger.info(f"✅ 云平台协调器初始化完成，已加载 {len(self.platforms)} 个平台")
+        self._initialized = False
+        self._load_from_env = True  # 兼容模式：优先从环境变量加载
+        logger.info("✅ 云平台协调器创建完成（延迟加载模式）")
     
-    def _initialize_platforms(self):
-        """初始化云平台适配器"""
+    async def ensure_initialized(self):
+        """确保平台已初始化（延迟加载）"""
+        if self._initialized:
+            return
+        
+        logger.info("🔧 开始加载云平台配置...")
+        
+        # 优先从数据库加载
+        db_loaded = await self._initialize_from_database()
+        
+        # 如果数据库没有配置，回退到环境变量
+        if not db_loaded and self._load_from_env:
+            logger.info("📝 数据库无配置，回退到环境变量加载")
+            self._initialize_from_env()
+        
+        self._initialized = True
+        logger.info(f"✅ 云平台加载完成，共 {len(self.platforms)} 个平台")
+    
+    async def _initialize_from_database(self) -> bool:
+        """从数据库加载云平台配置（优先）"""
+        try:
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    select(IntelligencePlatform).where(
+                        IntelligencePlatform.enabled == True
+                    )
+                )
+                platforms = result.scalars().all()
+                
+                if not platforms:
+                    logger.info("📭 数据库中没有启用的云平台配置")
+                    return False
+                
+                logger.info(f"📊 从数据库加载到 {len(platforms)} 个平台配置")
+                
+                for platform in platforms:
+                    adapter = self._create_adapter_from_db(platform)
+                    if adapter:
+                        self.platforms[platform.provider] = adapter
+                        logger.info(f"✓ {platform.name} ({platform.provider}) 已加载")
+                
+                return len(self.platforms) > 0
+                
+        except Exception as e:
+            logger.error(f"❌ 从数据库加载平台失败: {e}", exc_info=True)
+            return False
+    
+    def _create_adapter_from_db(self, platform: IntelligencePlatform):
+        """根据数据库配置创建适配器"""
+        try:
+            provider = platform.provider.lower()
+            
+            # 根据provider创建对应的适配器
+            if provider == "qwen":
+                return BaiduQwenAdapter(  # Qwen使用百度适配器
+                    api_key=platform.api_key,
+                    base_url=platform.base_url,
+                    enabled=platform.enabled
+                )
+            elif provider == "baidu":
+                return BaiduQwenAdapter(
+                    api_key=platform.api_key,
+                    base_url=platform.base_url,
+                    enabled=platform.enabled
+                )
+            elif provider == "tencent":
+                return TencentQwenAdapter(
+                    api_key=platform.api_key,
+                    base_url=platform.base_url,
+                    enabled=platform.enabled
+                )
+            elif provider == "volcano":
+                return VolcanoQwenAdapter(
+                    api_key=platform.api_key,
+                    base_url=platform.base_url,
+                    enabled=platform.enabled
+                )
+            elif provider == "aws":
+                return AWSQwenAdapter(
+                    api_key=platform.api_key,
+                    base_url=platform.base_url,
+                    enabled=platform.enabled
+                )
+            else:
+                logger.warning(f"⚠️  未知的平台类型: {provider}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"❌ 创建适配器失败 ({platform.name}): {e}")
+            return None
+    
+    def _initialize_from_env(self):
+        """从环境变量加载云平台配置（兼容模式）"""
+        logger.info("📝 从环境变量加载云平台配置...")
+        
         # 百度智能云
         if settings.ENABLE_BAIDU_QWEN and settings.BAIDU_QWEN_API_KEY:
             self.platforms["baidu"] = BaiduQwenAdapter(
@@ -75,7 +173,7 @@ class CloudPlatformCoordinator:
                 base_url=settings.BAIDU_QWEN_BASE_URL,
                 enabled=settings.ENABLE_BAIDU_QWEN
             )
-            logger.info("✓ 百度智能云平台已加载")
+            logger.info("✓ 百度智能云平台已加载（环境变量）")
         
         # 腾讯云
         if settings.ENABLE_TENCENT_QWEN and settings.TENCENT_QWEN_API_KEY:
@@ -84,7 +182,7 @@ class CloudPlatformCoordinator:
                 base_url=settings.TENCENT_QWEN_BASE_URL,
                 enabled=settings.ENABLE_TENCENT_QWEN
             )
-            logger.info("✓ 腾讯云平台已加载")
+            logger.info("✓ 腾讯云平台已加载（环境变量）")
         
         # 火山引擎
         if settings.ENABLE_VOLCANO_QWEN and settings.VOLCANO_QWEN_API_KEY:
@@ -93,7 +191,7 @@ class CloudPlatformCoordinator:
                 base_url=settings.VOLCANO_QWEN_BASE_URL,
                 enabled=settings.ENABLE_VOLCANO_QWEN
             )
-            logger.info("✓ 火山引擎平台已加载")
+            logger.info("✓ 火山引擎平台已加载（环境变量）")
         
         # AWS（可选）
         if settings.ENABLE_AWS_QWEN and settings.AWS_QWEN_API_KEY:
@@ -102,7 +200,14 @@ class CloudPlatformCoordinator:
                 base_url=settings.AWS_QWEN_BASE_URL,
                 enabled=settings.ENABLE_AWS_QWEN
             )
-            logger.info("✓ AWS平台已加载")
+            logger.info("✓ AWS平台已加载（环境变量）")
+    
+    async def reload_platforms(self):
+        """重新加载平台配置（用于动态更新）"""
+        logger.info("🔄 重新加载云平台配置...")
+        self.platforms.clear()
+        self._initialized = False
+        await self.ensure_initialized()
     
     async def parallel_search_and_verify(
         self,
@@ -119,6 +224,9 @@ class CloudPlatformCoordinator:
         Returns:
             综合情报报告（含置信度评分）
         """
+        # 确保平台已加载
+        await self.ensure_initialized()
+        
         start_time = datetime.now()
         
         if len(self.platforms) < 2:

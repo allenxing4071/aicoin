@@ -9,6 +9,10 @@ class AccountSnapshot(Base):
     """账户快照表 - 记录账户状态"""
     
     __tablename__ = "account_snapshots"
+    __table_args__ = (
+        Index('idx_account_timestamp', 'timestamp'),
+        {'comment': '💼 账户快照 - 定期记录账户余额、权益、盈亏、夏普比率等关键财务指标'}
+    )
     
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
@@ -21,11 +25,6 @@ class AccountSnapshot(Base):
     total_trades = Column(Integer, default=0)
     win_rate = Column(Numeric(5, 4), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Indexes
-    __table_args__ = (
-        Index('idx_account_timestamp', 'timestamp'),
-    )
     
     def __repr__(self):
         return f"<AccountSnapshot(id={self.id}, balance={self.balance}, equity={self.equity})>"

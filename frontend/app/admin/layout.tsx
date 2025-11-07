@@ -363,8 +363,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </span>
             )}
 
-            {/* 右侧：操作按钮 */}
-            <Space size="small">
+            {/* 右侧：操作按钮 - 向右对齐 */}
+            <Space size="small" style={{ marginLeft: "auto" }}>
               {/* 打开首页按钮 */}
               <a
                 href="/"

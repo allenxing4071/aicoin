@@ -9,6 +9,9 @@ from app.core.database import Base
 class IntelligencePlatform(Base):
     """情报平台配置模型"""
     __tablename__ = "intelligence_platforms"
+    __table_args__ = {
+        'comment': '☁️ 情报平台配置 - 管理AI云平台（Qwen、腾讯混元、火山引擎等）的连接配置和性能指标'
+    }
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)  # 平台名称

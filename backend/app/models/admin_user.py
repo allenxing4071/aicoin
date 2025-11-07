@@ -9,6 +9,9 @@ from app.core.database import Base
 class AdminUser(Base):
     """管理后台用户表"""
     __tablename__ = "admin_users"
+    __table_args__ = {
+        'comment': '👤 管理员用户 - 存储后台管理系统的用户账号、角色权限和登录信息'
+    }
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False, index=True)

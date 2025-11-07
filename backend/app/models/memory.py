@@ -10,6 +10,12 @@ class AILesson(Base):
     """AI经验教训表 - 知识库(L3)"""
     
     __tablename__ = "ai_lessons"
+    __table_args__ = (
+        Index('idx_ai_lessons_type', 'lesson_type'),
+        Index('idx_ai_lessons_regime', 'market_regime'),
+        Index('idx_ai_lessons_confidence', 'confidence_score'),
+        {'comment': '📚 AI经验教训 - 知识库(L3)，存储AI从历史交易中学习到的成功经验和失败教训'}
+    )
     
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -34,13 +40,6 @@ class AILesson(Base):
     validation_trades = Column(Integer, default=0)
     validation_success_rate = Column(Float, default=0)
     
-    # Indexes
-    __table_args__ = (
-        Index('idx_ai_lessons_type', 'lesson_type'),
-        Index('idx_ai_lessons_regime', 'market_regime'),
-        Index('idx_ai_lessons_confidence', 'confidence_score'),
-    )
-    
     def __repr__(self):
         return f"<AILesson(id={self.id}, type={self.lesson_type}, title={self.title})>"
 
@@ -49,6 +48,11 @@ class AIStrategy(Base):
     """AI策略评估表 - 知识库(L3)"""
     
     __tablename__ = "ai_strategies"
+    __table_args__ = (
+        Index('idx_ai_strategies_status', 'status'),
+        Index('idx_ai_strategies_performance', 'win_rate', 'sharpe_ratio'),
+        {'comment': '📋 AI策略评估 - 知识库(L3)，记录各交易策略的性能指标、适用条件和历史表现'}
+    )
     
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -73,12 +77,6 @@ class AIStrategy(Base):
     status = Column(String(20), default='active')  # 'active' | 'deprecated' | 'testing'
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Indexes
-    __table_args__ = (
-        Index('idx_ai_strategies_status', 'status'),
-        Index('idx_ai_strategies_performance', 'win_rate', 'sharpe_ratio'),
-    )
-    
     def __repr__(self):
         return f"<AIStrategy(id={self.id}, name={self.strategy_name}, win_rate={self.win_rate})>"
 
@@ -87,6 +85,9 @@ class MarketPattern(Base):
     """市场模式表 - 知识库(L3)"""
     
     __tablename__ = "market_patterns"
+    __table_args__ = {
+        'comment': '📊 市场模式 - AI识别的市场走势模式（趋势反转、突破、盘整等）及其历史表现'
+    }
     
     id = Column(Integer, primary_key=True, index=True)
     detected_at = Column(DateTime(timezone=True), server_default=func.now())

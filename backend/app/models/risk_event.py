@@ -9,6 +9,11 @@ class RiskEvent(Base):
     """风控事件表"""
     
     __tablename__ = "risk_events"
+    __table_args__ = (
+        Index('idx_risk_timestamp', 'timestamp'),
+        Index('idx_risk_severity', 'severity'),
+        {'comment': '⚠️ 风控事件 - 记录触发的风控警报、事件类型、严重程度和处理措施'}
+    )
     
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
@@ -19,12 +24,6 @@ class RiskEvent(Base):
     action_taken = Column(Text, nullable=True)  # What action was taken
     resolved = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Indexes
-    __table_args__ = (
-        Index('idx_risk_timestamp', 'timestamp'),
-        Index('idx_risk_severity', 'severity'),
-    )
     
     def __repr__(self):
         return f"<RiskEvent(id={self.id}, type={self.event_type}, severity={self.severity})>"

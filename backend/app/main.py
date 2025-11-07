@@ -136,12 +136,15 @@ async def get_system_status():
     }
 
 # Add CORS middleware
+# 允许所有localhost端口（开发环境）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    allow_origin_regex=r"http://localhost:\d+"  # 允许所有localhost端口
 )
 
 # Include API routers

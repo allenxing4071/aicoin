@@ -10,6 +10,9 @@ class ExchangeConfig(Base):
     """交易所配置表"""
     
     __tablename__ = "exchange_configs"
+    __table_args__ = {
+        'comment': '🏦 交易所配置 - 存储币安等交易所的API密钥和连接配置'
+    }
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False, unique=True, index=True)

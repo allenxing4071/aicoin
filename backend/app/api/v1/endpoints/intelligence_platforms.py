@@ -5,12 +5,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Dict, Any
 from datetime import datetime
+import logging
 
 from app.core.database import get_db
 from app.models.intelligence_platform import IntelligencePlatform
 from pydantic import BaseModel
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# 全局协调器实例（用于重新加载）
+_coordinator_instance = None
+
+def set_coordinator_instance(coordinator):
+    """设置全局协调器实例"""
+    global _coordinator_instance
+    _coordinator_instance = coordinator
+
+def get_coordinator_instance():
+    """获取全局协调器实例"""
+    return _coordinator_instance
 
 
 class PlatformCreate(BaseModel):
@@ -175,4 +189,52 @@ async def get_platforms_stats(
             for p in platforms
         }
     }
+
+
+@router.post("/platforms/reload")
+async def reload_platforms(
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    重新加载云平台配置
+    
+    用于在数据库配置更新后，动态重新加载平台，无需重启服务
+    """
+    try:
+        logger.info("🔄 收到重新加载平台配置请求...")
+        
+        # 获取协调器实例
+        coordinator = get_coordinator_instance()
+        
+        if coordinator is None:
+            logger.warning("⚠️  协调器实例未初始化")
+            return {
+                "success": False,
+                "message": "协调器未初始化，请稍后重试",
+                "platforms_loaded": 0
+            }
+        
+        # 重新加载平台
+        if hasattr(coordinator, 'cloud_coordinator'):
+            await coordinator.cloud_coordinator.reload_platforms()
+            platform_count = len(coordinator.cloud_coordinator.platforms)
+        else:
+            await coordinator.reload_platforms()
+            platform_count = len(coordinator.platforms)
+        
+        logger.info(f"✅ 平台配置重新加载完成，共 {platform_count} 个平台")
+        
+        return {
+            "success": True,
+            "message": f"平台配置已重新加载，共 {platform_count} 个平台",
+            "platforms_loaded": platform_count,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 重新加载平台配置失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"重新加载失败: {str(e)}"
+        )
 

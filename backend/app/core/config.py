@@ -178,7 +178,7 @@ class Settings(BaseSettings):
     
     # API Settings
     API_V1_PREFIX: str = "/api/v1"
-    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:8000"]
+    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:8000"]
     
     class Config:
         env_file = ".env"

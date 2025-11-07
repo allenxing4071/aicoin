@@ -5,6 +5,7 @@ import axios from "axios";
 
 interface TableInfo {
   table_name: string;
+  table_comment: string | null;
   row_count: number;
   columns: ColumnInfo[];
 }
@@ -147,7 +148,13 @@ export default function DatabaseManagementPage() {
                 <div className="p-4 text-center text-gray-500">加载中...</div>
               ) : (
                 tables.map((table) => {
+                  // 优先使用数据库注释，回退到硬编码配置
                   const tableInfo = tableDescriptions[table.table_name];
+                  const comment = table.table_comment || tableInfo?.description;
+                  // 从注释中提取图标（如果有）
+                  const iconMatch = table.table_comment?.match(/^([\u{1F300}-\u{1F9FF}])/u);
+                  const icon = iconMatch ? iconMatch[1] : tableInfo?.icon;
+                  
                   return (
                     <button
                       key={table.table_name}
@@ -157,15 +164,15 @@ export default function DatabaseManagementPage() {
                       }`}
                     >
                       <div className="flex items-center gap-2 font-medium text-gray-900">
-                        {tableInfo && <span className="text-lg">{tableInfo.icon}</span>}
+                        {icon && <span className="text-lg">{icon}</span>}
                         <span>{table.table_name}</span>
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
                         {table.row_count} 行 · {table.columns.length} 列
                       </div>
-                      {tableInfo && (
+                      {comment && (
                         <div className="text-xs text-gray-500 mt-2 whitespace-nowrap overflow-hidden text-ellipsis">
-                          {tableInfo.description}
+                          {comment}
                         </div>
                       )}
                     </button>

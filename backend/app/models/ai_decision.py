@@ -10,6 +10,12 @@ class AIDecision(Base):
     """AI决策日志表"""
     
     __tablename__ = "ai_decisions"
+    __table_args__ = (
+        Index('idx_ai_timestamp', 'timestamp'),
+        Index('idx_ai_executed', 'executed'),
+        Index('idx_ai_symbol', 'symbol'),
+        {'comment': '🤖 AI决策日志 - 记录AI每次决策的市场数据输入、决策输出、执行状态和拒绝原因'}
+    )
     
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
@@ -21,13 +27,6 @@ class AIDecision(Base):
     model_name = Column(String(50), default='deepseek')
     latency_ms = Column(Integer, nullable=True)  # API call latency
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Indexes
-    __table_args__ = (
-        Index('idx_ai_timestamp', 'timestamp'),
-        Index('idx_ai_executed', 'executed'),
-        Index('idx_ai_symbol', 'symbol'),
-    )
     
     def __repr__(self):
         return f"<AIDecision(id={self.id}, symbol={self.symbol}, executed={self.executed})>"
