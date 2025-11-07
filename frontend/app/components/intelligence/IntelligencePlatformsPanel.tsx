@@ -47,9 +47,19 @@ interface IntelligenceConfig {
   }>;
 }
 
+interface IntelligenceStats {
+  total_collections: number;
+  successful_collections: number;
+  failed_collections: number;
+  last_collection_time: string | null;
+  last_success_time: string | null;
+  last_error: string | null;
+}
+
 export default function IntelligencePlatformsPanel() {
   const [platforms, setPlatforms] = useState<CloudPlatform[]>([]);
   const [config, setConfig] = useState<IntelligenceConfig | null>(null);
+  const [stats, setStats] = useState<IntelligenceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -67,11 +77,13 @@ export default function IntelligencePlatformsPanel() {
   useEffect(() => {
     fetchPlatforms();
     fetchConfig();
+    fetchStats();
     
     // 每30秒刷新一次
     const interval = setInterval(() => {
       fetchPlatforms();
       fetchConfig();
+      fetchStats();
     }, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -120,6 +132,18 @@ export default function IntelligencePlatformsPanel() {
       }
     } catch (error) {
       console.error("获取配置失败:", error);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/admin/intelligence/status");
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data.data.stats);
+      }
+    } catch (error) {
+      console.error("获取统计失败:", error);
     }
   };
 
@@ -256,94 +280,92 @@ export default function IntelligencePlatformsPanel() {
 
   return (
     <div className="space-y-6">
-      {/* 数据源状态概览 */}
-      {config && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">📊 数据源状态概览</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* RSS新闻源 */}
-            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">📰</span>
-                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
-                  已启用
-                </span>
+      {/* Qwen情报系统配置 */}
+      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          🕵️‍♀️ Qwen情报系统配置
+        </h2>
+        
+        {config && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white/70 rounded-lg p-4">
+              <div className="text-sm text-orange-700 mb-1">系统状态</div>
+              <div className={`text-2xl font-bold ${config.enabled ? 'text-green-600' : 'text-red-600'}`}>
+                {config.enabled ? '✅ 运行中' : '⏸️ 已停止'}
               </div>
-              <h4 className="font-bold text-gray-900 mb-1">RSS新闻源</h4>
-              <p className="text-sm text-gray-600">
-                {config.data_sources.filter(s => s.type === 'news' && s.enabled).length} 个源
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                CoinDesk, CoinTelegraph
-              </p>
             </div>
-
-            {/* 巨鲸监控 */}
-            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">🐋</span>
-                {config.data_sources.find(s => s.type === 'whale')?.api_key ? (
-                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
-                    已配置
-                  </span>
-                ) : (
-                  <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full font-medium">
-                    未配置
-                  </span>
-                )}
+            
+            <div className="bg-white/70 rounded-lg p-4">
+              <div className="text-sm text-orange-700 mb-1">更新频率</div>
+              <div className="text-2xl font-bold text-indigo-600">
+                {Math.floor(config.update_interval / 60)}分钟
               </div>
-              <h4 className="font-bold text-gray-900 mb-1">巨鲸监控</h4>
-              <p className="text-sm text-gray-600">Whale Alert API</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {config.data_sources.find(s => s.type === 'whale')?.api_key ? '✅ 可用' : '⚠️ 需要API Key'}
-              </p>
             </div>
-
-            {/* 链上数据 */}
-            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">⛓️</span>
-                {config.data_sources.filter(s => s.type === 'onchain' && s.api_key).length > 0 ? (
-                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
-                    部分配置
-                  </span>
-                ) : (
-                  <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full font-medium">
-                    未配置
-                  </span>
-                )}
+            
+            <div className="bg-white/70 rounded-lg p-4">
+              <div className="text-sm text-orange-700 mb-1">AI模型</div>
+              <div className="text-lg font-bold text-purple-600">
+                {config.qwen_model}
               </div>
-              <h4 className="font-bold text-gray-900 mb-1">链上数据</h4>
-              <p className="text-sm text-gray-600">
-                {config.data_sources.filter(s => s.type === 'onchain').length} 个源
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Etherscan, Glassnode
-              </p>
             </div>
-
-            {/* 数据模式 */}
-            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">{config.mock_mode ? '🧪' : '🌐'}</span>
-                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                  config.mock_mode 
-                    ? 'bg-yellow-100 text-yellow-700' 
-                    : 'bg-green-100 text-green-700'
-                }`}>
-                  {config.mock_mode ? '测试模式' : '生产模式'}
-                </span>
+            
+            <div className="bg-white/70 rounded-lg p-4">
+              <div className="text-sm text-orange-700 mb-1">数据模式</div>
+              <div className={`text-lg font-bold ${config.mock_mode ? 'text-orange-600' : 'text-green-600'}`}>
+                {config.mock_mode ? '🧪 模拟数据' : '🌐 真实数据'}
               </div>
-              <h4 className="font-bold text-gray-900 mb-1">数据模式</h4>
-              <p className="text-sm text-gray-600">
-                {config.mock_mode ? '模拟数据' : '真实数据'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                更新: {config.update_interval / 60}分钟
-              </p>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* 收集统计 */}
+      {stats && (
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-bold mb-4 text-gray-800">📊 收集统计</h3>
+          
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-white/70 rounded-lg p-3">
+              <div className="text-xs text-orange-700 mb-1">总收集次数</div>
+              <div className="text-xl font-bold text-blue-600">{stats.total_collections}</div>
+            </div>
+            
+            <div className="bg-white/70 rounded-lg p-3">
+              <div className="text-xs text-orange-700 mb-1">成功次数</div>
+              <div className="text-xl font-bold text-green-600">{stats.successful_collections}</div>
+            </div>
+            
+            <div className="bg-white/70 rounded-lg p-3">
+              <div className="text-xs text-orange-700 mb-1">失败次数</div>
+              <div className="text-xl font-bold text-red-600">{stats.failed_collections}</div>
+            </div>
+            
+            <div className="bg-white/70 rounded-lg p-3">
+              <div className="text-xs text-orange-700 mb-1">成功率</div>
+              <div className="text-xl font-bold text-purple-600">
+                {stats.total_collections > 0 
+                  ? Math.round((stats.successful_collections / stats.total_collections) * 100) 
+                  : 0}%
+              </div>
+            </div>
+            
+            <div className="bg-white/70 rounded-lg p-3">
+              <div className="text-xs text-orange-700 mb-1">最后收集</div>
+              <div className="text-sm font-semibold text-gray-800">
+                {stats.last_collection_time 
+                  ? new Date(stats.last_collection_time).toLocaleTimeString('zh-CN')
+                  : '未知'}
+              </div>
+            </div>
+          </div>
+          
+          {stats.last_error && (
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="text-sm text-red-600">
+                <strong>最后错误：</strong> {stats.last_error}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

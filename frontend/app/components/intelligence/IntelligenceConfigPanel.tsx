@@ -301,92 +301,92 @@ export default function IntelligenceConfigPanel() {
 
   return (
     <div className="space-y-6">
-      {/* 系统配置卡片 */}
-      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          🕵️‍♀️ Qwen情报系统配置
-        </h2>
-        
-        {config && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white/70 rounded-lg p-4">
-              <div className="text-sm text-orange-700 mb-1">系统状态</div>
-              <div className={`text-2xl font-bold ${config.enabled ? 'text-green-600' : 'text-red-600'}`}>
-                {config.enabled ? '✅ 运行中' : '⏸️ 已停止'}
+      {/* 数据源状态概览 */}
+      {config && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">📊 数据源状态概览</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* RSS新闻源 */}
+            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">📰</span>
+                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                  已启用
+                </span>
               </div>
+              <h4 className="font-bold text-gray-900 mb-1">RSS新闻源</h4>
+              <p className="text-sm text-gray-600">
+                {config.data_sources.filter(s => s.type === 'news' && s.enabled).length} 个源
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                CoinDesk, CoinTelegraph
+              </p>
             </div>
-            
-            <div className="bg-white/70 rounded-lg p-4">
-              <div className="text-sm text-orange-700 mb-1">更新频率</div>
-              <div className="text-2xl font-bold text-indigo-600">
-                {Math.floor(config.update_interval / 60)}分钟
-              </div>
-            </div>
-            
-            <div className="bg-white/70 rounded-lg p-4">
-              <div className="text-sm text-orange-700 mb-1">AI模型</div>
-              <div className="text-lg font-bold text-purple-600">
-                {config.qwen_model}
-              </div>
-            </div>
-            
-            <div className="bg-white/70 rounded-lg p-4">
-              <div className="text-sm text-orange-700 mb-1">数据模式</div>
-              <div className={`text-lg font-bold ${config.mock_mode ? 'text-orange-600' : 'text-green-600'}`}>
-                {config.mock_mode ? '🧪 模拟数据' : '🌐 真实数据'}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* 统计信息 */}
-      {stats && (
-        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-bold mb-4 text-gray-800">📊 收集统计</h3>
-          
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-orange-700 mb-1">总收集次数</div>
-              <div className="text-xl font-bold text-blue-600">{stats.total_collections}</div>
-            </div>
-            
-            <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-orange-700 mb-1">成功次数</div>
-              <div className="text-xl font-bold text-green-600">{stats.successful_collections}</div>
-            </div>
-            
-            <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-orange-700 mb-1">失败次数</div>
-              <div className="text-xl font-bold text-red-600">{stats.failed_collections}</div>
-            </div>
-            
-            <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-orange-700 mb-1">成功率</div>
-              <div className="text-xl font-bold text-purple-600">
-                {stats.total_collections > 0 
-                  ? Math.round((stats.successful_collections / stats.total_collections) * 100) 
-                  : 0}%
+            {/* 巨鲸监控 */}
+            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">🐋</span>
+                {config.data_sources.find(s => s.type === 'whale')?.api_key ? (
+                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                    已配置
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full font-medium">
+                    未配置
+                  </span>
+                )}
               </div>
+              <h4 className="font-bold text-gray-900 mb-1">巨鲸监控</h4>
+              <p className="text-sm text-gray-600">Whale Alert API</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {config.data_sources.find(s => s.type === 'whale')?.api_key ? '✅ 可用' : '⚠️ 需要API Key'}
+              </p>
             </div>
-            
-            <div className="bg-white/70 rounded-lg p-3">
-              <div className="text-xs text-orange-700 mb-1">最后收集</div>
-              <div className="text-sm font-semibold text-gray-800">
-                {stats.last_collection_time 
-                  ? new Date(stats.last_collection_time).toLocaleTimeString('zh-CN')
-                  : '未知'}
+
+            {/* 链上数据 */}
+            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">⛓️</span>
+                {config.data_sources.filter(s => s.type === 'onchain' && s.api_key).length > 0 ? (
+                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium">
+                    未配置
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full font-medium">
+                    未配置
+                  </span>
+                )}
               </div>
+              <h4 className="font-bold text-gray-900 mb-1">链上数据</h4>
+              <p className="text-sm text-gray-600">
+                {config.data_sources.filter(s => s.type === 'onchain').length} 个源
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Etherscan, Glassnode
+              </p>
+            </div>
+
+            {/* 数据模式 */}
+            <div className="bg-white/80 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">🌐</span>
+                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                  config.mock_mode ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+                }`}>
+                  {config.mock_mode ? '模拟模式' : '生产模式'}
+                </span>
+              </div>
+              <h4 className="font-bold text-gray-900 mb-1">数据模式</h4>
+              <p className="text-sm text-gray-600">
+                {config.mock_mode ? '模拟数据' : '真实数据'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                更新: {Math.floor(config.update_interval / 60)}分钟
+              </p>
             </div>
           </div>
-          
-          {stats.last_error && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="text-sm text-red-600">
-                <strong>最后错误：</strong> {stats.last_error}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -722,46 +722,45 @@ export default function IntelligenceConfigPanel() {
         </div>
       </div>
 
-      {/* 云平台管理说明 */}
+      {/* 数据源说明 */}
       <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-bold mb-3 text-gray-800">📖 云平台管理说明</h3>
+        <h3 className="text-lg font-bold mb-3 text-gray-800">📖 数据源说明</h3>
         
         <div className="space-y-3 text-sm text-gray-700">
           <div>
-            <strong className="text-amber-700">☁️ 工作原理：</strong>
+            <strong className="text-amber-700">📡 数据源类型：</strong>
             <p className="ml-4 mt-1">
-              系统采用多云平台并行分析架构，同时调用多个AI云平台对相同数据进行分析，
-              通过交叉验证提升情报报告的准确性。类似"专家会诊"机制，多个AI同时分析，取得共识的信息置信度更高。
+              • <strong>news</strong>: 加密货币新闻（CoinDesk、CoinTelegraph）- RSS订阅，无需API Key
+              <br />• <strong>whale</strong>: 巨鲸交易监控（Whale Alert）- 需要API Key
+              <br />• <strong>onchain</strong>: 链上数据指标（Etherscan、Glassnode）- 需要API Key
+              <br />• <strong>mock</strong>: 模拟数据（用于测试和演示）- 无需配置
             </p>
           </div>
           
           <div>
-            <strong className="text-amber-700">📊 数据流程：</strong>
+            <strong className="text-amber-700">🔍 数据来源透明化：</strong>
             <p className="ml-4 mt-1">
-              1. 数据收集 → RSS新闻源定期抓取最新资讯（30分钟/次）
-              <br />2. 并行分析 → 多个云平台同时分析相同数据
-              <br />3. 交叉验证 → 对比各平台结果，计算置信度
-              <br />4. 生成报告 → 输出综合情报报告（准确率85%+）
+              所有数据源的URL和抓取路径都已公开显示。您可以看到每个数据源的具体来源、更新频率和运行状态。
             </p>
           </div>
           
           <div>
-            <strong className="text-amber-700">⚙️ 配置要求：</strong>
+            <strong className="text-amber-700">🧪 模拟数据 vs 真实数据：</strong>
             <p className="ml-4 mt-1">
-              • <strong>推荐配置</strong>：至少3个云平台（提升准确率至85%+）
-              <br />• <strong>最低配置</strong>：1个云平台（基础功能可用，准确率70%）
-              <br />• <strong>API密钥</strong>：需要在各云平台官网申请API Key
-              <br />• <strong>成本控制</strong>：可监控各平台调用次数和费用
+              当前系统默认使用<strong>模拟数据</strong>进行测试。要使用真实数据，需要：
+              <br />1. 配置相应的API Key（Whale Alert、Etherscan、Glassnode等）
+              <br />2. 启用对应的数据源
+              <br />3. 在配置中关闭"模拟模式"
             </p>
           </div>
           
           <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mt-3">
             <strong className="text-yellow-800">⚠️ 重要提示</strong>
             <ul className="list-disc list-inside mt-2 space-y-1 text-yellow-800">
-              <li>云平台配置需重启后才能生效</li>
-              <li>建议先在测试环境验证API Key的有效性</li>
-              <li>多平台并行会增加API调用成本，请注意费用控制</li>
-              <li>可以随时启用/禁用单个平台，无需删除配置</li>
+              <li>新闻源（RSS）通常无需API Key，可直接使用</li>
+              <li>巨鲸监控和链上数据需要在对应平台申请API Key</li>
+              <li>添加新数据源后默认为禁用状态，需要手动启用</li>
+              <li>建议先测试连接，确认可用后再启用数据源</li>
             </ul>
           </div>
         </div>
