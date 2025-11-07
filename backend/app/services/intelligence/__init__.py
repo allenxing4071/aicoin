@@ -10,6 +10,9 @@ from .models import (
 from .cloud_platform_coordinator import CloudPlatformCoordinator
 from .multi_platform_coordinator import MultiPlatformCoordinator
 
+# 创建全局云平台协调器实例（用于API管理）
+cloud_platform_coordinator = CloudPlatformCoordinator()
+
 __all__ = [
     "IntelligenceReport",
     "NewsItem",
@@ -17,6 +20,7 @@ __all__ = [
     "OnChainMetrics",
     "SentimentType",
     "CloudPlatformCoordinator",
-    "MultiPlatformCoordinator"
+    "MultiPlatformCoordinator",
+    "cloud_platform_coordinator"
 ]
 

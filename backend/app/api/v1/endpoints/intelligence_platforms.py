@@ -215,12 +215,9 @@ async def reload_platforms(
             }
         
         # 重新加载平台
-        if hasattr(coordinator, 'cloud_coordinator'):
-            await coordinator.cloud_coordinator.reload_platforms()
-            platform_count = len(coordinator.cloud_coordinator.platforms)
-        else:
-            await coordinator.reload_platforms()
-            platform_count = len(coordinator.platforms)
+        # coordinator 就是 CloudPlatformCoordinator 实例
+        await coordinator.reload_platforms()
+        platform_count = len(coordinator.platforms)
         
         logger.info(f"✅ 平台配置重新加载完成，共 {platform_count} 个平台")
         

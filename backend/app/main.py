@@ -331,10 +331,11 @@ async def startup_event():
         logger.info("✅ AI trading orchestrator V2 initialized (global variable set)")
         
         # Set intelligence coordinator instance for platform management
-        if hasattr(ai_orchestrator, 'intelligence_engine'):
-            from app.api.v1.endpoints.intelligence_platforms import set_coordinator_instance
-            set_coordinator_instance(ai_orchestrator.intelligence_engine)
-            logger.info("✅ Intelligence coordinator instance set for platform management")
+        # 使用全局的 cloud_platform_coordinator 实例
+        from app.services.intelligence import cloud_platform_coordinator
+        from app.api.v1.endpoints.intelligence_platforms import set_coordinator_instance
+        set_coordinator_instance(cloud_platform_coordinator)
+        logger.info("✅ Intelligence coordinator instance set for platform management")
         
         # Start the trading loop in background
         import asyncio
