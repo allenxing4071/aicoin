@@ -8,6 +8,8 @@ interface TableInfo {
   table_comment: string | null;
   row_count: number;
   columns: ColumnInfo[];
+  icon?: string;  // 从注释中提取的 emoji
+  description?: string;  // 从注释中提取的描述
 }
 
 interface ColumnInfo {
@@ -24,27 +26,25 @@ interface DatabaseStats {
   connection_status: string;
 }
 
-// 表说明配置
-const tableDescriptions: Record<string, { icon: string; description: string }> = {
-  account_snapshots: { icon: "💼", description: "账户快照 - 定期记录账户余额、权益、盈亏、夏普比率等关键财务指标" },
-  admin_users: { icon: "👤", description: "管理员用户 - 存储后台管理系统的用户账号、角色权限和登录信息" },
-  ai_decisions: { icon: "🤖", description: "AI决策日志 - 记录AI每次决策的市场数据输入、决策输出、执行状态和拒绝原因" },
-  ai_lessons: { icon: "📚", description: "AI经验教训 - 知识库(L3)，存储AI从历史交易中学习到的成功经验和失败教训" },
-  ai_strategies: { icon: "📋", description: "AI策略评估 - 知识库(L3)，记录各交易策略的性能指标、适用条件和历史表现" },
-  alembic_version: { icon: "🔧", description: "数据库版本 - Alembic迁移工具使用的版本控制表" },
-  exchange_configs: { icon: "🏦", description: "交易所配置 - 存储币安等交易所的API密钥和连接配置" },
-  intelligence_feedback: { icon: "💬", description: "情报反馈 - 记录用户对情报的反馈和使用效果，用于优化情报质量" },
-  intelligence_platforms: { icon: "☁️", description: "情报平台配置 - 管理AI云平台（Qwen、腾讯混元、火山引擎等）的连接配置和性能指标" },
-  intelligence_reports: { icon: "📊", description: "情报报告 - Qwen情报官收集的市场情报和分析报告，包含新闻、巨鲸活动、链上数据等" },
-  intelligence_source_weights: { icon: "⚖️", description: "情报源权重 - 记录各情报源（RSS、API等）的权重和有效性评分，用于智能筛选" },
-  market_data_kline: { icon: "📈", description: "K线数据 - 存储各币种的历史K线图数据（开高低收、成交量等）" },
-  market_patterns: { icon: "📊", description: "市场模式 - AI识别的市场走势模式（趋势反转、突破、盘整等）及其历史表现" },
-  model_performance_metrics: { icon: "📈", description: "模型性能指标 - 记录各AI模型的决策准确率、盈利率、响应时间等性能数据" },
-  orders: { icon: "📝", description: "订单记录 - 记录所有交易订单的创建、执行、成交状态和交易所订单ID" },
-  permission_level_configs: { icon: "🔐", description: "权限等级配置 - 定义L0-L5各等级的交易限制、升降级条件和风控参数" },
-  risk_events: { icon: "⚠️", description: "风控事件 - 记录触发的风控警报、事件类型、严重程度和处理措施" },
-  routing_decisions: { icon: "🔀", description: "路由决策日志 - 记录AI模型路由策略选择过程和多模型协作决策的详细信息" },
-  trades: { icon: "💰", description: "成交记录 - 记录所有已成交的交易明细，包括价格、数量、盈亏、AI决策依据等完整信息" },
+/**
+ * 从表注释中提取 emoji 和描述
+ * 注释格式: "🔥 表名 - 描述信息"
+ */
+const parseTableComment = (comment: string | null): { icon: string; description: string } => {
+  if (!comment) {
+    return { icon: "📊", description: "暂无说明" };
+  }
+  
+  // 提取 emoji（通常是第一个字符）
+  // 使用更兼容的正则表达式，匹配常见的 emoji 范围
+  const emojiRegex = /^[\u2600-\u27BF\uD83C-\uDBFF\uDC00-\uDFFF]+/;
+  const emojiMatch = comment.match(emojiRegex);
+  const icon = emojiMatch ? emojiMatch[0] : "📊";
+  
+  // 提取描述（去掉 emoji 后的内容）
+  const description = comment.replace(emojiRegex, "").trim();
+  
+  return { icon, description };
 };
 
 // 字段说明配置（针对account_snapshots表）
@@ -84,7 +84,18 @@ export default function DatabaseManagementPage() {
 
       // 获取所有表信息
       const tablesRes = await axios.get("http://localhost:8000/api/v1/admin/database/tables");
-      setTables(tablesRes.data);
+      
+      // 解析每个表的注释，提取 emoji 和描述
+      const tablesWithParsedComments = tablesRes.data.map((table: TableInfo) => {
+        const { icon, description } = parseTableComment(table.table_comment);
+        return {
+          ...table,
+          icon,
+          description
+        };
+      });
+      
+      setTables(tablesWithParsedComments);
     } catch (error) {
       console.error("加载数据库信息失败:", error);
     } finally {
@@ -154,37 +165,28 @@ export default function DatabaseManagementPage() {
               {loading ? (
                 <div className="p-4 text-center text-gray-500">加载中...</div>
               ) : (
-                tables.map((table) => {
-                  // 优先使用数据库注释，回退到硬编码配置
-                  const tableInfo = tableDescriptions[table.table_name];
-                  const comment = table.table_comment || tableInfo?.description;
-                  // 从注释中提取图标（如果有）
-                  const iconMatch = table.table_comment?.match(/^([\u{1F300}-\u{1F9FF}])/u);
-                  const icon = iconMatch ? iconMatch[1] : tableInfo?.icon;
-                  
-                  return (
-                    <button
-                      key={table.table_name}
-                      onClick={() => loadTableData(table.table_name)}
-                      className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
-                        selectedTable === table.table_name ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 font-medium text-gray-900">
-                        {icon && <span className="text-lg">{icon}</span>}
-                        <span>{table.table_name}</span>
+                tables.map((table) => (
+                  <button
+                    key={table.table_name}
+                    onClick={() => loadTableData(table.table_name)}
+                    className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
+                      selectedTable === table.table_name ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-medium text-gray-900">
+                      {table.icon && <span className="text-lg">{table.icon}</span>}
+                      <span>{table.table_name}</span>
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {table.row_count} 行 · {table.columns.length} 列
+                    </div>
+                    {table.description && (
+                      <div className="text-xs text-gray-500 mt-2 whitespace-nowrap overflow-hidden text-ellipsis">
+                        {table.description}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {table.row_count} 行 · {table.columns.length} 列
-                      </div>
-                      {comment && (
-                        <div className="text-xs text-gray-500 mt-2 whitespace-nowrap overflow-hidden text-ellipsis">
-                          {comment}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })
+                    )}
+                  </button>
+                ))
               )}
             </div>
           </div>
