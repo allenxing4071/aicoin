@@ -103,9 +103,10 @@ async def get_positions():
         持仓列表
     """
     try:
-        client = get_hyperliquid_client()
-        positions_data = await client.get_positions()
-        return [PositionInfo(**p) for p in positions_data] if positions_data else []
+        service = get_trading_service()
+        account_state = await service.get_account_state()
+        asset_positions = account_state.get('assetPositions', [])
+        return [PositionInfo(**p) for p in asset_positions] if asset_positions else []
         
     except Exception as e:
         logger.error(f"Error fetching positions: {e}")
