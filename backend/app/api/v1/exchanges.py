@@ -41,10 +41,11 @@ async def get_active_exchange():
         Dict: 当前交易所信息
     """
     try:
-        info = exchange_factory.get_active_exchange_info()
-        
-        # 获取适配器详细信息
+        # 先获取适配器（会触发初始化）
         adapter = await exchange_factory.get_active_exchange()
+        
+        # 再获取信息
+        info = exchange_factory.get_active_exchange_info()
         
         return {
             "success": True,
