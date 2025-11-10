@@ -6,6 +6,7 @@ from typing import Optional
 import logging
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -450,4 +451,65 @@ async def get_chat_history(
             "messages": [],
             "count": 0
         }
+
+
+@router.put("/config/decision-interval")
+async def update_decision_interval(
+    interval: int = Query(..., ge=60, le=3600, description="决策间隔（秒），范围60-3600")
+):
+    """
+    动态修改AI决策间隔
+    
+    Args:
+        interval: 新的决策间隔（秒）
+    
+    Returns:
+        更新结果
+    """
+    try:
+        from app.main import ai_orchestrator
+        
+        if not ai_orchestrator:
+            raise HTTPException(status_code=503, detail="AI决策系统未初始化")
+        
+        # 更新配置
+        old_interval = settings.DECISION_INTERVAL
+        settings.DECISION_INTERVAL = interval
+        
+        # 重启orchestrator的决策循环
+        if hasattr(ai_orchestrator, 'decision_interval'):
+            ai_orchestrator.decision_interval = interval
+        
+        logger.info(f"✅ 决策间隔已更新: {old_interval}秒 → {interval}秒")
+        
+        # 计算成本影响
+        daily_decisions_old = 86400 / old_interval
+        daily_decisions_new = 86400 / interval
+        cost_per_decision = 3.14  # ¥
+        
+        daily_cost_old = daily_decisions_old * cost_per_decision
+        daily_cost_new = daily_decisions_new * cost_per_decision
+        monthly_cost_old = daily_cost_old * 30
+        monthly_cost_new = daily_cost_new * 30
+        
+        savings_pct = ((monthly_cost_old - monthly_cost_new) / monthly_cost_old * 100) if monthly_cost_old > 0 else 0
+        
+        return {
+            "success": True,
+            "message": f"决策间隔已更新为 {interval} 秒",
+            "data": {
+                "old_interval": old_interval,
+                "new_interval": interval,
+                "old_daily_decisions": int(daily_decisions_old),
+                "new_daily_decisions": int(daily_decisions_new),
+                "old_monthly_cost": round(monthly_cost_old, 2),
+                "new_monthly_cost": round(monthly_cost_new, 2),
+                "monthly_savings": round(monthly_cost_old - monthly_cost_new, 2),
+                "savings_pct": round(savings_pct, 1)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"更新决策间隔失败: {e}")
+        raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
 

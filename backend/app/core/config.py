@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     
     # Application
     APP_NAME: str = "AIcoin Trading System"
-    APP_VERSION: str = "3.1.0"
+    APP_VERSION: str = "3.2.0"
     DEBUG: bool = True
     
     # Database
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     # Trading Configuration
     DEFAULT_SYMBOL: str = "BTC-PERP"
     TRADING_ENABLED: bool = True  # 启用交易
-    DECISION_INTERVAL: int = 60  # 1 minute (60秒) - 激进模式快速交易
+    DECISION_INTERVAL: int = 600  # 10 minutes (600秒) - 平衡模式，成本优化
     
     # Supported Trading Symbols (可交易币种池 - DeepSeek自主选择)
     TRADING_SYMBOLS: list = ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB"]  # 6个币种池

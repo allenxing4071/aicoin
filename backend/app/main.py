@@ -10,7 +10,9 @@ from app.core.database import init_db
 from app.core.redis_client import redis_client
 from app.api.v1 import market, account, performance, ai, admin_db, constraints, intelligence
 from app.api.v1 import exchanges, market_extended  # v3.1 新增
-from app.api.v1.endpoints import intelligence_storage, intelligence_platforms, model_performance, ai_journal
+from app.api.v1 import ai_cost  # AI成本管理
+from app.api.v1 import kol_tracking, smart_money  # KOL追踪和聪明钱跟单
+from app.api.v1.endpoints import intelligence_storage, intelligence_platforms, model_performance, ai_journal, platform_budget, platform_stats
 from app.api.v1.admin import permissions as admin_permissions
 from app.api.v1.admin import database as admin_database
 from app.api.v1.admin import memory as admin_memory
@@ -270,6 +272,33 @@ app.include_router(
     ai_journal.router,
     prefix=f"{settings.API_V1_PREFIX}/ai-journal",
     tags=["AI Journal - Qwen & DeepSeek Diary"]
+)
+
+# AI成本管理
+app.include_router(
+    ai_cost.router,
+    prefix=f"{settings.API_V1_PREFIX}/ai-cost",
+    tags=["AI Cost Management"]
+)
+app.include_router(
+    platform_budget.router,
+    prefix=f"{settings.API_V1_PREFIX}/intelligence",
+    tags=["Platform Budget Management"]
+)
+app.include_router(
+    platform_stats.router,
+    prefix=f"{settings.API_V1_PREFIX}/ai-platforms",
+    tags=["AI Platforms - Statistics"]
+)
+app.include_router(
+    kol_tracking.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["KOL Tracking"]
+)
+app.include_router(
+    smart_money.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["Smart Money"]
 )
 
 

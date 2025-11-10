@@ -1,67 +1,109 @@
 'use client';
 
 /**
- * 情报系统配置和监控页面
+ * 情报中枢导航页面
  * 
  * 路径: /admin/intelligence
  * 
  * 功能：
- * - 数据源状态: 显示数据源配置（RSS、巨鲸监控、链上数据等）
- * - Qwen配置: 显示云平台管理（Qwen、腾讯混元、火山引擎等）
+ * - 情报数据源导航
+ * - 情报分析导航
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import IntelligenceConfigPanel from '@/app/components/intelligence/IntelligenceConfigPanel';
-import IntelligencePlatformsPanel from '@/app/components/intelligence/IntelligencePlatformsPanel';
 import PageHeader from '../../components/common/PageHeader';
 
-type TabType = 'datasources' | 'platforms';
-
-export default function IntelligenceAdminPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('platforms');
-
+export default function IntelligenceHubPage() {
   return (
     <div className="space-y-6">
-      {/* 页头 - 统一风格 */}
       <PageHeader
-        icon="🕵️‍♀️"
-        title="Qwen情报系统管理"
-        description="配置和监控市场情报收集系统、云平台管理"
+        icon="🕵️"
+        title="情报中枢"
+        description="管理所有情报数据源和分析功能"
         color="orange"
       />
 
-      {/* Tab切换 */}
-      <div className="flex gap-2 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('datasources')}
-          className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 ${
-            activeTab === 'datasources'
-              ? 'text-blue-600 border-blue-600'
-              : 'text-gray-600 border-transparent hover:text-blue-600'
-          }`}
-        >
-          📊 数据源状态
-        </button>
-        <button
-          onClick={() => setActiveTab('platforms')}
-          className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 ${
-            activeTab === 'platforms'
-              ? 'text-blue-600 border-blue-600'
-              : 'text-gray-600 border-transparent hover:text-blue-600'
-          }`}
-        >
-          ☁️ Qwen配置
-        </button>
+      {/* 数据源管理 */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📡 数据源管理</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            href="/admin/intelligence/rss"
+            className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+          >
+            <div className="text-3xl mb-2">📰</div>
+            <h4 className="font-semibold text-gray-900 mb-1">RSS新闻源</h4>
+            <p className="text-sm text-gray-600">配置和监控新闻数据源</p>
+            <div className="mt-2 text-xs text-gray-500">即将上线</div>
+          </Link>
+
+          <Link
+            href="/admin/intelligence/whale"
+            className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+          >
+            <div className="text-3xl mb-2">🐋</div>
+            <h4 className="font-semibold text-gray-900 mb-1">巨鲸监控</h4>
+            <p className="text-sm text-gray-600">追踪大额交易和巨鲸动向</p>
+            <div className="mt-2 text-xs text-gray-500">即将上线</div>
+          </Link>
+
+          <Link
+            href="/admin/intelligence/onchain"
+            className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+          >
+            <div className="text-3xl mb-2">⛓️</div>
+            <h4 className="font-semibold text-gray-900 mb-1">链上数据</h4>
+            <p className="text-sm text-gray-600">分析链上交易和资金流向</p>
+            <div className="mt-2 text-xs text-gray-500">即将上线</div>
+          </Link>
+
+          <Link
+            href="/admin/intelligence/kol"
+            className="p-4 border-2 border-purple-200 bg-purple-50 rounded-lg hover:shadow-md transition-shadow"
+          >
+            <div className="text-3xl mb-2">👥</div>
+            <h4 className="font-semibold text-purple-900 mb-1">KOL追踪</h4>
+            <p className="text-sm text-purple-700">追踪KOL意见和市场情绪</p>
+            <div className="mt-2 text-xs text-purple-600">✓ 已上线</div>
+          </Link>
+
+          <Link
+            href="/admin/intelligence/smart-money"
+            className="p-4 border-2 border-green-200 bg-green-50 rounded-lg hover:shadow-md transition-shadow"
+          >
+            <div className="text-3xl mb-2">💰</div>
+            <h4 className="font-semibold text-green-900 mb-1">聪明钱跟单</h4>
+            <p className="text-sm text-green-700">学习聪明钱交易策略</p>
+            <div className="mt-2 text-xs text-green-600">✓ 已上线</div>
+          </Link>
+        </div>
       </div>
 
-      {/* Tab内容 */}
-      <div>
-        {activeTab === 'datasources' ? (
-          <IntelligenceConfigPanel />
-        ) : (
-          <IntelligencePlatformsPanel />
-        )}
+      {/* 情报分析 */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔍 情报分析</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link
+            href="/admin/intelligence/realtime"
+            className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+          >
+            <div className="text-3xl mb-2">⚡</div>
+            <h4 className="font-semibold text-gray-900 mb-1">实时情报</h4>
+            <p className="text-sm text-gray-600">查看实时市场情报和AI分析</p>
+            <div className="mt-2 text-xs text-gray-500">即将上线</div>
+          </Link>
+
+          <Link
+            href="/admin/intelligence/reports"
+            className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+          >
+            <div className="text-3xl mb-2">📊</div>
+            <h4 className="font-semibold text-gray-900 mb-1">历史报告</h4>
+            <p className="text-sm text-gray-600">查看历史情报分析报告</p>
+            <div className="mt-2 text-xs text-gray-500">即将上线</div>
+          </Link>
+        </div>
       </div>
     </div>
   );

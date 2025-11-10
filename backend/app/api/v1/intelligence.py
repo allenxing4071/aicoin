@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, desc
 
 from app.core.database import get_db
@@ -58,6 +59,35 @@ async def refresh_intelligence():
     
     except Exception as e:
         logger.error(f"手动收集情报失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reports")
+async def get_reports(
+    limit: int = Query(default=20, ge=1, le=100, description="返回记录数量"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取情报报告列表（简化版本）
+    用于前端页面快速获取最新报告
+    """
+    try:
+        from sqlalchemy import select
+        # 查询最新的报告
+        stmt = select(IntelligenceReport)\
+                .order_by(desc(IntelligenceReport.timestamp))\
+                .limit(limit)
+        result = await db.execute(stmt)
+        reports = result.scalars().all()
+        
+        return {
+            "success": True,
+            "data": [r.to_dict() for r in reports],
+            "total": len(reports)
+        }
+    
+    except Exception as e:
+        logger.error(f"获取情报报告失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

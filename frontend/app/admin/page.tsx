@@ -41,12 +41,14 @@ export default function AdminPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>('L1');
   const [currentLevel, setCurrentLevel] = useState<string>('L1');
   const [totalTableCount, setTotalTableCount] = useState<number>(0);
+  const [apiVersion, setApiVersion] = useState<string>('loading...');
 
   useEffect(() => {
     fetchData();
     fetchTradingStatus();
     fetchPermissionLevels();
     fetchCurrentLevel();
+    fetchApiVersion();
   }, []);
 
   const fetchData = async () => {
@@ -138,6 +140,19 @@ export default function AdminPage() {
     }
   };
 
+  const fetchApiVersion = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/openapi.json");
+      const data = await res.json();
+      if (data.info?.version) {
+        setApiVersion(data.info.version);
+      }
+    } catch (error) {
+      console.error("Failed to fetch API version:", error);
+      setApiVersion('3.2.0'); // 默认值
+    }
+  };
+
   const handleToggleTrading = async (enable: boolean) => {
     setControlLoading(true);
     try {
@@ -179,7 +194,6 @@ export default function AdminPage() {
       });
       if (res.ok) {
         setCurrentLevel(level);
-        console.log(`✅ 权限等级已设置为: ${level}`);
       }
     } catch (error) {
       console.error("Failed to set permission level:", error);
@@ -391,15 +405,39 @@ export default function AdminPage() {
             </p>
           </Link>
 
-          {/* Qwen情报系统 */}
+          {/* AI平台管理 */}
+          <Link
+            href="/admin/ai-platforms/intelligence"
+            className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="text-3xl mb-2">☁️</div>
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">AI平台管理</h3>
+            <p className="text-sm text-blue-700">
+              管理所有AI模型配置、成本监控和性能分析
+            </p>
+          </Link>
+
+          {/* 情报中枢 */}
           <Link
             href="/admin/intelligence"
             className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
           >
-            <div className="text-3xl mb-2">🕵️‍♀️</div>
-            <h3 className="text-lg font-semibold text-orange-900 mb-2">Qwen情报系统</h3>
+            <div className="text-3xl mb-2">🕵️</div>
+            <h3 className="text-lg font-semibold text-orange-900 mb-2">情报中枢</h3>
             <p className="text-sm text-orange-700">
-              配置和监控市场情报收集、数据源管理
+              管理所有情报数据源（新闻、巨鲸、链上、KOL、聪明钱）
+            </p>
+          </Link>
+
+          {/* 成本监控 */}
+          <Link
+            href="/admin/ai-cost"
+            className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="text-3xl mb-2">💰</div>
+            <h3 className="text-lg font-semibold text-green-900 mb-2">成本监控</h3>
+            <p className="text-sm text-green-700">
+              实时监控AI平台调用成本和预算管理
             </p>
           </Link>
         </div>
@@ -437,7 +475,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="bg-white rounded p-3 border border-blue-200">
                 <div className="text-gray-600 text-xs">API版本</div>
-                <div className="font-semibold text-blue-800">v3.1</div>
+                <div className="font-semibold text-blue-800">v{apiVersion}</div>
               </div>
               <div className="bg-white rounded p-3 border border-blue-200">
                 <div className="text-gray-600 text-xs">文档状态</div>

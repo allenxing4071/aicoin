@@ -1258,7 +1258,293 @@ curl http://localhost:8000/api/v1/admin/memory/overview
 
 ---
 
-### 9.5 旧版管理API（兼容性）
+### 9.5 AI平台性能监控 (v3.2新增)
+
+#### 9.5.1 获取平台调用统计
+
+**端点**: `GET /ai-platforms/stats`
+
+**描述**: 获取AI平台调用统计数据
+
+**参数**:
+- `time_range`: 时间范围（today/week/month/all）
+
+**请求**:
+```bash
+curl "http://localhost:8000/api/v1/ai-platforms/stats?time_range=week"
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "time_range": "week",
+    "start_time": "2025-11-03T00:00:00",
+    "end_time": "2025-11-09T10:30:00",
+    "total_calls": 245,
+    "total_cost": 12.34,
+    "platforms": [
+      {
+        "platform_id": 1,
+        "platform_name": "DeepSeek Chat",
+        "provider": "deepseek",
+        "total_calls": 100,
+        "successful_calls": 93,
+        "failed_calls": 7,
+        "success_rate": 93.0,
+        "total_cost": 5.67,
+        "avg_response_time": 1392.5
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### 9.5.2 获取小时统计
+
+**端点**: `GET /ai-platforms/hourly-stats`
+
+**描述**: 获取按小时聚合的调用统计
+
+**参数**:
+- `time_range`: 时间范围（today/week）
+
+**请求**:
+```bash
+curl "http://localhost:8000/api/v1/ai-platforms/hourly-stats?time_range=today"
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "time_range": "today",
+    "hourly_stats": [
+      {
+        "hour": "2025-11-09T08:00:00",
+        "calls": 45,
+        "successful": 44,
+        "failed": 1,
+        "cost": 2.34
+      }
+    ],
+    "peak_hour": {
+      "hour": "2025-11-09T09:00:00",
+      "calls": 67,
+      "successful": 65,
+      "failed": 2,
+      "cost": 3.45
+    }
+  }
+}
+```
+
+---
+
+#### 9.5.3 获取失败原因分析
+
+**端点**: `GET /ai-platforms/failure-analysis`
+
+**描述**: 分析AI平台调用失败原因
+
+**参数**:
+- `time_range`: 时间范围（today/week/month/all）
+
+**请求**:
+```bash
+curl "http://localhost:8000/api/v1/ai-platforms/failure-analysis?time_range=week"
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "time_range": "week",
+    "total_failures": 93,
+    "overall_categories": [
+      {
+        "category": "其他错误",
+        "count": 31,
+        "percentage": 33.33
+      },
+      {
+        "category": "请求超时",
+        "count": 13,
+        "percentage": 13.98
+      }
+    ],
+    "platforms": [
+      {
+        "platform_id": 1,
+        "platform_name": "DeepSeek Chat",
+        "failures": 7,
+        "categories": [
+          {"category": "网络错误", "count": 3},
+          {"category": "请求超时", "count": 4}
+        ]
+      }
+    ]
+  }
+}
+```
+
+**失败分类**:
+- 网络错误: Network Error, Connection Timeout
+- 认证失败: Authentication Failed, Invalid API Key
+- 频率限制: Rate Limit Exceeded, Too Many Requests
+- 配额不足: Quota Exceeded, Insufficient Balance
+- 请求超时: Request Timeout, Gateway Timeout
+- 参数错误: Invalid Parameters, Bad Request
+- 其他错误: 未分类的错误信息
+
+---
+
+#### 9.5.4 获取稳定性趋势
+
+**端点**: `GET /ai-platforms/stability-trend`
+
+**描述**: 获取AI平台稳定性趋势数据
+
+**参数**:
+- `time_range`: 时间范围（today/week/month）
+
+**请求**:
+```bash
+curl "http://localhost:8000/api/v1/ai-platforms/stability-trend?time_range=week"
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "time_range": "week",
+    "platforms": [
+      {
+        "platform_id": 1,
+        "platform_name": "DeepSeek Chat",
+        "avg_success_rate": 84.44,
+        "stability_score": 91.9,
+        "data_points": [
+          {
+            "timestamp": "2025-11-03T00:00:00",
+            "total_calls": 6,
+            "successful_calls": 6,
+            "success_rate": 100.0
+          },
+          {
+            "timestamp": "2025-11-04T00:00:00",
+            "total_calls": 13,
+            "successful_calls": 10,
+            "success_rate": 76.9
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**稳定性评分算法**:
+```
+stability_score = avg_success_rate * 0.7 + (100 - std_dev) * 0.3
+```
+
+---
+
+#### 9.5.5 获取响应时间分位数
+
+**端点**: `GET /ai-platforms/response-time-percentiles`
+
+**描述**: 获取响应时间分位数统计（P50/P95/P99）
+
+**参数**:
+- `time_range`: 时间范围（today/week/month）
+
+**请求**:
+```bash
+curl "http://localhost:8000/api/v1/ai-platforms/response-time-percentiles?time_range=week"
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "time_range": "week",
+    "platforms": [
+      {
+        "platform_id": 1,
+        "platform_name": "DeepSeek Chat",
+        "p50": 1396.06,
+        "p95": 1586.49,
+        "p99": 1596.24,
+        "avg": 1402.34,
+        "min": 1209.12,
+        "max": 1598.45,
+        "sample_count": 71
+      }
+    ]
+  }
+}
+```
+
+**字段说明**:
+- `p50`: 中位数，50%的请求响应时间低于此值
+- `p95`: 95%的请求响应时间低于此值
+- `p99`: 99%的请求响应时间低于此值（关注长尾延迟）
+- `sample_count`: 有效样本数量
+
+---
+
+#### 9.5.6 获取响应时间趋势
+
+**端点**: `GET /ai-platforms/response-time-trend`
+
+**描述**: 获取响应时间趋势数据
+
+**参数**:
+- `time_range`: 时间范围（today/week/month）
+
+**请求**:
+```bash
+curl "http://localhost:8000/api/v1/ai-platforms/response-time-trend?time_range=week"
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "time_range": "week",
+    "platforms": [
+      {
+        "platform_id": 1,
+        "platform_name": "DeepSeek Chat",
+        "overall_avg": 1407.23,
+        "data_points": [
+          {
+            "timestamp": "2025-11-03T00:00:00",
+            "avg_response_time": 1453.2,
+            "p50": 1450.0,
+            "p95": 1580.0,
+            "call_count": 6
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 9.6 旧版管理API（兼容性）
 
 #### 9.5.1 获取系统统计
 
