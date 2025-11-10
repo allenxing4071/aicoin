@@ -24,6 +24,9 @@ import {
   HomeOutlined,
   DatabaseOutlined,
   SettingOutlined,
+  CloudOutlined,
+  DollarOutlined,
+  FundOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 
@@ -74,13 +77,110 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       ],
     },
     {
+      key: "ai-platforms-group",
+      icon: <CloudOutlined />,
+      label: "AI平台管理",
+      children: [
+        {
+          key: "model-config",
+          label: "模型配置中心",
+          children: [
+            {
+              key: "/admin/ai-platforms/intelligence",
+              label: <Link href="/admin/ai-platforms/intelligence">情报模型（Qwen系列）</Link>,
+            },
+            {
+              key: "/admin/ai-platforms/decision",
+              label: <Link href="/admin/ai-platforms/decision">决策模型（DeepSeek）</Link>,
+            },
+            {
+              key: "/admin/ai-platforms/analysis",
+              label: <Link href="/admin/ai-platforms/analysis">分析模型（预留）</Link>,
+            },
+          ],
+        },
+        {
+          key: "cost-management",
+          label: "成本管理",
+          children: [
+            {
+              key: "/admin/ai-cost",
+              label: <Link href="/admin/ai-cost">实时监控</Link>,
+            },
+            {
+              key: "/admin/ai-cost/budget",
+              label: <Link href="/admin/ai-cost/budget">预算设置</Link>,
+            },
+            {
+              key: "/admin/ai-cost/optimization",
+              label: <Link href="/admin/ai-cost/optimization">决策间隔优化</Link>,
+            },
+          ],
+        },
+        {
+          key: "performance-monitoring",
+          label: "性能监控",
+          children: [
+            {
+              key: "/admin/ai-platforms/stats",
+              label: <Link href="/admin/ai-platforms/stats">调用统计</Link>,
+            },
+            {
+              key: "/admin/ai-platforms/success-rate",
+              label: <Link href="/admin/ai-platforms/success-rate">成功率分析</Link>,
+            },
+            {
+              key: "/admin/ai-platforms/response-time",
+              label: <Link href="/admin/ai-platforms/response-time">响应时间</Link>,
+            },
+          ],
+        },
+      ],
+    },
+    {
       key: "intelligence-group",
       icon: <FileSearchOutlined />,
       label: "情报中枢",
       children: [
         {
-          key: "/admin/intelligence",
-          label: <Link href="/admin/intelligence">情报源配置</Link>,
+          key: "data-sources",
+          label: "数据源管理",
+          children: [
+            {
+              key: "/admin/intelligence/rss",
+              label: <Link href="/admin/intelligence/rss">RSS新闻源</Link>,
+            },
+            {
+              key: "/admin/intelligence/whale",
+              label: <Link href="/admin/intelligence/whale">巨鲸监控</Link>,
+            },
+            {
+              key: "/admin/intelligence/onchain",
+              label: <Link href="/admin/intelligence/onchain">链上数据</Link>,
+            },
+            {
+              key: "/admin/intelligence/kol",
+              label: <Link href="/admin/intelligence/kol">KOL追踪</Link>,
+            },
+            {
+              key: "/admin/intelligence/smart-money",
+              label: <Link href="/admin/intelligence/smart-money">聪明钱跟单</Link>,
+            },
+          ],
+        },
+        {
+          key: "intelligence-analysis",
+          label: "情报分析",
+          children: [
+            {
+              key: "/admin/intelligence/realtime",
+              label: <Link href="/admin/intelligence/realtime">实时情报</Link>,
+            },
+            {
+              key: "/admin/intelligence/reports",
+              label: <Link href="/admin/intelligence/reports">历史报告</Link>,
+            },
+          ],
         },
       ],
     },
@@ -402,7 +502,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <button
                 onClick={() => {
                   // TODO: 跳转到个人中心页面
-                  console.log("跳转到个人中心");
                 }}
                 style={{
                   display: "flex",

@@ -84,6 +84,7 @@ async def create_platform(
 
 
 @router.patch("/platforms/{platform_id}")
+@router.put("/platforms/{platform_id}")  # 同时支持PUT方法
 async def update_platform(
     platform_id: int,
     update: PlatformUpdate,
@@ -136,6 +137,7 @@ async def delete_platform(
 
 
 @router.get("/platforms/{platform_id}/health")
+@router.post("/platforms/{platform_id}/health")  # 同时支持POST方法
 async def check_platform_health(
     platform_id: int,
     db: AsyncSession = Depends(get_db)
@@ -158,9 +160,11 @@ async def check_platform_health(
     await db.commit()
     
     return {
+        "success": True,
         "platform_id": platform_id,
         "health_status": platform.health_status,
-        "last_check": platform.last_health_check.isoformat()
+        "last_check": platform.last_health_check.isoformat(),
+        "response_time": 0  # 前端期望的字段
     }
 
 

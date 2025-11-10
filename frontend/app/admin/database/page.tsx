@@ -96,7 +96,6 @@ export default function DatabaseManagementPage() {
       // 解析每个表的注释，提取 emoji 和描述
       const tablesWithParsedComments = tablesRes.data.map((table: TableInfo) => {
         const { icon, description } = parseTableComment(table.table_comment);
-        console.log(`Table: ${table.table_name}, Icon: ${icon}, Description: ${description}`);
         return {
           ...table,
           icon,
@@ -104,7 +103,6 @@ export default function DatabaseManagementPage() {
         };
       });
       
-      console.log("Parsed tables:", tablesWithParsedComments.slice(0, 3));
       setTables(tablesWithParsedComments);
     } catch (error) {
       console.error("加载数据库信息失败:", error);

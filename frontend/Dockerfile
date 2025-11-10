@@ -1,36 +1,52 @@
-# Stage 1: Build
-FROM node:18-alpine AS builder
-
+# Stage 1: Dependencies
+FROM node:18-alpine AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
+# 只复制package文件，利用Docker缓存
+COPY package*.json ./
+RUN npm ci --only=production && \
+    npm cache clean --force
+
+# Stage 2: Build
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+# 复制依赖
+COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
 
-# Install dependencies
+# 安装开发依赖（用于构建）
 RUN npm ci
 
-# Copy source code
+# 复制源代码
 COPY . .
 
-# Build the application
+# 构建应用
+ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
-# Stage 2: Production
+# Stage 3: Production
 FROM node:18-alpine AS runner
-
 WORKDIR /app
 
-# Set NODE_ENV to production
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Copy necessary files from builder
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.next ./.next
+# 创建非root用户
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# 只复制必要的文件
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Expose port
+USER nextjs
+
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]

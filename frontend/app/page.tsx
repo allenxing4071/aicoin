@@ -90,7 +90,6 @@ export default function Home() {
   // ✨ 新方法: 一次性获取所有仪表板数据 (优化: 4个请求 → 1个请求)
   const fetchDashboardData = async () => {
     try {
-      console.log('📊 Fetching dashboard data...');
       const response = await axios.get(`${API_BASE}/dashboard/summary`, {
         timeout: 15000 // 15秒超时 (交易服务初始化可能需要时间)
       });
@@ -127,7 +126,6 @@ export default function Home() {
         });
         }
         
-        console.log('✅ Dashboard data loaded successfully');
       }
     } catch (error: any) {
       console.error('❌ Failed to fetch dashboard data:', error);

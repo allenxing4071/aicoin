@@ -41,14 +41,11 @@ export default function DecisionTimeline({ filter: externalFilter }: DecisionTim
     try {
       setError(null);
       const status = filter === 'all' ? undefined : filter;
-      console.log('🔍 Fetching decisions with filter:', filter, 'retry:', retryCount);
       const res = await axios.get(`${API_BASE}/ai/decisions`, {
         params: { limit: 25, status },
         timeout: 10000 // 10秒超时
       });
-      console.log('✅ Decisions API response:', res.data);
       const decisionsData = res.data.decisions || [];
-      console.log('📊 Decisions count:', decisionsData.length);
       setDecisions(decisionsData);
       setLoading(false);
       setRetryCount(0); // 成功后重置重试计数

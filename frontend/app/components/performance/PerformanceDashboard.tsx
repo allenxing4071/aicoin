@@ -64,12 +64,10 @@ export default function PerformanceDashboard() {
   const fetchMetrics = async () => {
     try {
       setError(null);
-      console.log('🔍 Fetching performance metrics for period:', period, 'retry:', retryCount);
       const res = await axios.get(`${API_BASE}/performance/metrics`, {
         params: { period_days: period },
         timeout: 10000 // 10秒超时
       });
-      console.log('✅ Performance API response:', res.data);
       setMetrics(res.data);
       setLoading(false);
       setRetryCount(0);

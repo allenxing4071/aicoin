@@ -123,7 +123,6 @@ export default function MultiModelChart({ models, timeRange = 'all' }: MultiMode
       //     generateInitialData();
       //   }
       // } catch (error) {
-      //   console.log('Failed to fetch account history, using initial data');
       //   generateInitialData();
       // }
       

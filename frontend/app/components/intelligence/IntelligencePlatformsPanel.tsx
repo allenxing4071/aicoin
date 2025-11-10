@@ -90,7 +90,6 @@ export default function IntelligencePlatformsPanel() {
 
   const fetchPlatforms = async () => {
     try {
-      console.log("🔍 正在获取平台列表...");
       setError(null);
       
       // 添加超时控制（增加到30秒，给后端足够的初始化时间）
@@ -102,14 +101,12 @@ export default function IntelligencePlatformsPanel() {
       });
       clearTimeout(timeoutId);
       
-      console.log("📡 API响应状态:", response.status);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
-      console.log("📊 获取到的平台数据:", data);
       setPlatforms(data.platforms || []);
     } catch (error: any) {
       console.error("❌ 获取平台列表失败:", error);
