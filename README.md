@@ -1,170 +1,32 @@
-# 🪙 AIcoin - AI加密货币自主交易系统
+# 🪙 AIcoin - AI驱动的加密货币智能交易系统
 
-> **DeepSeek驱动的智能量化交易系统** | v2.1 | MIT License
+> **多AI平台驱动的智能量化交易系统** | v3.2.0 | MIT License
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![Status](https://img.shields.io/badge/Status-Development-orange.svg)]()
+[![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
+[![Status](https://img.shields.io/badge/Status-Active-success.svg)]()
 
 ---
 
-## ⚠️ 重要警告
+## 📋 项目简介
 
-```diff
-- ❌ 系统当前处于开发阶段，不可用于真实交易
-- ❌ 初始测试导致48.8%亏损（$599.80 → $307.30）
-+ ✅ 问题已识别，正在实施Phase 1改进
-+ ✅ 预计1-2周后Phase 1完成可小资金测试
-```
+AIcoin 是一个基于多AI平台（DeepSeek、Qwen、Doubao）的智能加密货币交易系统，集成了情报分析、决策支持、成本管理等功能模块，提供完整的量化交易解决方案。
 
-**风险提示**: 加密货币交易存在重大风险，请勿使用超出您承受能力的资金。
+### ✨ 核心特性
+
+- 🤖 **多AI平台集成** - DeepSeek决策 + Qwen情报 + Doubao分析
+- 📊 **智能情报系统** - 实时市场情报 + AI综合分析
+- 💰 **AI成本管理** - 预算控制 + 使用统计 + 成本优化
+- 🎯 **权限等级系统** - L0-L5动态权限管理
+- 📈 **性能监控** - 调用统计 + 成功率分析 + 响应时间监控
+- 🎨 **现代化UI** - 统一设计系统 + 响应式布局
 
 ---
 
 ## 🚀 快速开始
 
-### 📚 文档入口（推荐从这里开始）
-
-```bash
-# 1. 阅读完整文档
-cd docs/
-cat 00-文档导航.md          # 导航中心（5分钟）
-
-# 2. 核心文档
-cat 01-核心规则/AI交易规则文档.md  # 系统"宪法"（1-2小时）
-
-# 3. 快速参考
-cat 06-快速参考/核心要点速查卡.md  # 1页速查（打印版）
-cat 06-快速参考/术语表.md          # 50+术语定义
-```
-
-### 🎯 核心特性
-
-- 🤖 **AI自主决策** - 基于DeepSeek V3.1大语言模型
-- 🎚️ **动态权限系统** - L0-L5等级，随表现自动调整
-- 🛡️ **智能约束框架** - 硬约束+软约束，保护本金
-- 🧠 **三层记忆系统** - Redis+Qdrant+PostgreSQL
-- 📊 **专业量化指标** - 13+风险指标，机构级标准
-- 🔄 **持续学习** - 从每次交易中学习和优化
-
----
-
-## 📁 项目结构
-
-```
-AIcoin/
-├── LICENSE                        # MIT许可证+免责声明
-├── README.md                      # 本文件
-│
-├── docs/                          # 📚 完整文档（20+文件）
-│   ├── 00-文档导航.md             # ⭐ 从这里开始
-│   ├── 01-核心规则/               # 系统"宪法"
-│   ├── 02-问题分析/               # -48.8%亏损分析
-│   ├── 03-技术架构/               # 技术文档+8个架构图
-│   ├── 04-研究报告/               # 5篇深度研究
-│   ├── 05-实验记录/               # 测试记录模板
-│   └── 06-快速参考/               # 速查卡+术语表
-│
-├── backend/                       # 后端服务
-│   ├── app/
-│   │   ├── api/                   # FastAPI路由
-│   │   ├── services/              # 业务逻辑
-│   │   ├── models/                # 数据模型
-│   │   └── config/                # 配置文件
-│   └── requirements.txt
-│
-├── frontend/                      # 前端界面
-│   ├── src/
-│   │   ├── components/            # React组件
-│   │   ├── pages/                 # 页面
-│   │   └── utils/                 # 工具函数
-│   └── package.json
-│
-└── docker-compose.yml             # Docker部署配置
-```
-
----
-
-## 🏗️ 技术栈
-
-### 后端
-- **Python 3.11** + **FastAPI** - 高性能异步API
-- **PostgreSQL 15** - 主数据库
-- **Redis 7** - 短期记忆缓存
-- **Qdrant** - 向量数据库（长期记忆）
-
-### AI/ML
-- **DeepSeek V3.1** - 大语言模型
-- **Transformers** + **PyTorch** - 模型训练
-- **PEFT (LoRA)** - 轻量级微调
-
-### 前端
-- **Next.js 14** + **React 18** - 现代化前端
-- **TailwindCSS** - 样式框架
-- **Lightweight Charts** - 图表展示
-
-### 交易所
-- **Hyperliquid** - 去中心化永续合约交易所
-
----
-
-## 🎯 三阶段实施计划
-
-### Phase 1: 基础修复（1-2周）⏳ 当前阶段
-```
-目标: 修复当前系统的关键问题
-├── 重写Prompt（保守策略）
-├── 实现硬性约束（回撤10%、单日亏损5%）
-├── 添加止损/止盈自动执行
-└── 实现L1-L3权限系统
-
-验收标准:
-✅ 7天测试，$100资金
-✅ 无单日亏损>5%
-✅ 胜率>40%
-✅ 最大回撤<10%
-```
-
-### Phase 2: 记忆增强（2-4周）
-```
-目标: 添加记忆系统，AI能从历史学习
-├── 部署Redis短期记忆
-├── 部署Qdrant向量数据库
-├── 实现记忆注入Prompt
-└── 添加经验教训提取
-
-验收标准:
-✅ 14天测试，$200资金
-✅ 胜率>55%
-✅ 夏普比率>1.0
-✅ 能明显看到"从历史中学习"
-```
-
-### Phase 3: 模型自建（1-2月）
-```
-目标: 部署专用模型，实现完全自主
-├── 收集10,000+训练样本
-├── 阿里云PAI平台LoRA微调
-├── A/B测试（通用 vs 专用）
-└── 性能评估和切换
-
-验收标准:
-✅ 自建模型胜率>60%
-✅ 夏普比率>1.5
-✅ 优于DeepSeek API基线
-```
-
----
-
-## 🔧 开发环境搭建
-
-### 前置要求
-- Python 3.11+
-- Node.js 18+
-- Docker & Docker Compose
-- Git
-
-### 快速启动
+### 📦 使用 Docker（推荐）
 
 ```bash
 # 1. 克隆项目
@@ -173,135 +35,339 @@ cd aicoin
 
 # 2. 配置环境变量
 cp .env.example .env
-# 编辑.env，填入API密钥
+# 编辑 .env 文件，填入必要的API密钥
 
 # 3. 启动服务
-docker-compose up -d
+docker compose up -d
 
-# 4. 访问
-# Backend API: http://localhost:8000/docs
-# Frontend: http://localhost:3000
+# 4. 访问系统
+# 前端: http://localhost:3000
+# 后端API: http://localhost:8000
+# API文档: http://localhost:8000/docs
 ```
 
-### 开发命令
+详细部署指南: [docs/00-快速开始/DOCKER_QUICK_START.md](./docs/00-快速开始/DOCKER_QUICK_START.md)
+
+---
+
+## 🏗️ 技术架构
+
+### 后端技术栈
+- **Python 3.11** + **FastAPI** - 高性能异步API框架
+- **PostgreSQL 15** - 主数据库
+- **Redis 7** - 缓存和会话管理
+- **Alembic** - 数据库迁移管理
+- **Docker** - 容器化部署
+
+### 前端技术栈
+- **Next.js 14** + **React 18** - 服务端渲染框架
+- **TypeScript** - 类型安全
+- **TailwindCSS** - 原子化CSS框架
+- **Axios** - HTTP客户端
+
+### AI平台
+- **DeepSeek** - 交易决策引擎
+- **Qwen (通义千问)** - 情报分析
+- **Doubao (豆包)** - 辅助分析
+
+### 交易所
+- **Hyperliquid** - 去中心化永续合约交易所
+- **Binance** - 币安交易所（支持）
+
+---
+
+## 📁 项目结构
+
+```
+AIcoin/
+├── backend/                    # 后端服务
+│   ├── app/
+│   │   ├── api/               # API路由
+│   │   ├── core/              # 核心配置
+│   │   ├── models/            # 数据模型
+│   │   ├── services/          # 业务逻辑
+│   │   └── main.py            # 应用入口
+│   ├── alembic/               # 数据库迁移
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── frontend/                   # 前端应用
+│   ├── app/
+│   │   ├── admin/             # 管理后台
+│   │   ├── components/        # 公共组件
+│   │   └── page.tsx           # 主页
+│   ├── Dockerfile
+│   └── package.json
+│
+├── docs/                       # 📚 项目文档
+│   ├── 00-快速开始/           # 快速开始指南
+│   ├── 03-技术架构/           # 技术架构文档
+│   ├── 06-快速参考/           # 快速参考手册
+│   ├── 07-部署运维/           # 部署运维指南
+│   ├── 08-前端系统/           # 前端系统文档
+│   └── 10-版本更新/           # 版本更新日志
+│
+├── scripts/                    # 工具脚本
+│   ├── deployment/            # 部署脚本
+│   ├── maintenance/           # 维护脚本
+│   └── utils/                 # 工具脚本
+│
+├── .env.example               # 环境变量模板
+├── docker-compose.yml         # Docker编排配置
+├── VERSION                    # 版本号文件
+└── README.md                  # 本文件
+```
+
+---
+
+## 🎯 核心功能模块
+
+### 1. 管理后台 (`/admin`)
+
+#### 📊 AI平台管理
+- **情报模型配置** - Qwen情报平台配置和管理
+- **决策模型配置** - DeepSeek决策引擎配置
+- **分析模型配置** - Doubao分析平台配置
+
+#### 📈 性能监控
+- **调用统计** - 实时监控各平台调用量和趋势
+- **成功率分析** - 失败原因分析和稳定性评估
+- **响应时间分析** - P50/P95/P99延迟监控
+
+#### 🔍 情报分析
+- **实时情报** - 最新市场情报流和AI综合分析
+- **历史报告** - 情报历史记录和数据导出
+
+#### 💰 AI成本管理
+- **成本概览** - 总体成本统计和趋势分析
+- **预算设置** - 预算配置和预警管理
+
+#### 🔧 系统管理
+- **权限管理** - L0-L5权限等级配置
+- **数据库管理** - 数据库状态和表统计
+- **记忆系统** - 三层记忆系统状态监控
+
+### 2. 交易监控
+
+- **实时价格** - 6个主流币种价格跑马灯
+- **账户信息** - 实时账户余额和盈亏
+- **持仓管理** - 当前持仓列表和未实现盈亏
+- **交易历史** - 已完成交易记录
+
+---
+
+## 📚 文档导航
+
+### 🚀 快速开始
+- [Docker快速启动](./docs/00-快速开始/DOCKER_QUICK_START.md)
+- [完整快速开始指南](./docs/00-快速开始/QUICKSTART.md)
+
+### 🏗️ 技术架构
+- [系统架构设计](./docs/03-技术架构/00-系统架构设计.md)
+- [权限等级管理系统](./docs/03-技术架构/05-权限等级管理系统.md)
+- [Qwen情报系统](./docs/03-技术架构/06-Qwen情报系统.md)
+- [AI平台性能监控系统](./docs/03-技术架构/07-AI平台性能监控系统.md)
+
+### 📖 快速参考
+- [v3.1快速上手指南](./docs/06-快速参考/05-v3.1快速上手指南.md)
+- [AI多平台使用指南](./docs/06-快速参考/06-AI多平台使用指南.md)
+- [权限管理速查](./docs/06-快速参考/02-权限管理速查.md)
+
+### 🔧 部署运维
+- [部署指南](./docs/07-部署运维/01-部署指南.md)
+- [版本管理指南](./docs/07-部署运维/07-版本管理指南.md)
+- [敏感信息管理规范](./docs/07-部署运维/00-敏感信息管理规范.md)
+- [AI平台API密钥配置](./docs/07-部署运维/05-AI平台API密钥配置.md)
+
+### 🎨 前端系统
+- [功能模块说明](./docs/08-前端系统/01-功能模块说明.md)
+- [组件文档](./docs/08-前端系统/02-组件文档.md)
+- [API集成](./docs/08-前端系统/04-API集成.md)
+
+### 📝 版本更新
+- [更新日志](./docs/10-版本更新/CHANGELOG.md)
+- [v3.1版本说明](./docs/10-版本更新/v3.1_版本说明.md)
+
+---
+
+## 🔐 环境配置
+
+### 必需的环境变量
+
+创建 `.env` 文件（参考 `.env.example`）：
 
 ```bash
-# 后端开发
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+# 数据库配置
+DATABASE_URL=postgresql://user:password@localhost:5432/aicoin
 
-# 前端开发
-cd frontend
-npm install
-npm run dev
+# Redis配置
+REDIS_URL=redis://localhost:6379/0
 
-# 运行测试
-pytest                    # 后端测试
-npm test                  # 前端测试
+# AI平台API密钥
+DEEPSEEK_API_KEY=your_deepseek_api_key
+QWEN_API_KEY=your_qwen_api_key
+DOUBAO_API_KEY=your_doubao_api_key
+
+# 交易所API密钥
+HYPERLIQUID_PRIVATE_KEY=your_hyperliquid_private_key
+BINANCE_API_KEY=your_binance_api_key
+BINANCE_API_SECRET=your_binance_api_secret
+
+# 应用配置
+SECRET_KEY=your_secret_key
+ENVIRONMENT=development
 ```
 
----
-
-## 📊 性能目标
-
-| Phase | 胜率 | 夏普比率 | 最大回撤 | 资金 |
-|-------|------|---------|---------|------|
-| Phase 1 | >40% | N/A | <10% | $100 |
-| Phase 2 | >55% | >1.0 | <8% | $200 |
-| Phase 3 | >60% | >1.5 | <5% | 逐步扩大 |
+详细配置说明: [docs/07-部署运维/00-敏感信息管理规范.md](./docs/07-部署运维/00-敏感信息管理规范.md)
 
 ---
 
-## 📚 文档
+## 🛠️ 开发指南
 
-### 核心文档
-- [📖 文档导航中心](./docs/00-文档导航.md) - 从这里开始
-- [🎯 AI交易规则文档](./docs/01-核心规则/AI交易规则文档.md) - 系统"宪法"（20,000字）
-- [🔍 系统问题总结](./docs/02-问题分析/系统问题总结.md) - -48.8%亏损分析
+### 本地开发
 
-### 技术文档
-- [🏗️ 系统架构设计](./docs/03-技术架构/00-系统架构设计.md) - 8个Mermaid架构图
-- [⚙️ 智能约束框架](./docs/03-技术架构/01-智能约束框架.md) - 完整技术实现
+#### 后端开发
 
-### 快速参考
-- [⚡ 核心要点速查卡](./docs/06-快速参考/核心要点速查卡.md) - 1页A4打印版
-- [📚 术语表](./docs/06-快速参考/术语表.md) - 50+核心术语定义
+```bash
+cd backend
 
-### AI协作文档
-- [项目上下文](./.claudecontext) - AI助手项目记忆
-- [开发规范](./.clinerules) - 开发规范和约束
+# 创建虚拟环境
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 运行数据库迁移
+alembic upgrade head
+
+# 启动开发服务器
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### 前端开发
+
+```bash
+cd frontend
+
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+
+# 构建生产版本
+npm run build
+```
+
+### 代码规范
+
+- **Python**: Black + Flake8 + isort
+- **TypeScript**: ESLint + Prettier
+- **提交规范**: Conventional Commits
+
+---
+
+## 📊 版本历史
+
+### v3.2.0 (2025-11-10) - 当前版本
+
+**✨ 新增功能**
+- 成熟的版本管理系统
+- 前端动态版本获取
+- 敏感信息管理规范
+
+**🎨 样式优化**
+- 统一设计系统
+- 可复用组件库
+- 93%代码重复减少
+
+**⚡ 性能优化**
+- Docker镜像优化
+- 数据库索引优化
+- Next.js编译优化
+
+**📚 文档完善**
+- 版本管理指南
+- 版本发布流程
+- 安全管理规范
+
+### v3.1.0 (2025-11-08)
+
+**✨ 新增功能**
+- AI多平台集成（DeepSeek + Qwen + Doubao）
+- AI成本管理系统
+- AI平台性能监控
+- 情报分析系统
+
+### v3.0.0 (2025-11-06)
+
+**✨ 新增功能**
+- Qwen情报系统集成
+- AI日记系统
+- 权限等级管理
+
+更多版本历史: [docs/10-版本更新/CHANGELOG.md](./docs/10-版本更新/CHANGELOG.md)
 
 ---
 
 ## 🤝 参与贡献
 
-我们欢迎各种形式的贡献！
+欢迎贡献代码、报告问题或提出建议！
 
-### 如何贡献
-1. 🐛 **报告问题** - [创建Issue](https://github.com/allenxing4071/aicoin/issues)
-2. 💡 **提出建议** - 通过Pull Request
-3. 📝 **完善文档** - 遵循现有格式
-4. 🧪 **测试验证** - 提交测试结果
+### 贡献流程
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'feat: add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
 
 ### 开发规范
-- 代码风格: Black + Flake8（Python）
-- 提交规范: Conventional Commits
-- 分支管理: Git Flow
-- 测试覆盖: >80%
+
+- 遵循项目代码风格
+- 添加必要的测试
+- 更新相关文档
+- 使用语义化的提交信息
 
 ---
 
 ## 📜 许可证
 
-本项目采用 [MIT License](./LICENSE)。
+本项目采用 [MIT License](./LICENSE) 开源协议。
 
-### ⚠️ 重要免责声明
+### ⚠️ 免责声明
 
-**本软件当前处于开发阶段，不可用于生产环境。**
+**本软件仅供学习和研究使用。**
 
-- ❌ 请勿在未经充分测试的情况下使用真实资金
-- ❌ 加密货币交易存在重大亏损风险
-- ❌ 过去的表现不代表未来的结果
-- ⚠️ 初始测试结果: -48.8%亏损
+- ⚠️ 加密货币交易存在重大风险
+- ⚠️ 请勿使用超出承受能力的资金
+- ⚠️ 过去的表现不代表未来的结果
+- ⚠️ 作者不对任何经济损失负责
 
-**作者和贡献者对因使用本软件而产生的任何经济损失不承担责任。**
-
-**使用风险自负。**
+**使用本软件即表示您理解并接受上述风险。**
 
 ---
 
 ## 📞 联系方式
 
-- **GitHub Issues**: [提交问题](https://github.com/allenxing4071/aicoin/issues)
-- **项目仓库**: [GitHub](https://github.com/allenxing4071/aicoin)
-- **文档中心**: [docs/](./docs/)
-
----
-
-## 🎯 路线图
-
-- [x] **v1.0** - 初始版本（存在严重问题）
-- [x] **v2.0** - 文档重组，问题识别
-- [x] **v2.1** - 技术架构文档+快速参考
-- [ ] **v2.2** - Phase 1实施（当前）
-- [ ] **v3.0** - Phase 2完成（记忆系统）
-- [ ] **v4.0** - Phase 3完成（自建模型）
+- **GitHub**: [https://github.com/allenxing4071/aicoin](https://github.com/allenxing4071/aicoin)
+- **Issues**: [提交问题](https://github.com/allenxing4071/aicoin/issues)
+- **Discussions**: [参与讨论](https://github.com/allenxing4071/aicoin/discussions)
 
 ---
 
 ## ⭐ Star History
 
-如果这个项目对你有帮助，请给一个Star⭐！
+如果这个项目对你有帮助，请给一个 Star ⭐
 
 ---
 
 **创建时间**: 2025-10-22  
-**最后更新**: 2025-10-31  
-**当前版本**: v2.1  
-**系统状态**: ⚠️ 开发中
+**最后更新**: 2025-11-10  
+**当前版本**: v3.2.0  
+**系统状态**: ✅ 活跃开发中
 
 ---
 
-*🚀 从-48.8%亏损到稳定盈利的AI交易系统改进之路*
-
+*🚀 基于多AI平台的智能量化交易系统*
