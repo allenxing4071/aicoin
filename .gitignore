@@ -12,6 +12,22 @@
 *$py.class
 **/api_keys.txt
 **/private_key.txt
+
+# SSH Keys and Connection Info
+*.pem
+*.pem.pub
+**/连接信息*.txt
+**/connection_info*.txt
+**/*连接*.txt
+**/*密钥*.txt
+**/*key*.pem
+docs/07-部署运维/私密配置/
+
+# SSH Configs Directory (Root Level)
+ssh-configs/local-servers/
+ssh-configs/cloud-servers/
+!ssh-configs/templates/
+!ssh-configs/README.md
 *.db
 *.egg-info/
 *.log

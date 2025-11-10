@@ -1,0 +1,236 @@
+# AIcoin 项目服务器 SSH 配置模板
+# 将此配置添加到 ~/.ssh/config 文件中
+
+# ============================================================================
+# 内网服务器配置
+# ============================================================================
+
+# 开发服务器
+Host dev-server
+    HostName 192.168.x.x
+    User your_username
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/local-servers/dev-server/dev-server-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    # 可选：端口转发
+    # LocalForward 3000 localhost:3000
+    # LocalForward 8000 localhost:8000
+
+# 测试服务器
+Host test-server
+    HostName 192.168.x.x
+    User your_username
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/local-servers/test-server/test-server-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# 预发布服务器
+Host staging-server
+    HostName 192.168.x.x
+    User your_username
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/local-servers/staging-server/staging-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# ============================================================================
+# 云服务器配置 - 阿里云
+# ============================================================================
+
+# 阿里云生产 Web 服务器 1
+Host aliyun-prod-web-01
+    HostName your.aliyun.ip
+    User root
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/cloud-servers/aliyun/prod-web-01/aliyun-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    # 生产服务器建议启用严格主机密钥检查
+    StrictHostKeyChecking yes
+
+# 阿里云生产 Web 服务器 2
+Host aliyun-prod-web-02
+    HostName your.aliyun.ip
+    User root
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/cloud-servers/aliyun/prod-web-02/aliyun-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    StrictHostKeyChecking yes
+
+# 阿里云生产数据库服务器
+Host aliyun-prod-db-01
+    HostName your.aliyun.ip
+    User root
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/cloud-servers/aliyun/prod-db-01/aliyun-db-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    StrictHostKeyChecking yes
+    # 数据库服务器建议通过跳板机访问
+    # ProxyJump aliyun-prod-web-01
+
+# ============================================================================
+# 云服务器配置 - 腾讯云
+# ============================================================================
+
+# 腾讯云备份服务器
+Host tencent-backup-01
+    HostName your.tencent.ip
+    User ubuntu
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/cloud-servers/tencent/backup-01/tencent-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    StrictHostKeyChecking yes
+
+# 腾讯云 CDN 节点
+Host tencent-cdn-01
+    HostName your.tencent.ip
+    User ubuntu
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/cloud-servers/tencent/cdn-01/tencent-cdn-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# ============================================================================
+# 云服务器配置 - AWS
+# ============================================================================
+
+# AWS 全球节点
+Host aws-global-01
+    HostName your.aws.ip
+    User ec2-user
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/cloud-servers/aws/global-01/aws-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    StrictHostKeyChecking yes
+
+# ============================================================================
+# 通配符配置（所有 AIcoin 服务器的默认设置）
+# ============================================================================
+
+Host *-server aliyun-* tencent-* aws-*
+    # 保持连接活跃
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    # 连接超时
+    ConnectTimeout 10
+    # 禁用 GSSAPI 认证（加快连接速度）
+    GSSAPIAuthentication no
+    # 压缩传输
+    Compression yes
+    # 控制主机密钥检查
+    StrictHostKeyChecking ask
+    # 哈希 known_hosts
+    HashKnownHosts yes
+    # 使用 SSH 协议版本 2
+    Protocol 2
+
+# ============================================================================
+# 跳板机配置示例
+# ============================================================================
+
+# 跳板机
+Host bastion
+    HostName bastion.your-domain.com
+    User bastion_user
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/cloud-servers/bastion/bastion-key.pem
+
+# 通过跳板机访问内网服务器
+Host internal-server
+    HostName 10.0.0.10
+    User internal_user
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/cloud-servers/internal/internal-key.pem
+    ProxyJump bastion
+
+# ============================================================================
+# 端口转发配置示例
+# ============================================================================
+
+# 开发服务器（带端口转发）
+Host dev-server-forward
+    HostName 192.168.x.x
+    User your_username
+    Port 22
+    IdentityFile ~/Documents/soft/AIcoin/ssh-configs/local-servers/dev-server/dev-server-key.pem
+    # 本地 3000 端口转发到远程 3000 端口（前端）
+    LocalForward 3000 localhost:3000
+    # 本地 8000 端口转发到远程 8000 端口（后端）
+    LocalForward 8000 localhost:8000
+    # 本地 5432 端口转发到远程 5432 端口（PostgreSQL）
+    LocalForward 5432 localhost:5432
+    # 本地 6379 端口转发到远程 6379 端口（Redis）
+    LocalForward 6379 localhost:6379
+
+# ============================================================================
+# VS Code 远程开发配置
+# ============================================================================
+
+# VS Code 会自动识别 ~/.ssh/config 中的配置
+# 在 VS Code 中：
+# 1. 安装 Remote - SSH 扩展
+# 2. F1 -> Remote-SSH: Connect to Host
+# 3. 选择上面配置的服务器别名
+
+# ============================================================================
+# 使用说明
+# ============================================================================
+
+# 1. 复制此文件内容到 ~/.ssh/config
+#    cat ssh-configs/templates/ssh-config-template >> ~/.ssh/config
+
+# 2. 根据实际情况修改：
+#    - HostName: 服务器 IP 地址
+#    - User: SSH 用户名
+#    - IdentityFile: 私钥文件路径
+#    - Port: SSH 端口（默认 22）
+
+# 3. 设置 config 文件权限
+#    chmod 600 ~/.ssh/config
+
+# 4. 测试连接
+#    ssh dev-server
+#    ssh aliyun-prod-web-01
+
+# 5. 查看配置
+#    ssh -G dev-server
+
+# ============================================================================
+# 故障排查
+# ============================================================================
+
+# 查看详细连接信息
+# ssh -v dev-server
+
+# 查看更详细的调试信息
+# ssh -vv dev-server
+
+# 测试配置是否正确
+# ssh -T dev-server
+
+# 检查密钥权限
+# ls -l ~/Documents/soft/AIcoin/ssh-configs/*/*/*.pem
+
+# 修正密钥权限
+# chmod 600 ~/Documents/soft/AIcoin/ssh-configs/*/*/*.pem
+
+# ============================================================================
+# 安全建议
+# ============================================================================
+
+# 1. 生产服务器使用独立密钥
+# 2. 定期轮换密钥（3-6个月）
+# 3. 启用 StrictHostKeyChecking
+# 4. 使用跳板机访问敏感服务器
+# 5. 限制密钥访问权限（600）
+# 6. 备份密钥到安全位置
+# 7. 记录密钥分发情况
+
+# ============================================================================
+
