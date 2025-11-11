@@ -114,7 +114,7 @@ class CryptoNewsAPI:
         """获取Mock数据（用于测试或RSS源不可用时）"""
         logger.info("📝 使用Mock数据（测试模式）")
         
-            mock_news = [
+        mock_news = [
                 {
                     "title": "Bitcoin突破10万美元大关，机构买盘强劲",
                     "source": "CoinDesk",
@@ -142,10 +142,10 @@ class CryptoNewsAPI:
                     "impact": "high",
                     "sentiment": "neutral"
                 }
-            ]
+        ]
             
         news_items = []
-            for item in mock_news[:limit]:
+        for item in mock_news[:limit]:
                 news_items.append(NewsItem(
                     title=item["title"],
                     source=item["source"],
@@ -154,10 +154,10 @@ class CryptoNewsAPI:
                     content=item["content"],
                     impact=item["impact"],
                     sentiment=item["sentiment"]
-                ))
+            ))
             
         logger.info(f"✅ Mock数据: {len(news_items)} 条新闻")
-            return news_items
+        return news_items
 
 
 class OnChainDataAPI:
@@ -200,7 +200,7 @@ class OnChainDataAPI:
                     "timestamp": datetime.now() - timedelta(hours=6),
                     "exchange": "Coinbase"
                 }
-            ]
+        ]
             
             for whale in mock_whales:
                 if whale["symbol"] in symbols:
