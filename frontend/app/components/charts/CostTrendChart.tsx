@@ -84,9 +84,9 @@ export default function CostTrendChart() {
       },
     });
 
-    // 转换数据格式
+    // 转换数据格式 - 使用 YYYY-MM-DD 格式作为时间轴
     const chartData = trendData.daily_trend.map((d) => ({
-      time: new Date(d.date).getTime() / 1000, // 转换为秒级时间戳
+      time: d.date.split('T')[0], // 使用 YYYY-MM-DD 格式
       value: d.total_cost,
     }));
 
