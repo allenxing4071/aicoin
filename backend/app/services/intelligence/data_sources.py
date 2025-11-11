@@ -114,50 +114,50 @@ class CryptoNewsAPI:
         """获取Mock数据（用于测试或RSS源不可用时）"""
         logger.info("📝 使用Mock数据（测试模式）")
         
-        mock_news = [
-            {
-                "title": "Bitcoin突破10万美元大关，机构买盘强劲",
-                "source": "CoinDesk",
-                "url": "https://coindesk.com/btc-100k",
-                "published_at": datetime.now() - timedelta(hours=2),
-                "content": "比特币价格突破历史新高，主要由机构投资者推动...",
-                "impact": "high",
-                "sentiment": "bullish"
-            },
-            {
-                "title": "以太坊Layer2活跃度创新高",
-                "source": "Decrypt",
-                "url": "https://decrypt.co/eth-l2",
-                "published_at": datetime.now() - timedelta(hours=5),
-                "content": "Arbitrum和Optimism交易量激增...",
-                "impact": "medium",
-                "sentiment": "bullish"
-            },
-            {
-                "title": "美联储会议纪要：加息周期可能接近尾声",
-                "source": "Reuters",
-                "url": "https://reuters.com/fed",
-                "published_at": datetime.now() - timedelta(hours=8),
-                "content": "联储官员暗示可能暂停加息...",
-                "impact": "high",
-                "sentiment": "neutral"
-            }
-        ]
-        
+            mock_news = [
+                {
+                    "title": "Bitcoin突破10万美元大关，机构买盘强劲",
+                    "source": "CoinDesk",
+                    "url": "https://coindesk.com/btc-100k",
+                    "published_at": datetime.now() - timedelta(hours=2),
+                    "content": "比特币价格突破历史新高，主要由机构投资者推动...",
+                    "impact": "high",
+                    "sentiment": "bullish"
+                },
+                {
+                    "title": "以太坊Layer2活跃度创新高",
+                    "source": "Decrypt",
+                    "url": "https://decrypt.co/eth-l2",
+                    "published_at": datetime.now() - timedelta(hours=5),
+                    "content": "Arbitrum和Optimism交易量激增...",
+                    "impact": "medium",
+                    "sentiment": "bullish"
+                },
+                {
+                    "title": "美联储会议纪要：加息周期可能接近尾声",
+                    "source": "Reuters",
+                    "url": "https://reuters.com/fed",
+                    "published_at": datetime.now() - timedelta(hours=8),
+                    "content": "联储官员暗示可能暂停加息...",
+                    "impact": "high",
+                    "sentiment": "neutral"
+                }
+            ]
+            
         news_items = []
-        for item in mock_news[:limit]:
-            news_items.append(NewsItem(
-                title=item["title"],
-                source=item["source"],
-                url=item["url"],
-                published_at=item["published_at"],
-                content=item["content"],
-                impact=item["impact"],
-                sentiment=item["sentiment"]
-            ))
-        
+            for item in mock_news[:limit]:
+                news_items.append(NewsItem(
+                    title=item["title"],
+                    source=item["source"],
+                    url=item["url"],
+                    published_at=item["published_at"],
+                    content=item["content"],
+                    impact=item["impact"],
+                    sentiment=item["sentiment"]
+                ))
+            
         logger.info(f"✅ Mock数据: {len(news_items)} 条新闻")
-        return news_items
+            return news_items
 
 
 class OnChainDataAPI:

@@ -79,6 +79,45 @@ async def get_supported_exchanges():
         raise HTTPException(status_code=500, detail=f"获取支持的交易所失败: {str(e)}")
 
 
+async def _switch_exchange_impl(
+    exchange_name: str,
+    market_type: str,
+    db: AsyncSession
+):
+    """交易所切换的实现逻辑"""
+    # 验证交易所名称
+    if exchange_name not in ['binance', 'hyperliquid']:
+        raise HTTPException(status_code=400, detail=f"不支持的交易所: {exchange_name}")
+    
+    # 验证市场类型
+    if market_type not in ['spot', 'futures', 'perpetual']:
+        raise HTTPException(status_code=400, detail=f"不支持的市场类型: {market_type}")
+    
+    # Hyperliquid只支持永续合约
+    if exchange_name == 'hyperliquid' and market_type != 'perpetual':
+        raise HTTPException(status_code=400, detail="Hyperliquid仅支持永续合约(perpetual)")
+    
+    # 执行切换
+    success = await exchange_factory.switch_exchange(
+        exchange_name=exchange_name,
+        market_type=market_type,
+        db=db
+    )
+    
+    if success:
+        return {
+            "success": True,
+            "message": f"成功切换到 {exchange_name} ({market_type})",
+            "data": {
+                "exchange": exchange_name,
+                "market_type": market_type
+            }
+        }
+    else:
+        raise HTTPException(status_code=500, detail="切换交易所失败")
+
+
+@router.get("/switch")
 @router.post("/switch")
 async def switch_exchange(
     exchange_name: str = Query(..., description="交易所名称 (binance|hyperliquid)"),
@@ -86,7 +125,7 @@ async def switch_exchange(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    切换交易所
+    切换交易所（支持GET和POST）
     
     Args:
         exchange_name: 交易所名称
@@ -96,37 +135,7 @@ async def switch_exchange(
         Dict: 切换结果
     """
     try:
-        # 验证交易所名称
-        if exchange_name not in ['binance', 'hyperliquid']:
-            raise HTTPException(status_code=400, detail=f"不支持的交易所: {exchange_name}")
-        
-        # 验证市场类型
-        if market_type not in ['spot', 'futures', 'perpetual']:
-            raise HTTPException(status_code=400, detail=f"不支持的市场类型: {market_type}")
-        
-        # Hyperliquid只支持永续合约
-        if exchange_name == 'hyperliquid' and market_type != 'perpetual':
-            raise HTTPException(status_code=400, detail="Hyperliquid仅支持永续合约(perpetual)")
-        
-        # 执行切换
-        success = await exchange_factory.switch_exchange(
-            exchange_name=exchange_name,
-            market_type=market_type,
-            db=db
-        )
-        
-        if success:
-            return {
-                "success": True,
-                "message": f"成功切换到 {exchange_name} ({market_type})",
-                "data": {
-                    "exchange": exchange_name,
-                    "market_type": market_type
-                }
-            }
-        else:
-            raise HTTPException(status_code=500, detail="切换交易所失败")
-            
+        return await _switch_exchange_impl(exchange_name, market_type, db)
     except HTTPException:
         raise
     except Exception as e:
