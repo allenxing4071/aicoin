@@ -57,50 +57,34 @@ export default function AICostOverviewPage() {
     try {
       setLoading(true);
       
-      // 获取平台数据
-      const platformsRes = await fetch('/api/v1/intelligence/platforms');
-      const platformsData = await platformsRes.json();
+      // 使用stats API获取全部数据 (含真实调用记录)
+      const res = await fetch('/api/v1/ai-platforms/stats?time_range=all');
+      const data = await res.json();
       
-      if (platformsData.platforms) {
-        const platformCosts = platformsData.platforms.map((p: any) => ({
+      if (data.success && data.data) {
+        // 转换数据格式
+        const platformCosts = data.data.platforms.map((p: any) => ({
           id: p.id,
           name: p.name,
           provider: p.provider,
-          total_cost: p.performance?.total_cost || 0,
-          current_month_cost: p.performance?.total_cost || 0, // TODO: 需要后端支持月度统计
-          monthly_budget: p.config_json?.monthly_budget || 0,
-          usage_percentage: p.config_json?.monthly_budget 
-            ? ((p.performance?.total_cost || 0) / p.config_json.monthly_budget) * 100 
-            : 0,
+          total_cost: p.total_cost,
+          current_month_cost: p.total_cost, // 暂用总成本代替月度成本
+          monthly_budget: 0, // TODO: 需要从platform配置获取
+          usage_percentage: 0,
+          today_cost: 0 // TODO: 需要单独查询今日成本
         }));
+        
         setPlatforms(platformCosts);
         
-        // 计算汇总数据
-        const totalCost = platformCosts.reduce((sum: number, p: PlatformCost) => sum + p.total_cost, 0);
-        const monthCost = platformCosts.reduce((sum: number, p: PlatformCost) => sum + p.current_month_cost, 0);
-        const totalBudget = platformCosts.reduce((sum: number, p: PlatformCost) => sum + p.monthly_budget, 0);
-        
+        // 设置汇总数据
         setSummary({
-          total_cost: totalCost,
-          month_cost: monthCost,
-          today_cost: 0, // TODO: 需要后端支持今日统计
-          avg_daily_cost: monthCost / new Date().getDate(),
-          total_budget: totalBudget,
-          budget_usage: totalBudget > 0 ? (monthCost / totalBudget) * 100 : 0,
+          total_cost: data.data.summary.total_cost,
+          month_cost: data.data.summary.total_cost, 
+          today_cost: 0, // TODO: 需要单独查询
+          avg_daily_cost: data.data.summary.total_cost / new Date().getDate(),
+          total_budget: 0,
+          budget_usage: 0
         });
-        
-        // 检查预算告警
-        const newAlerts: string[] = [];
-        platformCosts.forEach((p: PlatformCost) => {
-          if (p.monthly_budget > 0) {
-            if (p.usage_percentage >= 100) {
-              newAlerts.push(`🚨 ${p.name} 已超出月度预算！`);
-            } else if (p.usage_percentage >= 80) {
-              newAlerts.push(`⚠️ ${p.name} 预算使用率已达 ${p.usage_percentage.toFixed(0)}%`);
-            }
-          }
-        });
-        setAlerts(newAlerts);
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);

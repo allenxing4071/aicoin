@@ -234,14 +234,14 @@ async def get_cost_trend_daily(
     start_time = now - timedelta(days=days)
     
     # 按天分组统计总成本
-    day_column = func.date_trunc('day', AIModelUsageLog.created_at)
+    day_column = func.date_trunc('day', AIModelUsageLog.timestamp)
     
     daily_query = select(
         day_column.label('date'),
         func.sum(AIModelUsageLog.cost).label('total_cost'),
         func.count(AIModelUsageLog.id).label('total_calls')
     ).where(
-        AIModelUsageLog.created_at >= start_time
+        AIModelUsageLog.timestamp >= start_time
     ).group_by(
         day_column
     ).order_by(
@@ -856,3 +856,122 @@ async def get_daily_cost_trend(
         }
     }
 
+
+@router.get("/cost-summary")
+async def get_cost_summary(
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    获取成本汇总（用于AI成本管理页面）
+    从ai_model_usage_log表读取真实调用数据
+    
+    Returns:
+        总成本、今日成本、本月成本等统计数据
+    """
+    
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # 获取所有平台
+    platforms_result = await db.execute(
+        select(IntelligencePlatform).where(IntelligencePlatform.enabled == True)
+    )
+    platforms = platforms_result.scalars().all()
+    
+    platform_costs = []
+    total_cost = 0.0
+    today_cost = 0.0
+    month_cost = 0.0
+    
+    for platform in platforms:
+        # 构建模型匹配模式
+        provider_model_map = {
+            "deepseek": ["deepseek"],
+            "qwen": ["qwen"],
+            "tencent": ["hunyuan"],
+            "volcano": ["doubao"],
+            "baidu": ["ernie", "wenxin"],
+        }
+        
+        model_patterns = provider_model_map.get(platform.provider.lower(), [platform.provider.lower()])
+        
+        # 查询总成本
+        total_query = select(
+            func.sum(AIModelUsageLog.cost).label('total_cost'),
+            func.count(AIModelUsageLog.id).label('total_calls')
+        ).where(
+            func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
+        )
+        total_result = await db.execute(total_query)
+        total_data = total_result.first()
+        
+        # 查询今日成本
+        today_query = select(
+            func.sum(AIModelUsageLog.cost).label('cost')
+        ).where(
+            and_(
+                AIModelUsageLog.timestamp >= today_start,
+                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
+            )
+        )
+        today_result = await db.execute(today_query)
+        today_data = today_result.scalar()
+        
+        # 查询本月成本
+        month_query = select(
+            func.sum(AIModelUsageLog.cost).label('cost')
+        ).where(
+            and_(
+                AIModelUsageLog.timestamp >= month_start,
+                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
+            )
+        )
+        month_result = await db.execute(month_query)
+        month_data = month_result.scalar()
+        
+        platform_total = float(total_data.total_cost) if total_data.total_cost else 0.0
+        platform_today = float(today_data) if today_data else 0.0
+        platform_month = float(month_data) if month_data else 0.0
+        
+        # 获取月度预算
+        monthly_budget = platform.config_json.get('monthly_budget', 0) if platform.config_json else 0
+        
+        platform_costs.append({
+            "id": platform.id,
+            "name": platform.name,
+            "provider": platform.provider,
+            "total_cost": round(platform_total, 2),
+            "today_cost": round(platform_today, 2),
+            "current_month_cost": round(platform_month, 2),
+            "monthly_budget": monthly_budget,
+            "usage_percentage": round((platform_month / monthly_budget * 100), 2) if monthly_budget > 0 else 0,
+            "total_calls": total_data.total_calls if total_data.total_calls else 0
+        })
+        
+        total_cost += platform_total
+        today_cost += platform_today
+        month_cost += platform_month
+    
+    # 计算平均每日成本（基于本月）
+    days_in_month = now.day
+    avg_daily_cost = month_cost / days_in_month if days_in_month > 0 else 0
+    
+    # 总预算
+    total_budget = sum(p['monthly_budget'] for p in platform_costs)
+    budget_usage = (month_cost / total_budget * 100) if total_budget > 0 else 0
+    
+    return {
+        "success": True,
+        "data": {
+            "summary": {
+                "total_cost": round(total_cost, 2),
+                "today_cost": round(today_cost, 2),
+                "month_cost": round(month_cost, 2),
+                "avg_daily_cost": round(avg_daily_cost, 2),
+                "total_budget": total_budget,
+                "budget_usage": round(budget_usage, 2)
+            },
+            "platforms": platform_costs
+        }
+    }

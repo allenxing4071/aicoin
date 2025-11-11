@@ -39,29 +39,6 @@ export default function MultiAssetChart({ assets = DEFAULT_ASSETS }: MultiAssetC
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [priceData, setPriceData] = useState<Map<string, PriceDataPoint[]>>(new Map());
   const [hoveredPrice, setHoveredPrice] = useState<Map<string, number>>(new Map());
-  // 浮动价格标签
-  const [tooltipData, setTooltipData] = useState<{ visible: boolean; x: number; y: number; price: string; color: string; assetName: string }>({
-    visible: false,
-    x: 0,
-    y: 0,
-    price: '',
-    color: '#f7931a',
-    assetName: ''
-  });
-  // 存储真实价格映射（时间戳 -> 真实价格）
-  const priceMapRef = useRef<Map<string, Map<number, number>>>(new Map());
-  // 存储最新的资产状态（用于事件监听器）
-  const assetStatesRef = useRef<Asset[]>(assets);
-  const selectedAssetRef = useRef<string | null>(null);
-
-  // 同步assetStates和selectedAsset到ref
-  useEffect(() => {
-    assetStatesRef.current = assetStates;
-  }, [assetStates]);
-
-  useEffect(() => {
-    selectedAssetRef.current = selectedAsset;
-  }, [selectedAsset]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -135,56 +112,6 @@ export default function MultiAssetChart({ assets = DEFAULT_ASSETS }: MultiAssetC
     // 加载所有资产数据
     loadAllAssets();
 
-    // 十字光标移动事件 - 显示浮动价格标签
-    chart.subscribeCrosshairMove((param) => {
-      if (!param.point || !param.time || !chartContainerRef.current) {
-        setTooltipData({ visible: false, x: 0, y: 0, price: '', color: '#f7931a', assetName: '' });
-        return;
-      }
-
-      const timestamp = typeof param.time === 'number' ? param.time : (param.time as any).timestamp;
-      
-      // 查找鼠标最接近的K线（根据Y坐标距离）
-      let closestAsset: Asset | null = null;
-      let closestPrice: number | null = null;
-      let minDistance = Infinity;
-      
-      for (const asset of assetStatesRef.current) {
-        if (!asset.enabled && !selectedAssetRef.current) continue;
-        if (selectedAssetRef.current && asset.symbol !== selectedAssetRef.current) continue;
-        
-        const series = seriesRefs.current.get(asset.symbol);
-        const seriesData = series ? param.seriesData.get(series) : null;
-        
-        if (seriesData) {
-          const assetPriceMap = priceMapRef.current.get(asset.symbol);
-          if (assetPriceMap) {
-            const realPrice = assetPriceMap.get(timestamp);
-            // 简化逻辑：如果该系列有数据，就显示该系列的价格
-            // lightweight-charts的圆圈标记已经指示了鼠标最接近的线
-            if (realPrice) {
-              closestAsset = asset;
-              closestPrice = realPrice;
-              break; // 找到有数据的系列就显示
-            }
-          }
-        }
-      }
-      
-      if (closestAsset && closestPrice !== null) {
-        setTooltipData({
-          visible: true,
-          x: param.point.x,
-          y: param.point.y,
-          price: `$${closestPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          color: closestAsset.color,
-          assetName: closestAsset.name
-        });
-      } else {
-        setTooltipData({ visible: false, x: 0, y: 0, price: '', color: '#f7931a', assetName: '' });
-      }
-    });
-
     // 响应式调整
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
@@ -242,21 +169,15 @@ export default function MultiAssetChart({ assets = DEFAULT_ASSETS }: MultiAssetC
               
               // 转换为价格线数据（标准化处理）
               const firstPrice = parseFloat(klines[0].close);
-              const assetPriceMap = new Map<number, number>();
               const lineData = klines.map((k: any) => {
                 const price = parseFloat(k.close);
-                const timestamp = k.timestamp;
-                assetPriceMap.set(timestamp, price); // 存储真实价格映射
                 // 标准化：第一个价格点为基准100，其他按比例显示
                 const normalizedValue = (price / firstPrice) * 100;
                 return {
-                  time: timestamp as any,
+                  time: k.timestamp as any,
                   value: normalizedValue,
                 };
               });
-
-              // 保存价格映射
-              priceMapRef.current.set(asset.symbol, assetPriceMap);
 
               const series = seriesRefs.current.get(asset.symbol);
               if (series) {
@@ -433,33 +354,6 @@ export default function MultiAssetChart({ assets = DEFAULT_ASSETS }: MultiAssetC
           </div>
         )}
         <div ref={chartContainerRef} className="absolute top-0 left-0 right-0 bottom-12 w-full h-[calc(100%-3rem)]" />
-        
-        {/* 浮动价格标签 */}
-        {tooltipData.visible && (
-          <div 
-            className="absolute pointer-events-none z-40"
-            style={{
-              left: `${tooltipData.x}px`,
-              top: `${tooltipData.y - 40}px`,
-              transform: 'translateX(-50%)'
-            }}
-          >
-            <div 
-              className="px-3 py-1.5 rounded-md shadow-lg text-white text-sm font-semibold whitespace-nowrap"
-              style={{ backgroundColor: tooltipData.color }}
-            >
-              {tooltipData.assetName}: {tooltipData.price}
-            </div>
-            <div 
-              className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-0 h-0"
-              style={{
-                borderLeft: '6px solid transparent',
-                borderRight: '6px solid transparent',
-                borderTop: `6px solid ${tooltipData.color}`
-              }}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
