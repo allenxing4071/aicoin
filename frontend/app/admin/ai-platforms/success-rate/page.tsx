@@ -48,7 +48,7 @@ export default function SuccessRatePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/v1/intelligence/platforms');
+      const res = await fetch('/api/v1/intelligence/platforms');
       const data = await res.json();
       if (data.platforms) {
         setPlatforms(data.platforms.map((p: any) => ({
@@ -73,7 +73,7 @@ export default function SuccessRatePage() {
 
   const fetchFailureData = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/ai-platforms/failure-analysis?time_range=${timeRange}`);
+      const res = await fetch(`/api/v1/ai-platforms/failure-analysis?time_range=${timeRange}`);
       const data = await res.json();
       if (data.success) {
         setFailureData(data.data);
@@ -85,7 +85,7 @@ export default function SuccessRatePage() {
 
   const fetchTrendData = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/ai-platforms/stability-trend?time_range=${timeRange}`);
+      const res = await fetch(`/api/v1/ai-platforms/stability-trend?time_range=${timeRange}`);
       const data = await res.json();
       if (data.success) {
         setTrendData(data.data);

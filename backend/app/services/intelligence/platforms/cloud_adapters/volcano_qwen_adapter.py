@@ -98,7 +98,8 @@ class VolcanoQwenAdapter(BasePlatformAdapter):
             key_findings = self._extract_key_findings(analysis_text)
             
             # 记录成功调用
-            await self._record_call(success=True, cost=0.0)
+            response_time = (datetime.now() - start_time).total_seconds() * 1000
+            await self._record_call(success=True, cost=0.0, response_time=response_time)
             
             result = {
                 "platform": self.platform_name,
@@ -116,7 +117,8 @@ class VolcanoQwenAdapter(BasePlatformAdapter):
             
         except Exception as e:
             logger.error(f"❌ 火山引擎搜索失败: {e}", exc_info=True)
-            await self._record_call(success=False, cost=0.0)
+            response_time = (datetime.now() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
+            await self._record_call(success=False, cost=0.0, response_time=response_time)
             
             return {
                 "platform": self.platform_name,
@@ -188,6 +190,7 @@ class VolcanoQwenAdapter(BasePlatformAdapter):
             return False
         
         try:
+            start_time = datetime.now()
             response = await self.client.post(
                 f"{self.base_url}/chat/completions",
                 json={

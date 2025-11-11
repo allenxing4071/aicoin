@@ -30,7 +30,7 @@ export default function AIDecisionsPage() {
       });
 
       const response = await fetch(
-        `http://localhost:8000/api/v1/admin/ai-decisions?${params}`
+        `/api/v1/admin/ai-decisions?${params}`
       );
       const result = await response.json();
 

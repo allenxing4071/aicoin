@@ -60,7 +60,7 @@ export default function DecisionModelsPage() {
   const fetchPlatforms = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/v1/intelligence/platforms');
+      const res = await fetch('/api/v1/intelligence/platforms');
       const data = await res.json();
       // API返回格式: {platforms: [...], total: number}
       if (data.platforms) {
@@ -79,7 +79,7 @@ export default function DecisionModelsPage() {
 
   const handleToggleEnabled = async (id: number, enabled: boolean) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/intelligence/platforms/${id}`, {
+      const res = await fetch(`/api/v1/intelligence/platforms/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
@@ -94,7 +94,7 @@ export default function DecisionModelsPage() {
 
   const handleHealthCheck = async (id: number) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/intelligence/platforms/${id}/health`, {
+      const res = await fetch(`/api/v1/intelligence/platforms/${id}/health`, {
         method: 'POST',
       });
       const data = await res.json();

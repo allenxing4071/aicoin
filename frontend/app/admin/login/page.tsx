@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/admin/login", {
+      const response = await fetch("/api/v1/admin/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

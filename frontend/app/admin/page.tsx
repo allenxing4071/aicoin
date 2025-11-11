@@ -56,14 +56,14 @@ export default function AdminPage() {
       setLoading(true);
       
       // 获取表列表
-      const tablesRes = await fetch("http://localhost:8000/api/v1/admin/tables");
+      const tablesRes = await fetch("/api/v1/admin/tables");
       const tablesData = await tablesRes.json();
       if (tablesData.success) {
         setTables(tablesData.data);
       }
 
       // 获取统计信息
-      const statsRes = await fetch("http://localhost:8000/api/v1/admin/stats");
+      const statsRes = await fetch("/api/v1/admin/stats");
       const statsData = await statsRes.json();
       if (statsData.success) {
         setStats(statsData.data);
@@ -81,7 +81,7 @@ export default function AdminPage() {
 
   const fetchTradingStatus = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/constraints/trading-control");
+      const res = await fetch("/api/v1/constraints/trading-control");
       const data = await res.json();
       if (data.success) {
         setTradingEnabled(data.trading_enabled);
@@ -93,7 +93,7 @@ export default function AdminPage() {
 
   const fetchPermissionLevels = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/admin/permissions/levels");
+      const res = await fetch("/api/v1/admin/permissions/levels");
       const data = await res.json();
       if (data && Array.isArray(data)) {
         const levels = data.map((item: any) => ({
@@ -129,7 +129,7 @@ export default function AdminPage() {
 
   const fetchCurrentLevel = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/ai/status");
+      const res = await fetch("/api/v1/ai/status");
       const data = await res.json();
       if (data.success && data.orchestrator?.permission_level) {
         setCurrentLevel(data.orchestrator.permission_level);
@@ -142,7 +142,7 @@ export default function AdminPage() {
 
   const fetchApiVersion = async () => {
     try {
-      const res = await fetch("http://localhost:8000/openapi.json");
+      const res = await fetch("/openapi.json");
       const data = await res.json();
       if (data.info?.version) {
         setApiVersion(data.info.version);
@@ -161,7 +161,7 @@ export default function AdminPage() {
         await handleSetPermissionLevel(selectedLevel);
       }
 
-      const res = await fetch("http://localhost:8000/api/v1/constraints/trading-control", {
+      const res = await fetch("/api/v1/constraints/trading-control", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -189,7 +189,7 @@ export default function AdminPage() {
   const handleSetPermissionLevel = async (level: string) => {
     try {
       // 设置为默认等级
-      const res = await fetch(`http://localhost:8000/api/v1/admin/permissions/levels/${level}/set-default`, {
+      const res = await fetch(`/api/v1/admin/permissions/levels/${level}/set-default`, {
         method: "POST"
       });
       if (res.ok) {
@@ -456,7 +456,7 @@ export default function AdminPage() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <a
-                href="http://localhost:8000/docs"
+                href="/docs"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-colors text-center font-medium"
@@ -464,7 +464,7 @@ export default function AdminPage() {
                 Swagger UI
               </a>
               <a
-                href="http://localhost:8000/redoc"
+                href="/redoc"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-colors text-center font-medium"

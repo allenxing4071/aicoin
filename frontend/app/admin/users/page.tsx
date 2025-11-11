@@ -78,7 +78,7 @@ export default function UsersPage() {
         return;
       }
       
-      const response = await fetch("http://localhost:8000/api/v1/admin/users", {
+      const response = await fetch("/api/v1/admin/users", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -143,7 +143,7 @@ export default function UsersPage() {
       
       if (editingUser) {
         // 更新用户
-        const response = await fetch(`http://localhost:8000/api/v1/admin/users/${editingUser.id}`, {
+        const response = await fetch(`/api/v1/admin/users/${editingUser.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -163,7 +163,7 @@ export default function UsersPage() {
         }
       } else {
         // 创建用户
-        const response = await fetch("http://localhost:8000/api/v1/admin/users", {
+        const response = await fetch("/api/v1/admin/users", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -206,7 +206,7 @@ export default function UsersPage() {
         return;
       }
       
-      const response = await fetch(`http://localhost:8000/api/v1/admin/users/${user.id}/toggle-active`, {
+      const response = await fetch(`/api/v1/admin/users/${user.id}/toggle-active`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -249,7 +249,7 @@ export default function UsersPage() {
         return;
       }
       
-      const response = await fetch(`http://localhost:8000/api/v1/admin/users/${user.id}`, {
+      const response = await fetch(`/api/v1/admin/users/${user.id}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`

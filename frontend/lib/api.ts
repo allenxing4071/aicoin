@@ -3,8 +3,22 @@
  * 统一的API配置文件
  */
 
-// API Base URL - 可以通过环境变量配置
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+// 🎯 统一的 API 配置
+// 使用相对路径，通过 Nginx 反向代理访问后端，避免 CORS 问题
+
+/**
+ * API Base URL - 使用相对路径通过 Nginx 代理
+ * Nginx 配置:
+ *   location /api/ { proxy_pass http://localhost:8000/api/; }
+ */
+export const API_BASE = '/api/v1';
+
+/**
+ * API Server URL - 用于非 API 端点（如 /docs, /health）
+ * Nginx 配置:
+ *   location ~ ^/(docs|redoc|health|openapi\.json)$ { proxy_pass http://localhost:8000; }
+ */
+export const API_SERVER = '';
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -47,7 +61,7 @@ export const API_ENDPOINTS = {
   CONSTRAINTS_STATUS: `${API_BASE}/constraints/status`,
   
   // Health Check
-  HEALTH: "http://localhost:8000/health",
+  HEALTH: `${API_BASE.replace('/api/v1', '')}/health`,
 };
 
 // Helper function to build URL with query params

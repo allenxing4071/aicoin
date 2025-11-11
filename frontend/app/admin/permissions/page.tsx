@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import PageHeader from '../../components/common/PageHeader';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { API_BASE } from '../../../lib/api';
 
 interface TradingParams {
   max_position_pct: number;
@@ -59,7 +58,7 @@ export default function PermissionsAdmin() {
   const fetchLevels = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE}/api/v1/admin/permissions/levels`);
+      const response = await axios.get(`${API_BASE}/admin/permissions/levels`);
       setLevels(response.data);
       setError(null);
     } catch (err: any) {
@@ -71,7 +70,7 @@ export default function PermissionsAdmin() {
 
   const fetchCurrentAILevel = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/api/v1/ai/status`);
+      const response = await axios.get(`${API_BASE}/ai/status`);
       if (response.data?.orchestrator?.permission_level) {
         setCurrentAILevel(response.data.orchestrator.permission_level);
       }
@@ -90,7 +89,7 @@ export default function PermissionsAdmin() {
 
     try {
       await axios.put(
-        `${API_BASE}/api/v1/admin/permissions/levels/${editingLevel.level}`,
+        `${API_BASE}/admin/permissions/levels/${editingLevel.level}`,
         {
           name: editingLevel.name,
           description: editingLevel.description,
@@ -111,7 +110,7 @@ export default function PermissionsAdmin() {
 
   const handleSetDefault = async (level: string) => {
     try {
-      await axios.post(`${API_BASE}/api/v1/admin/permissions/levels/${level}/set-default`);
+      await axios.post(`${API_BASE}/admin/permissions/levels/${level}/set-default`);
       fetchLevels();
     } catch (err: any) {
       alert(`设置默认等级失败: ${err.message}`);
@@ -122,7 +121,7 @@ export default function PermissionsAdmin() {
     if (!confirm('确认初始化默认权限配置？这将创建L0-L5的默认配置。')) return;
 
     try {
-      await axios.post(`${API_BASE}/api/v1/admin/permissions/levels/init-defaults`);
+      await axios.post(`${API_BASE}/admin/permissions/levels/init-defaults`);
       fetchLevels();
       alert('默认配置初始化成功！');
     } catch (err: any) {

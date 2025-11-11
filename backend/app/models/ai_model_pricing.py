@@ -86,11 +86,12 @@ class AIModelUsageLog(Base):
     
     # 关联信息
     model_name = Column(String(100), nullable=False, index=True, comment="模型名称")
-    request_id = Column(String(100), index=True, comment="请求ID，用于追踪")
+    decision_id = Column(String(100), index=True, comment="决策ID，用于追踪")  # 对应实际表的decision_id
+    user_id = Column(Integer, comment="用户ID")  # 对应实际表的user_id
     
-    # 使用信息
-    input_tokens = Column(Integer, nullable=False, comment="输入tokens数量")
-    output_tokens = Column(Integer, nullable=False, comment="输出tokens数量")
+    # 使用信息（使用实际表的字段名）
+    prompt_tokens = Column(Integer, nullable=False, default=0, comment="输入tokens数量")  # 实际表字段名
+    completion_tokens = Column(Integer, nullable=False, default=0, comment="输出tokens数量")  # 实际表字段名
     cost = Column(Float, nullable=False, comment="本次花费（元）")
     
     # 性能信息
@@ -100,10 +101,34 @@ class AIModelUsageLog(Base):
     
     # 上下文信息
     purpose = Column(String(100), comment="调用目的：decision、intelligence、analysis等")
-    symbol = Column(String(20), comment="交易对（如果适用）")
     
-    # 时间戳
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True, comment="创建时间")
+    # 时间戳（使用实际表的字段名）
+    timestamp = Column(DateTime, server_default=func.now(), index=True, comment="创建时间")  # 实际表字段名
+    
+    # 添加属性别名以保持代码兼容性
+    @property
+    def input_tokens(self):
+        return self.prompt_tokens
+    
+    @input_tokens.setter  
+    def input_tokens(self, value):
+        self.prompt_tokens = value
+    
+    @property
+    def output_tokens(self):
+        return self.completion_tokens
+    
+    @output_tokens.setter
+    def output_tokens(self, value):
+        self.completion_tokens = value
+    
+    @property
+    def created_at(self):
+        return self.timestamp
+    
+    @created_at.setter
+    def created_at(self, value):
+        self.timestamp = value
     
     def __repr__(self):
         return f"<AIModelUsageLog(model={self.model_name}, cost={self.cost:.4f}元)>"

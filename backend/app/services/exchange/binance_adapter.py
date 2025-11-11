@@ -75,8 +75,11 @@ class BinanceAdapter(BaseExchangeAdapter):
             
             # 测试合约API
             if self.supports_futures():
-                futures_account = await self.futures_client.futures_account()
-                logger.info(f"合约账户验证成功")
+                try:
+                    futures_account = await self.futures_client.futures_account()
+                    logger.info(f"合约账户验证成功: totalWalletBalance={futures_account.get('totalWalletBalance', 0)}")
+                except Exception as fe:
+                    logger.warning(f"合约账户验证失败（可能未开通合约或API权限不足）: {fe}")
                 
         except Exception as e:
             raise Exception(f"API连接验证失败: {e}")
@@ -174,62 +177,116 @@ class BinanceAdapter(BaseExchangeAdapter):
         return result
     
     async def get_account_balance(self, market_type: str = 'spot') -> Dict[str, Any]:
-        """获取账户余额"""
+        """获取账户余额（汇总所有账户的总资产）"""
         try:
-            if market_type == 'spot':
+            # 🔥 获取所有账户的总资产（现货+合约+资金账户）
+            total_spot_usdt = 0.0
+            total_futures_usdt = 0.0
+            
+            # 1. 获取现货账户余额
+            try:
                 account = await self.spot_client.get_account()
                 balances = account['balances']
-                
-                total_balance_usdt = 0.0
-                available_balance_usdt = 0.0
-                assets = {}
                 
                 for balance in balances:
                     asset = balance['asset']
                     free = float(balance['free'])
                     locked = float(balance['locked'])
+                    total_amount = free + locked
                     
-                    if free > 0 or locked > 0:
-                        # 转换为USDT价值
+                    if total_amount > 0:
                         if asset == 'USDT':
-                            asset_value_usdt = free + locked
+                            asset_value_usdt = total_amount
+                            logger.debug(f"现货资产: {asset} = {total_amount:.8f} (价值 ${asset_value_usdt:.2f})")
                         else:
-                            # 获取当前价格
                             try:
                                 ticker = await self.spot_client.get_symbol_ticker(symbol=f"{asset}USDT")
                                 price = float(ticker['price'])
-                                asset_value_usdt = (free + locked) * price
-                            except:
+                                asset_value_usdt = total_amount * price
+                                if asset_value_usdt > 0.01:  # 只记录价值超过0.01的资产
+                                    logger.info(f"现货资产: {asset} = {total_amount:.8f} × ${price:.4f} = ${asset_value_usdt:.2f}")
+                            except Exception as e:
+                                logger.debug(f"无法获取 {asset} 价格: {e}")
                                 asset_value_usdt = 0
                         
-                        total_balance_usdt += asset_value_usdt
-                        available_balance_usdt += asset_value_usdt * (free / (free + locked)) if (free + locked) > 0 else 0
+                        total_spot_usdt += asset_value_usdt
                         
-                        assets[asset] = {
-                            'free': free,
-                            'locked': locked,
-                            'total': free + locked,
-                            'value_usdt': asset_value_usdt
-                        }
-                
-                return {
-                    'total_balance': total_balance_usdt,
-                    'available_balance': available_balance_usdt,
-                    'locked_balance': total_balance_usdt - available_balance_usdt,
-                    'assets': assets
+            except Exception as e:
+                logger.warning(f"获取现货账户失败: {e}")
+            
+            # 2. 获取合约账户余额
+            try:
+                futures_account = await self.futures_client.futures_account()
+                total_futures_usdt = float(futures_account.get('totalWalletBalance', 0))
+            except Exception as e:
+                logger.warning(f"获取合约账户失败: {e}")
+            
+            # 3. 获取资金账户余额（使用FUNDING类型快照）
+            total_funding_usdt = 0.0
+            try:
+                # 尝试使用FUNDING类型快照获取资金账户
+                import time
+                try:
+                    funding_snapshot_params = {
+                        'type': 'FUNDING',  # 专门查询资金账户
+                        'timestamp': int(time.time() * 1000)
+                    }
+                    funding_snapshot = await self.spot_client._request('get', 'sapi/v1/accountSnapshot', signed=True, data=funding_snapshot_params)
+                    
+                    if funding_snapshot.get('code') == 200:
+                        funding_snapshots = funding_snapshot.get('snapshotVos', [])
+                        if funding_snapshots:
+                            latest_funding = funding_snapshots[-1]
+                            funding_data = latest_funding.get('data', {})
+                            funding_balances = funding_data.get('balances', [])
+                            
+                            logger.info(f"✅ 成功获取资金账户快照，共 {len(funding_balances)} 种资产")
+                            
+                            for balance_info in funding_balances:
+                                asset_name = balance_info.get('asset', '')
+                                free = float(balance_info.get('free', 0))
+                                locked = float(balance_info.get('locked', 0))
+                                total_amount = free + locked
+                                
+                                if total_amount > 0.001:  # 忽略极小金额
+                                    if asset_name == 'USDT':
+                                        asset_value_usdt = total_amount
+                                        logger.info(f"💰 资金账户: {asset_name} = {total_amount:.8f} USDT (价值 ${asset_value_usdt:.2f})")
+                                    else:
+                                        try:
+                                            ticker = await self.spot_client.get_symbol_ticker(symbol=f"{asset_name}USDT")
+                                            price = float(ticker['price'])
+                                            asset_value_usdt = total_amount * price
+                                            if asset_value_usdt > 0.01:
+                                                logger.info(f"💰 资金账户: {asset_name} = {total_amount:.8f} × ${price:.4f} = ${asset_value_usdt:.2f}")
+                                        except:
+                                            asset_value_usdt = 0
+                                    
+                                    total_funding_usdt += asset_value_usdt
+                    else:
+                        logger.debug(f"资金账户快照返回: {funding_snapshot}")
+                        
+                except Exception as e:
+                    logger.warning(f"获取资金账户快照失败: {e}")
+                    
+            except Exception as e:
+                logger.warning(f"获取资金账户失败: {e}")
+            
+            # 4. 汇总总资产
+            total_balance = total_spot_usdt + total_futures_usdt + total_funding_usdt
+            
+            logger.info(f"币安账户汇总: 现货={total_spot_usdt:.2f}, 合约={total_futures_usdt:.2f}, 资金={total_funding_usdt:.2f}, 总计={total_balance:.2f} USDT")
+            
+            return {
+                'total_balance': total_balance,
+                'available_balance': total_balance,  # 简化处理，总余额即可用余额
+                'locked_balance': 0,
+                'unrealized_pnl': 0,
+                'assets': {
+                    'spot': total_spot_usdt,
+                    'futures': total_futures_usdt
                 }
-                
-            else:
-                # 合约账户
-                account = await self.futures_client.futures_account()
-                
-                return {
-                    'total_balance': float(account['totalWalletBalance']),
-                    'available_balance': float(account['availableBalance']),
-                    'locked_balance': float(account['totalWalletBalance']) - float(account['availableBalance']),
-                    'unrealized_pnl': float(account['totalUnrealizedProfit']),
-                    'assets': {}
-                }
+            }
                 
         except Exception as e:
             logger.error(f"获取账户余额失败: {e}", exc_info=True)

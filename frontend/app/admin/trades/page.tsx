@@ -30,7 +30,7 @@ export default function TradesPage() {
       });
 
       const response = await fetch(
-        `http://localhost:8000/api/v1/admin/trades?${params}`
+        `/api/v1/admin/trades?${params}`
       );
       const result = await response.json();
 

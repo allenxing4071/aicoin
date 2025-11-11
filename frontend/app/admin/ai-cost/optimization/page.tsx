@@ -40,7 +40,7 @@ export default function OptimizationPage() {
 
   const fetchCurrentInterval = async () => {
     try {
-      const res = await fetch('http://localhost:8000/health');
+      const res = await fetch('/health');
       const data = await res.json();
       if (data.orchestrator_status?.decision_interval) {
         setCurrentInterval(data.orchestrator_status.decision_interval);
@@ -53,7 +53,7 @@ export default function OptimizationPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/v1/ai-cost/decision-interval-analysis');
+      const res = await fetch('/api/v1/ai-cost/decision-interval-analysis');
       const data = await res.json();
       if (data.success) {
         setIntervals(data.data.intervals);
@@ -73,7 +73,7 @@ export default function OptimizationPage() {
     try {
       setChanging(true);
       // 使用正确的API路径
-      const res = await fetch(`http://localhost:8000/api/v1/ai/config/decision-interval?interval=${intervalSeconds}`, {
+      const res = await fetch(`/api/v1/ai/config/decision-interval?interval=${intervalSeconds}`, {
         method: 'PUT',
       });
       

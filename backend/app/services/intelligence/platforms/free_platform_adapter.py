@@ -95,7 +95,8 @@ class FreePlatformAdapter(BasePlatformAdapter):
                 key_findings.append(f"市场情绪偏向: {market_sentiment}")
             
             # 记录成功调用
-            await self._record_call(success=True, cost=0.0)
+            response_time = (datetime.now() - start_time).total_seconds() * 1000
+            await self._record_call(success=True, cost=0.0, response_time=response_time)
             
             result = {
                 "platform": self.platform_name,
@@ -117,7 +118,8 @@ class FreePlatformAdapter(BasePlatformAdapter):
             
         except Exception as e:
             logger.error(f"❌ 免费平台分析失败: {e}", exc_info=True)
-            await self._record_call(success=False, cost=0.0)
+            response_time = (datetime.now() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
+            await self._record_call(success=False, cost=0.0, response_time=response_time)
             
             return {
                 "platform": self.platform_name,

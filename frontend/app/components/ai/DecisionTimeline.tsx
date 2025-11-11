@@ -5,7 +5,7 @@ import axios from 'axios';
 import DecisionFlowViewer from './DecisionFlowViewer';
 import { DecisionSkeleton } from '../common/LoadingSkeleton';
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
 
 interface Decision {
   decision_id: string;

@@ -64,7 +64,7 @@ export default function OnChainDataPage() {
       setLoading(true);
       
       // 获取数据源配置
-      const configRes = await fetch('http://localhost:8000/api/v1/admin/intelligence/config');
+      const configRes = await fetch('/api/v1/admin/intelligence/config');
       const configData = await configRes.json();
       if (configData.success && configData.data.data_sources) {
         const onchainSources = configData.data.data_sources.filter(
@@ -74,7 +74,7 @@ export default function OnChainDataPage() {
       }
 
       // 获取数据源状态
-      const statusRes = await fetch('http://localhost:8000/api/v1/admin/intelligence/data-sources/status');
+      const statusRes = await fetch('/api/v1/admin/intelligence/data-sources/status');
       const statusData = await statusRes.json();
       if (Array.isArray(statusData)) {
         const onchainStatuses = statusData.filter((s: SourceStatus) => s.type === 'onchain');
@@ -82,7 +82,7 @@ export default function OnChainDataPage() {
       }
 
       // 获取链上指标（从情报报告中提取）
-      const reportsRes = await fetch('http://localhost:8000/api/v1/intelligence/reports?limit=20');
+      const reportsRes = await fetch('/api/v1/intelligence/reports?limit=20');
       const reportsData = await reportsRes.json();
       if (reportsData.success && reportsData.data) {
         const allMetrics: OnChainMetrics[] = [];
@@ -109,7 +109,7 @@ export default function OnChainDataPage() {
   const handleToggleSource = async (sourceName: string, currentEnabled: boolean) => {
     try {
       const res = await fetch(
-        `http://localhost:8000/api/v1/admin/intelligence/data-sources/${encodeURIComponent(sourceName)}/toggle?enabled=${!currentEnabled}`,
+        `/api/v1/admin/intelligence/data-sources/${encodeURIComponent(sourceName)}/toggle?enabled=${!currentEnabled}`,
         { method: 'POST' }
       );
       const data = await res.json();
@@ -128,7 +128,7 @@ export default function OnChainDataPage() {
     try {
       setTesting(sourceName);
       const res = await fetch(
-        `http://localhost:8000/api/v1/admin/intelligence/data-sources/${encodeURIComponent(sourceName)}/test-connection`,
+        `/api/v1/admin/intelligence/data-sources/${encodeURIComponent(sourceName)}/test-connection`,
         { method: 'POST' }
       );
       const data = await res.json();
@@ -156,7 +156,7 @@ export default function OnChainDataPage() {
     
     try {
       // 获取完整配置
-      const configRes = await fetch('http://localhost:8000/api/v1/admin/intelligence/config');
+      const configRes = await fetch('/api/v1/admin/intelligence/config');
       const configData = await configRes.json();
       
       if (!configData.success) {
@@ -173,7 +173,7 @@ export default function OnChainDataPage() {
       });
 
       // 保存配置
-      const saveRes = await fetch('http://localhost:8000/api/v1/admin/intelligence/config', {
+      const saveRes = await fetch('/api/v1/admin/intelligence/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

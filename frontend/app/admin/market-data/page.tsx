@@ -30,7 +30,7 @@ export default function MarketDataPage() {
       });
 
       const response = await fetch(
-        `http://localhost:8000/api/v1/admin/market-data?${params}`
+        `/api/v1/admin/market-data?${params}`
       );
       const result = await response.json();
 

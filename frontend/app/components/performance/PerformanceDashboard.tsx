@@ -6,7 +6,7 @@ import MetricCard from './MetricCard';
 import RiskGauge from './RiskGauge';
 import { PerformanceSkeleton } from '../common/LoadingSkeleton';
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
 
 interface PerformanceMetrics {
   returns: {

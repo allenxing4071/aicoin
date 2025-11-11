@@ -321,6 +321,16 @@ class DecisionEngineV2:
     
     async def _call_llm(self, prompt: str) -> str:
         """调用LLM API"""
+        import time
+        from app.services.ai_usage_logger import log_ai_call
+        
+        start_time = time.time()
+        success = False
+        error_message = None
+        input_tokens = 0
+        output_tokens = 0
+        cost = 0.0
+        
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -333,9 +343,58 @@ class DecisionEngineV2:
                 timeout=30
             )
             
+            # 提取token使用信息
+            if hasattr(response, 'usage') and response.usage:
+                input_tokens = response.usage.prompt_tokens
+                output_tokens = response.usage.completion_tokens
+                
+                # 计算成本（DeepSeek定价：输入¥1/M, 输出¥2/M）
+                cost = (input_tokens / 1_000_000 * 1.0) + (output_tokens / 1_000_000 * 2.0)
+            
+            success = True
+            response_time = time.time() - start_time
+            
+            # 异步记录使用日志
+            try:
+                await log_ai_call(
+                    db=self.db_session,
+                    model_name=self.model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost=cost,
+                    platform_id=1,  # DeepSeek平台ID（假设为1）
+                    success=True,
+                    response_time=response_time,
+                    purpose="decision",
+                    request_id=f"dec_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                )
+            except Exception as log_error:
+                logger.warning(f"记录AI使用日志失败（不影响主流程）: {log_error}")
+            
             return response.choices[0].message.content
         
         except Exception as e:
+            error_message = str(e)
+            response_time = time.time() - start_time
+            
+            # 记录失败日志
+            try:
+                await log_ai_call(
+                    db=self.db_session,
+                    model_name=self.model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost=cost,
+                    platform_id=1,  # DeepSeek平台ID
+                    success=False,
+                    error_message=error_message,
+                    response_time=response_time,
+                    purpose="decision",
+                    request_id=f"dec_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                )
+            except Exception as log_error:
+                logger.warning(f"记录AI使用日志失败: {log_error}")
+            
             logger.error(f"LLM调用失败: {e}")
             raise
     

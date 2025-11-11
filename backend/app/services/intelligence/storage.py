@@ -3,13 +3,11 @@
 import logging
 from datetime import datetime, timedelta
 from typing import List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.redis_client import redis_client
+from app.core.database import AsyncSessionLocal
 from .models import IntelligenceReport as IntelligenceReportModel
-
-# TODO: 添加PostgreSQL存储需要异步实现
-# from sqlalchemy.orm import Session
-# from app.core.database import AsyncSessionLocal
-# from app.models.intelligence import IntelligenceReport as IntelligenceReportDB
+from app.models.intelligence import IntelligenceReport as IntelligenceReportDB
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +24,7 @@ class IntelligenceStorage:
     
     async def store_report(self, report: IntelligenceReportModel) -> bool:
         """
-        Store intelligence report in Redis
-        
-        TODO: PostgreSQL持久化存储需要异步实现
+        Store intelligence report in Redis and PostgreSQL
         
         Args:
             report: Intelligence report to store
@@ -40,16 +36,20 @@ class IntelligenceStorage:
             # 1. Store to Redis (fast, 7-day cache)
             redis_success = await self._store_to_redis(report)
             
-            # TODO: 2. Store to PostgreSQL (persistent, long-term) - 需要异步实现
-            # postgres_success = await self._store_to_postgres_async(report)
+            # 2. Store to PostgreSQL (persistent, long-term)
+            postgres_success = await self._store_to_postgres_async(report)
             
-            if redis_success:
-                logger.info(f"✅ 存储情报报告成功: {report.timestamp} (Redis: ✅)")
+            if redis_success and postgres_success:
+                logger.info(f"✅ 存储情报报告成功: {report.timestamp} (Redis: ✅, PostgreSQL: ✅)")
+            elif redis_success:
+                logger.warning(f"⚠️ 情报报告部分存储成功: {report.timestamp} (Redis: ✅, PostgreSQL: ❌)")
+            else:
+                logger.error(f"❌ 情报报告存储失败: {report.timestamp}")
             
-            return redis_success
+            return redis_success or postgres_success  # 至少一个成功就算成功
             
         except Exception as e:
-            logger.error(f"❌ 存储情报报告失败: {e}")
+            logger.error(f"❌ 存储情报报告失败: {e}", exc_info=True)
             return False
     
     async def _store_to_redis(self, report: IntelligenceReportModel) -> bool:
@@ -74,17 +74,36 @@ class IntelligenceStorage:
             logger.error(f"❌ Redis存储失败: {e}")
             return False
     
-    # TODO: 实现异步PostgreSQL存储
-    # async def _store_to_postgres_async(self, report: IntelligenceReportModel) -> bool:
-    #     """Store intelligence report to PostgreSQL (async)"""
-    #     async with AsyncSessionLocal() as db:
-    #         try:
-    #             # Implementation here...
-    #             pass
-    #         except Exception as e:
-    #             logger.error(f"❌ PostgreSQL存储失败: {e}")
-    #             await db.rollback()
-    #             return False
+    async def _store_to_postgres_async(self, report: IntelligenceReportModel) -> bool:
+        """Store intelligence report to PostgreSQL (async)"""
+        async with AsyncSessionLocal() as db:
+            try:
+                # 将report的字典数据转换，确保所有对象都可JSON序列化
+                report_dict = report.to_dict()
+                
+                # 创建数据库模型
+                db_report = IntelligenceReportDB(
+                    timestamp=report.timestamp,
+                    market_sentiment=report.market_sentiment.value,
+                    sentiment_score=report.sentiment_score,
+                    confidence=report.confidence,
+                    key_news=report_dict.get('key_news', []),
+                    whale_signals=report_dict.get('whale_signals', []),
+                    on_chain_metrics=report_dict.get('on_chain_metrics', {}),
+                    risk_factors=report_dict.get('risk_factors', []),
+                    opportunities=report_dict.get('opportunities', []),
+                    qwen_analysis=report_dict.get('qwen_analysis', {})
+                )
+                
+                db.add(db_report)
+                await db.commit()
+                logger.debug(f"✅ PostgreSQL存储成功: {report.timestamp}")
+                return True
+                
+            except Exception as e:
+                logger.error(f"❌ PostgreSQL存储失败: {e}", exc_info=True)
+                await db.rollback()
+                return False
     
     async def get_latest_report(self) -> Optional[IntelligenceReportModel]:
         """Get the most recent intelligence report"""

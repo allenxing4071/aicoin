@@ -13,8 +13,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-const API_BASE = 'http://localhost:8000/api/v1';
+import { API_BASE } from '../../../lib/api';
 
 interface DataSource {
   type: string;

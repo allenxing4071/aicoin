@@ -66,7 +66,7 @@ export default function RSSNewsPage() {
       setLoading(true);
       
       // 获取数据源配置
-      const configRes = await fetch('http://localhost:8000/api/v1/admin/intelligence/config');
+      const configRes = await fetch('/api/v1/admin/intelligence/config');
       const configData = await configRes.json();
       if (configData.success && configData.data.data_sources) {
         // 只显示RSS新闻源
@@ -77,7 +77,7 @@ export default function RSSNewsPage() {
       }
 
       // 获取数据源状态
-      const statusRes = await fetch('http://localhost:8000/api/v1/admin/intelligence/data-sources/status');
+      const statusRes = await fetch('/api/v1/admin/intelligence/data-sources/status');
       const statusData = await statusRes.json();
       if (Array.isArray(statusData)) {
         const rssStatuses = statusData.filter((s: SourceStatus) => s.type === 'news');
@@ -85,7 +85,7 @@ export default function RSSNewsPage() {
       }
 
       // 获取最新新闻（从情报报告中提取）
-      const reportsRes = await fetch('http://localhost:8000/api/v1/intelligence/reports?limit=10');
+      const reportsRes = await fetch('/api/v1/intelligence/reports?limit=10');
       const reportsData = await reportsRes.json();
       if (reportsData.success && reportsData.data) {
         // 提取所有新闻
@@ -107,7 +107,7 @@ export default function RSSNewsPage() {
   const handleToggleSource = async (sourceName: string, currentEnabled: boolean) => {
     try {
       const res = await fetch(
-        `http://localhost:8000/api/v1/admin/intelligence/data-sources/${encodeURIComponent(sourceName)}/toggle?enabled=${!currentEnabled}`,
+        `/api/v1/admin/intelligence/data-sources/${encodeURIComponent(sourceName)}/toggle?enabled=${!currentEnabled}`,
         { method: 'POST' }
       );
       const data = await res.json();
@@ -126,7 +126,7 @@ export default function RSSNewsPage() {
     try {
       setTesting(sourceName);
       const res = await fetch(
-        `http://localhost:8000/api/v1/admin/intelligence/data-sources/${encodeURIComponent(sourceName)}/test-connection`,
+        `/api/v1/admin/intelligence/data-sources/${encodeURIComponent(sourceName)}/test-connection`,
         { method: 'POST' }
       );
       const data = await res.json();

@@ -54,21 +54,21 @@ export default function KOLTrackingPage() {
       setLoading(true);
       
       // 获取KOL列表
-      const kolsRes = await fetch('http://localhost:8000/api/v1/kol/sources');
+      const kolsRes = await fetch('/api/v1/kol/sources');
       const kolsData = await kolsRes.json();
       if (Array.isArray(kolsData)) {
         setKols(kolsData);
       }
 
       // 获取意见列表
-      const opinionsRes = await fetch('http://localhost:8000/api/v1/kol/opinions?limit=20');
+      const opinionsRes = await fetch('/api/v1/kol/opinions?limit=20');
       const opinionsData = await opinionsRes.json();
       if (opinionsData.success) {
         setOpinions(opinionsData.data);
       }
 
       // 获取统计数据
-      const statsRes = await fetch('http://localhost:8000/api/v1/kol/statistics');
+      const statsRes = await fetch('/api/v1/kol/statistics');
       const statsData = await statsRes.json();
       if (statsData.success) {
         setStats(statsData.data);

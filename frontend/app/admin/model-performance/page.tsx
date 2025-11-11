@@ -32,7 +32,7 @@ export default function ModelPerformancePage() {
 
   const fetchPerformance = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/v1/decision/performance");
+      const response = await fetch("/api/v1/decision/performance");
       const data = await response.json();
       setPerfData(data);
     } catch (error) {
@@ -44,7 +44,7 @@ export default function ModelPerformancePage() {
 
   const changeStrategy = async (strategy: string) => {
     try {
-      await fetch("http://localhost:8000/api/v1/decision/strategy", {
+      await fetch("/api/v1/decision/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategy })

@@ -31,6 +31,16 @@ const nextConfig = {
     NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000',
   },
   
+  // API重写规则 - 将 /api 请求转发到后端
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8000/api/:path*',
+      },
+    ]
+  },
+  
   // Webpack优化
   webpack: (config, { isServer }) => {
     if (!isServer) {

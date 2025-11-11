@@ -290,7 +290,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           }}
           theme="light"
         >
-          {/* Logo区域 - 年轻化设计 + 折叠按钮 */}
+          {/* Logo区域 - 年轻化设计 + 折叠按钮 - 固定在顶部 */}
           <div
             style={{
               height: "64px",
@@ -300,6 +300,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               borderBottom: "1px solid #f0f0f0",
               padding: collapsed ? "0 24px" : "0 20px",
               gap: "12px",
+              position: "sticky",
+              top: 0,
+              background: "#ffffff",
+              zIndex: 10,
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

@@ -1,12 +1,14 @@
 """Dashboard API - 统一的仪表板数据接口"""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
 from app.core.database import get_db
+from app.models.account import AccountSnapshot
 import asyncio
 import logging
-from datetime import datetime
-from typing import Dict, Any
+from datetime import datetime, timedelta
+from typing import Dict, Any, List
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -41,11 +43,10 @@ async def get_api_status_data() -> Dict[str, Any]:
 
 
 async def get_account_data(db: AsyncSession) -> Dict[str, Any]:
-    """获取账户信息 (带缓存优化)"""
+    """获取账户信息 (带缓存优化，支持多交易所)"""
     try:
-        from app.services.hyperliquid_trading import HyperliquidTradingService
+        from app.services.exchange.exchange_factory import ExchangeFactory
         from app.core.redis_client import redis_client
-        from app.core.config import settings
         
         # 尝试从缓存获取 (30秒缓存)
         cache_key = "dashboard:account_info"
@@ -54,27 +55,38 @@ async def get_account_data(db: AsyncSession) -> Dict[str, Any]:
             logger.debug("✅ 从缓存获取账户数据")
             return cached_data
         
-        # 缓存未命中,查询数据
-        testnet = getattr(settings, 'HYPERLIQUID_TESTNET', False)
-        trading_service = HyperliquidTradingService(redis_client, testnet=testnet)
-        await trading_service.initialize()
-        account_info = trading_service.get_account_info()
+        # 缓存未命中,从当前激活的交易所查询数据
+        adapter = await ExchangeFactory.get_active_exchange()
+        if not adapter:
+            logger.warning("⚠️  没有激活的交易所适配器")
+            return {
+                "equity": 0,
+                "balance": 0,
+                "error": "No active exchange"
+            }
+        
+        # 获取当前市场类型
+        exchange_info = ExchangeFactory.get_active_exchange_info()
+        market_type = exchange_info.get('market_type', 'spot')
+        
+        # 获取账户信息（传递正确的市场类型）
+        account_info = await adapter.get_account_balance(market_type=market_type)
         
         result = {
-            "equity": account_info.get("equity", 0),
-            "balance": account_info.get("balance", 0),
-            "margin_used": account_info.get("margin_used", 0),
-            "unrealized_pnl": account_info.get("unrealized_pnl", 0),
-            "total_return": account_info.get("total_return", 0)
+            "equity": float(account_info.get("total_balance", account_info.get("equity", 0))),
+            "balance": float(account_info.get("available_balance", account_info.get("balance", 0))),
+            "margin_used": float(account_info.get("margin_used", 0)),
+            "unrealized_pnl": float(account_info.get("unrealized_pnl", 0)),
+            "total_return": float(account_info.get("total_return", 0))
         }
         
         # 缓存结果 (30秒)
         await redis_client.set(cache_key, result, expire=30)
-        logger.debug("✅ 账户数据已缓存")
+        logger.debug(f"✅ 账户数据已缓存: {result}")
         
         return result
     except Exception as e:
-        logger.error(f"获取账户数据失败: {e}")
+        logger.error(f"获取账户数据失败: {e}", exc_info=True)
         return {
             "equity": 0,
             "balance": 0,
@@ -254,4 +266,67 @@ async def get_dashboard_quick():
                 "permission_level": "L0"
             }
         }
+
+
+@router.get("/account-history")
+async def get_account_history(
+    hours: int = Query(default=72, ge=1, le=720, description="查询多少小时的历史数据"),
+    limit: int = Query(default=100, ge=10, le=1000, description="返回的数据点数量"),
+    db: AsyncSession = Depends(get_db)
+) -> List[Dict[str, Any]]:
+    """
+    获取账户价值历史数据
+    
+    用于绘制账户价值趋势图，与BTC价格对比
+    
+    Args:
+        hours: 查询最近多少小时的数据（默认72小时）
+        limit: 返回的数据点数量（默认100）
+        db: 数据库会话
+    
+    Returns:
+        账户历史数据列表
+    """
+    try:
+        # 计算时间范围
+        end_time = datetime.utcnow()
+        start_time = end_time - timedelta(hours=hours)
+        
+        # 查询账户快照
+        stmt = (
+            select(AccountSnapshot)
+            .where(AccountSnapshot.timestamp >= start_time)
+            .order_by(desc(AccountSnapshot.timestamp))
+            .limit(limit)
+        )
+        
+        result = await db.execute(stmt)
+        snapshots = result.scalars().all()
+        
+        if not snapshots:
+            logger.warning("没有找到账户历史数据")
+            return []
+        
+        # 反转列表，使其按时间正序排列
+        snapshots.reverse()
+        
+        # 格式化返回数据
+        history_data = []
+        for snapshot in snapshots:
+            history_data.append({
+                "timestamp": snapshot.timestamp.isoformat(),
+                "balance": float(snapshot.balance),
+                "equity": float(snapshot.equity),
+                "unrealized_pnl": float(snapshot.unrealized_pnl) if snapshot.unrealized_pnl else 0,
+                "realized_pnl": float(snapshot.realized_pnl) if snapshot.realized_pnl else 0,
+                "total_trades": snapshot.total_trades,
+                "win_rate": float(snapshot.win_rate) if snapshot.win_rate else 0,
+            })
+        
+        logger.info(f"✅ 返回 {len(history_data)} 条账户历史记录 ({hours}小时内)")
+        return history_data
+        
+    except Exception as e:
+        logger.error(f"获取账户历史失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取账户历史失败: {str(e)}")
 

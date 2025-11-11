@@ -37,7 +37,7 @@ export default function AILessonsPage() {
       });
 
       const response = await fetch(
-        `http://localhost:8000/api/v1/admin/memory/lessons?${params}`
+        `/api/v1/admin/memory/lessons?${params}`
       );
       const result = await response.json();
 

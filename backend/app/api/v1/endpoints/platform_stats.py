@@ -5,23 +5,15 @@ AI平台调用统计API
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, Integer, cast, column, table
+from sqlalchemy import select, func, and_, Integer, cast
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 from app.core.database import get_db
 from app.models.ai_model_pricing import AIModelUsageLog
 from app.models.intelligence_platform import IntelligencePlatform
+import logging
 
-# 直接定义表结构（因为模型定义和实际数据库表不一致）
-usage_log_table = table('ai_model_usage_log',
-    column('id'),
-    column('model_name'),
-    column('timestamp'),
-    column('cost'),
-    column('success'),
-    column('error_message'),
-    column('response_time')
-)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -87,15 +79,17 @@ async def get_platform_stats(
         
         model_patterns = provider_model_map.get(platform.provider.lower(), [platform.provider.lower()])
         
-        # 统计调用（使用实际数据库表字段：timestamp, cost）
+        # 统计调用（使用AIModelUsageLog模型）
         query = select(
-            func.count(usage_log_table.c.id).label('count'),
-            func.sum(usage_log_table.c.cost).label('total_cost')
+            func.count(AIModelUsageLog.id).label('count'),
+            func.sum(cast(AIModelUsageLog.success, Integer)).label('successful'),
+            func.sum(AIModelUsageLog.cost).label('total_cost'),
+            func.avg(AIModelUsageLog.response_time).label('avg_response_time')
         ).where(
             and_(
-                usage_log_table.c.timestamp >= start_time,
+                AIModelUsageLog.timestamp >= start_time,
                 # 模糊匹配model_name
-                func.lower(usage_log_table.c.model_name).op('~')(f"({'|'.join(model_patterns)})")
+                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
             )
         )
         
@@ -103,11 +97,11 @@ async def get_platform_stats(
         data = result.first()
         
         calls = data.count if data.count else 0
-        successful_calls = calls  # 假设所有记录都是成功的
-        failed_calls = 0  # 实际表中无法区分失败
-        success_rate = 100.0 if calls > 0 else 0.0
+        successful_calls = int(data.successful) if data.successful else 0
+        failed_calls = calls - successful_calls
+        success_rate = (successful_calls / calls * 100) if calls > 0 else 0.0
         cost = float(data.total_cost) if data.total_cost else 0.0
-        avg_response_time = None  # 实际表中没有response_time字段
+        avg_response_time = float(data.avg_response_time) if data.avg_response_time else None
         
         platform_stats.append({
             "id": platform.id,
@@ -171,14 +165,15 @@ async def get_hourly_stats(
     else:  # week
         start_time = now - timedelta(days=7)
     
-    # 按小时分组统计（使用实际数据库表字段：timestamp）
-    hour_column = func.date_trunc('hour', usage_log_table.c.timestamp).label('hour')
+    # 按小时分组统计（使用AIModelUsageLog模型）
+    hour_column = func.date_trunc('hour', AIModelUsageLog.timestamp).label('hour')
     hourly_query = select(
         hour_column,
-        func.count(usage_log_table.c.id).label('calls'),
-        func.sum(usage_log_table.c.cost).label('cost')
+        func.count(AIModelUsageLog.id).label('calls'),
+        func.sum(cast(AIModelUsageLog.success, Integer)).label('successful'),
+        func.sum(AIModelUsageLog.cost).label('cost')
     ).where(
-        usage_log_table.c.timestamp >= start_time
+        AIModelUsageLog.timestamp >= start_time
     ).group_by(
         hour_column
     ).order_by(
@@ -188,14 +183,18 @@ async def get_hourly_stats(
     result = await db.execute(hourly_query)
     hourly_data = result.all()
     
-    # 格式化数据（注意：没有success字段，假设所有调用都成功）
+    # 格式化数据
     hourly_stats = []
     for row in hourly_data:
+        successful = int(row.successful) if row.successful else 0
+        calls = row.calls
+        failed = calls - successful
+        
         hourly_stats.append({
             "hour": row.hour.isoformat() if row.hour else None,
-            "calls": row.calls,
-            "successful": row.calls,  # 假设所有调用都成功
-            "failed": 0,  # 无法区分失败
+            "calls": calls,
+            "successful": successful,
+            "failed": failed,
             "cost": round(float(row.cost) if row.cost else 0.0, 2),
         })
     
@@ -210,6 +209,76 @@ async def get_hourly_stats(
             "end_time": now.isoformat(),
             "hourly_stats": hourly_stats,
             "peak_hour": peak_hour,
+        }
+    }
+
+
+@router.get("/cost-trend-daily")
+async def get_cost_trend_daily(
+    days: int = Query(7, ge=1, le=30),
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    获取每日成本趋势数据（最新实现）
+    
+    Args:
+        days: 天数 (1-30天)
+        db: 数据库会话
+        
+    Returns:
+        每日成本趋势数据
+    """
+    
+    # 计算时间范围
+    now = datetime.utcnow()
+    start_time = now - timedelta(days=days)
+    
+    # 按天分组统计总成本
+    day_column = func.date_trunc('day', AIModelUsageLog.created_at)
+    
+    daily_query = select(
+        day_column.label('date'),
+        func.sum(AIModelUsageLog.cost).label('total_cost'),
+        func.count(AIModelUsageLog.id).label('total_calls')
+    ).where(
+        AIModelUsageLog.created_at >= start_time
+    ).group_by(
+        day_column
+    ).order_by(
+        day_column
+    )
+    
+    result = await db.execute(daily_query)
+    daily_data = result.all()
+    
+    # 格式化每日数据
+    daily_trend = []
+    for row in daily_data:
+        daily_trend.append({
+            "date": row.date.isoformat() if row.date else None,
+            "total_cost": round(float(row.total_cost) if row.total_cost else 0.0, 2),
+            "total_calls": row.total_calls,
+        })
+    
+    # 计算统计信息
+    total_cost = sum(d['total_cost'] for d in daily_trend)
+    avg_daily_cost = total_cost / len(daily_trend) if daily_trend else 0
+    max_daily_cost = max((d['total_cost'] for d in daily_trend), default=0)
+    min_daily_cost = min((d['total_cost'] for d in daily_trend), default=0)
+    
+    return {
+        "success": True,
+        "data": {
+            "days": days,
+            "start_time": start_time.isoformat(),
+            "end_time": now.isoformat(),
+            "daily_trend": daily_trend,
+            "summary": {
+                "total_cost": round(total_cost, 2),
+                "avg_daily_cost": round(avg_daily_cost, 2),
+                "max_daily_cost": round(max_daily_cost, 2),
+                "min_daily_cost": round(min_daily_cost, 2),
+            }
         }
     }
 
@@ -261,15 +330,15 @@ async def get_failure_analysis(
         
         # 查询失败记录
         query = select(
-            usage_log_table.c.error_message,
-            func.count(usage_log_table.c.id).label('count')
+            AIModelUsageLog.error_message,
+            func.count(AIModelUsageLog.id).label('count')
         ).where(
             and_(
-                usage_log_table.c.timestamp >= start_time,
-                usage_log_table.c.success == False,
-                func.lower(usage_log_table.c.model_name).op('~')(f"({'|'.join(model_patterns)})")
+                AIModelUsageLog.timestamp >= start_time,
+                AIModelUsageLog.success == False,
+                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
             )
-        ).group_by(usage_log_table.c.error_message)
+        ).group_by(AIModelUsageLog.error_message)
         
         result = await db.execute(query)
         failures = result.all()
@@ -391,18 +460,18 @@ async def get_stability_trend(
             continue
         
         # 按时间间隔分组查询
-        time_column = func.date_trunc(interval, usage_log_table.c.timestamp)
+        time_column = func.date_trunc(interval, AIModelUsageLog.timestamp)
         
         query = select(
             time_column.label('time_bucket'),
-            func.count(usage_log_table.c.id).label('total_calls'),
+            func.count(AIModelUsageLog.id).label('total_calls'),
             func.sum(
-                cast(usage_log_table.c.success, Integer)
+                cast(AIModelUsageLog.success, Integer)
             ).label('successful_calls')
         ).where(
             and_(
-                usage_log_table.c.timestamp >= start_time,
-                func.lower(usage_log_table.c.model_name).op('~')(f"({'|'.join(model_patterns)})")
+                AIModelUsageLog.timestamp >= start_time,
+                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
             )
         ).group_by(time_column).order_by(time_column)
         
@@ -502,19 +571,19 @@ async def get_response_time_percentiles(
         # 查询响应时间数据 (使用真实的 response_time 字段)
         # 使用 PERCENTILE_CONT 计算分位数
         query = select(
-            func.percentile_cont(0.50).within_group(usage_log_table.c.response_time).label('p50'),
-            func.percentile_cont(0.95).within_group(usage_log_table.c.response_time).label('p95'),
-            func.percentile_cont(0.99).within_group(usage_log_table.c.response_time).label('p99'),
-            func.avg(usage_log_table.c.response_time).label('avg'),
-            func.min(usage_log_table.c.response_time).label('min'),
-            func.max(usage_log_table.c.response_time).label('max'),
-            func.count(usage_log_table.c.id).label('sample_count')
+            func.percentile_cont(0.50).within_group(AIModelUsageLog.response_time).label('p50'),
+            func.percentile_cont(0.95).within_group(AIModelUsageLog.response_time).label('p95'),
+            func.percentile_cont(0.99).within_group(AIModelUsageLog.response_time).label('p99'),
+            func.avg(AIModelUsageLog.response_time).label('avg'),
+            func.min(AIModelUsageLog.response_time).label('min'),
+            func.max(AIModelUsageLog.response_time).label('max'),
+            func.count(AIModelUsageLog.id).label('sample_count')
         ).where(
             and_(
-                usage_log_table.c.timestamp >= start_time,
-                usage_log_table.c.success == True,
-                usage_log_table.c.response_time != None,
-                func.lower(usage_log_table.c.model_name).op('~')(f"({'|'.join(model_patterns)})")
+                AIModelUsageLog.timestamp >= start_time,
+                AIModelUsageLog.success == True,
+                AIModelUsageLog.response_time != None,
+                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
             )
         )
         
@@ -596,20 +665,20 @@ async def get_response_time_trend(
             continue
         
         # 按时间间隔分组查询响应时间
-        time_column = func.date_trunc(interval, usage_log_table.c.timestamp)
+        time_column = func.date_trunc(interval, AIModelUsageLog.timestamp)
         
         query = select(
             time_column.label('time_bucket'),
-            func.avg(usage_log_table.c.response_time).label('avg_response_time'),
-            func.percentile_cont(0.50).within_group(usage_log_table.c.response_time).label('p50'),
-            func.percentile_cont(0.95).within_group(usage_log_table.c.response_time).label('p95'),
-            func.count(usage_log_table.c.id).label('call_count')
+            func.avg(AIModelUsageLog.response_time).label('avg_response_time'),
+            func.percentile_cont(0.50).within_group(AIModelUsageLog.response_time).label('p50'),
+            func.percentile_cont(0.95).within_group(AIModelUsageLog.response_time).label('p95'),
+            func.count(AIModelUsageLog.id).label('call_count')
         ).where(
             and_(
-                usage_log_table.c.timestamp >= start_time,
-                usage_log_table.c.success == True,
-                usage_log_table.c.response_time != None,
-                func.lower(usage_log_table.c.model_name).op('~')(f"({'|'.join(model_patterns)})")
+                AIModelUsageLog.timestamp >= start_time,
+                AIModelUsageLog.success == True,
+                AIModelUsageLog.response_time != None,
+                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
             )
         ).group_by(time_column).order_by(time_column)
         
@@ -649,6 +718,141 @@ async def get_response_time_trend(
             "start_time": start_time.isoformat(),
             "end_time": now.isoformat(),
             "platforms": trend_data
+        }
+    }
+
+
+@router.get("/daily-cost-trend")
+async def get_daily_cost_trend(
+    days: int = Query(7, ge=1, le=30),
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    获取每日成本趋势数据
+    
+    Args:
+        days: 天数 (1-30天)
+        db: 数据库会话
+        
+    Returns:
+        每日成本趋势数据
+    """
+    
+    # 计算时间范围
+    now = datetime.utcnow()
+    start_time = now - timedelta(days=days)
+    
+    # 按天分组统计总成本
+    day_column = func.date_trunc('day', AIModelUsageLog.timestamp)
+    
+    daily_query = select(
+        day_column.label('date'),
+        func.sum(AIModelUsageLog.cost).label('total_cost'),
+        func.count(AIModelUsageLog.id).label('total_calls'),
+        func.sum(cast(AIModelUsageLog.success, Integer)).label('successful_calls')
+    ).where(
+        AIModelUsageLog.timestamp >= start_time
+    ).group_by(
+        day_column
+    ).order_by(
+        day_column
+    )
+    
+    result = await db.execute(daily_query)
+    daily_data = result.all()
+    
+    # 获取所有平台
+    platforms_result = await db.execute(
+        select(IntelligencePlatform).where(IntelligencePlatform.enabled == True)
+    )
+    platforms = platforms_result.scalars().all()
+    
+    # 为每个平台统计每日成本
+    platform_daily_costs = []
+    
+    for platform in platforms:
+        # 构建模型名称匹配模式
+        provider_model_map = {
+            "deepseek": ["deepseek"],
+            "qwen": ["qwen"],
+            "tencent": ["hunyuan"],
+            "volcano": ["doubao"],
+            "baidu": ["ernie", "wenxin"],
+        }
+        
+        model_patterns = provider_model_map.get(platform.provider.lower(), [platform.provider.lower()])
+        
+        # 按天分组查询该平台的成本
+        platform_daily_query = select(
+            day_column.label('date'),
+            func.sum(AIModelUsageLog.cost).label('cost')
+        ).where(
+            and_(
+                AIModelUsageLog.timestamp >= start_time,
+                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
+            )
+        ).group_by(
+            day_column
+        ).order_by(
+            day_column
+        )
+        
+        platform_result = await db.execute(platform_daily_query)
+        platform_data = platform_result.all()
+        
+        if platform_data:
+            data_points = [
+                {
+                    "date": row.date.isoformat() if row.date else None,
+                    "cost": round(float(row.cost) if row.cost else 0.0, 4)
+                }
+                for row in platform_data
+            ]
+            
+            total_cost = sum(p['cost'] for p in data_points)
+            
+            platform_daily_costs.append({
+                "platform_id": platform.id,
+                "platform_name": platform.name,
+                "provider": platform.provider,
+                "total_cost": round(total_cost, 2),
+                "data_points": data_points
+            })
+    
+    # 格式化总体每日数据
+    daily_trend = []
+    for row in daily_data:
+        successful = int(row.successful_calls) if row.successful_calls else 0
+        failed = row.total_calls - successful
+        
+        daily_trend.append({
+            "date": row.date.isoformat() if row.date else None,
+            "total_cost": round(float(row.total_cost) if row.total_cost else 0.0, 2),
+            "total_calls": row.total_calls,
+            "successful_calls": successful,
+            "failed_calls": failed,
+        })
+    
+    # 计算统计信息
+    total_cost = sum(d['total_cost'] for d in daily_trend)
+    avg_daily_cost = total_cost / len(daily_trend) if daily_trend else 0
+    max_daily_cost = max((d['total_cost'] for d in daily_trend), default=0)
+    min_daily_cost = min((d['total_cost'] for d in daily_trend), default=0)
+    
+    return {
+        "success": True,
+        "data": {
+            "days": days,
+            "start_time": start_time.isoformat(),
+            "end_time": now.isoformat(),
+            "daily_trend": daily_trend,
+            "platform_costs": platform_daily_costs,
+            "summary": {
+                "total_cost": round(total_cost, 2),
+                "avg_daily_cost": round(avg_daily_cost, 2),
+                "max_daily_cost": round(max_daily_cost, 2),
+                "min_daily_cost": round(min_daily_cost, 2),
+            }
         }
     }
 

@@ -30,7 +30,7 @@ export default function OrdersPage() {
       });
 
       const response = await fetch(
-        `http://localhost:8000/api/v1/admin/orders?${params}`
+        `/api/v1/admin/orders?${params}`
       );
       const result = await response.json();
 

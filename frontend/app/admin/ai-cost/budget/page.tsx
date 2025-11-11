@@ -45,7 +45,7 @@ export default function BudgetSettingsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/v1/intelligence/budget/summary');
+      const res = await fetch('/api/v1/intelligence/budget/summary');
       const data = await res.json();
       if (data.success && data.data) {
         setModels(data.data.platforms.map((p: any) => ({
@@ -89,7 +89,7 @@ export default function BudgetSettingsPage() {
       }
       
       // 从API获取平台列表找到ID
-      const platformsRes = await fetch('http://localhost:8000/api/v1/intelligence/platforms');
+      const platformsRes = await fetch('/api/v1/intelligence/platforms');
       const platformsData = await platformsRes.json();
       const platform = platformsData.platforms?.find((p: any) => p.provider === modelName);
       
@@ -99,7 +99,7 @@ export default function BudgetSettingsPage() {
       }
       
       
-      const res = await fetch(`http://localhost:8000/api/v1/intelligence/platforms/${platform.id}/budget`, {
+      const res = await fetch(`/api/v1/intelligence/platforms/${platform.id}/budget`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

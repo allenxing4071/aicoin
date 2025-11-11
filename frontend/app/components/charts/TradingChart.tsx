@@ -77,22 +77,27 @@ export default function TradingChart({ symbol }: ChartProps) {
   const loadChartData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8000/api/v1/market/kline/${symbol}`);
+      // 使用多周期API，获取1小时K线数据
+      const response = await axios.get(`/api/v1/market/klines/multi/${symbol}?intervals=1h`);
       
-      const data = response.data.klines.map((k: any) => ({
-        time: Math.floor(new Date(k.timestamp).getTime() / 1000) as any,
-        open: parseFloat(k.open),
-        high: parseFloat(k.high),
-        low: parseFloat(k.low),
-        close: parseFloat(k.close),
-      }));
+      if (response.data.success && response.data.data.klines['1h']) {
+        const klines = response.data.data.klines['1h'];
+        const data = klines.map((k: any) => ({
+          time: k.timestamp as any,
+          open: parseFloat(k.open),
+          high: parseFloat(k.high),
+          low: parseFloat(k.low),
+          close: parseFloat(k.close),
+        }));
 
-      if (seriesRef.current) {
-        seriesRef.current.setData(data);
+        if (seriesRef.current) {
+          seriesRef.current.setData(data);
+        }
       }
       setLoading(false);
     } catch (error) {
       console.error('Failed to load chart data:', error);
+      setLoading(false);
       // 使用模拟数据
       generateMockData();
     }

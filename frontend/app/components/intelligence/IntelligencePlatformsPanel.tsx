@@ -96,7 +96,7 @@ export default function IntelligencePlatformsPanel() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
       
-      const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms", {
+      const response = await fetch("/api/v1/intelligence/platforms", {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
@@ -122,7 +122,7 @@ export default function IntelligencePlatformsPanel() {
 
   const fetchConfig = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/v1/admin/intelligence/config");
+      const response = await fetch("/api/v1/admin/intelligence/config");
       if (response.ok) {
         const data = await response.json();
         setConfig(data.data);
@@ -134,7 +134,7 @@ export default function IntelligencePlatformsPanel() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/v1/admin/intelligence/status");
+      const response = await fetch("/api/v1/admin/intelligence/status");
       if (response.ok) {
         const data = await response.json();
         setStats(data.data.stats);
@@ -147,7 +147,7 @@ export default function IntelligencePlatformsPanel() {
   const togglePlatform = async (id: number, enabled: boolean) => {
     setUpdating(true);
     try {
-      await fetch(`http://localhost:8000/api/v1/intelligence/platforms/${id}`, {
+      await fetch(`/api/v1/intelligence/platforms/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled })
@@ -170,7 +170,7 @@ export default function IntelligencePlatformsPanel() {
 
     setUpdating(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms", {
+      const response = await fetch("/api/v1/intelligence/platforms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
@@ -206,7 +206,7 @@ export default function IntelligencePlatformsPanel() {
   const handleReloadPlatforms = async () => {
     setReloading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/intelligence/platforms/reload", {
+      const response = await fetch("/api/v1/intelligence/platforms/reload", {
         method: "POST"
       });
       

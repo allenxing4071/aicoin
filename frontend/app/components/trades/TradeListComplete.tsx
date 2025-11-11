@@ -33,7 +33,7 @@ interface TradeListCompleteProps {
   models: Model[];
 }
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
 
 export default function TradeListComplete({ selectedModel, models }: TradeListCompleteProps) {
   const [trades, setTrades] = useState<Trade[]>([]);

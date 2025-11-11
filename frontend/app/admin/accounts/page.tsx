@@ -30,7 +30,7 @@ export default function AccountsPage() {
       });
 
       const response = await fetch(
-        `http://localhost:8000/api/v1/admin/accounts?${params}`
+        `/api/v1/admin/accounts?${params}`
       );
       const result = await response.json();
 

@@ -73,7 +73,7 @@ export default function IntelligenceModelsPage() {
   const fetchPlatforms = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/v1/intelligence/platforms');
+      const res = await fetch('/api/v1/intelligence/platforms');
       const data = await res.json();
       // API返回格式: {platforms: [...], total: number}
       if (data.platforms) {
@@ -92,7 +92,7 @@ export default function IntelligenceModelsPage() {
 
   const handleToggleEnabled = async (id: number, enabled: boolean) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/intelligence/platforms/${id}`, {
+      const res = await fetch(`/api/v1/intelligence/platforms/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
@@ -107,7 +107,7 @@ export default function IntelligenceModelsPage() {
 
   const handleHealthCheck = async (id: number) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/intelligence/platforms/${id}/health`, {
+      const res = await fetch(`/api/v1/intelligence/platforms/${id}/health`, {
         method: 'POST',
       });
       const data = await res.json();
@@ -156,7 +156,7 @@ export default function IntelligenceModelsPage() {
     if (!confirm(`确定要删除 ${name} 吗？`)) return;
     
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/intelligence/platforms/${id}`, {
+      const res = await fetch(`/api/v1/intelligence/platforms/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -190,8 +190,8 @@ export default function IntelligenceModelsPage() {
 
     try {
       const url = editingPlatform
-        ? `http://localhost:8000/api/v1/intelligence/platforms/${editingPlatform.id}`
-        : 'http://localhost:8000/api/v1/intelligence/platforms';
+        ? `/api/v1/intelligence/platforms/${editingPlatform.id}`
+        : '/api/v1/intelligence/platforms';
       
       const res = await fetch(url, {
         method: editingPlatform ? 'PUT' : 'POST',

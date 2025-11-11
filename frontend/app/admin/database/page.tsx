@@ -87,11 +87,11 @@ export default function DatabaseManagementPage() {
     setLoading(true);
     try {
       // 获取数据库统计信息 - 使用完整URL强制刷新
-      const statsRes = await axios.get("http://localhost:8000/api/v1/admin/database/stats");
+      const statsRes = await axios.get("/api/v1/admin/database/stats");
       setDbStats(statsRes.data);
 
       // 获取所有表信息
-      const tablesRes = await axios.get("http://localhost:8000/api/v1/admin/database/tables");
+      const tablesRes = await axios.get("/api/v1/admin/database/tables");
       
       // 解析每个表的注释，提取 emoji 和描述
       const tablesWithParsedComments = tablesRes.data.map((table: TableInfo) => {
@@ -115,7 +115,7 @@ export default function DatabaseManagementPage() {
     setSelectedTable(tableName);
     setDataLoading(true);
     try {
-      const res = await axios.get(`http://localhost:8000/api/v1/admin/database/tables/${tableName}/data?limit=50`);
+      const res = await axios.get(`/api/v1/admin/database/tables/${tableName}/data?limit=50`);
       setTableData(res.data);
     } catch (error) {
       console.error("加载表数据失败:", error);

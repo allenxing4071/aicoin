@@ -37,7 +37,7 @@ export default function MarketPatternsPage() {
       });
 
       const response = await fetch(
-        `http://localhost:8000/api/v1/admin/memory/patterns?${params}`
+        `/api/v1/admin/memory/patterns?${params}`
       );
       const result = await response.json();
 

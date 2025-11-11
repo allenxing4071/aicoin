@@ -7,7 +7,7 @@ import Link from 'next/link';
 import TradeListComplete from '@/app/components/trades/TradeListComplete';
 import DecisionTimeline from '@/app/components/ai/DecisionTimeline';
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
 
 interface ModelStats {
   name: string;

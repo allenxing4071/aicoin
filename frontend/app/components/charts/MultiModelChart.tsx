@@ -18,7 +18,7 @@ interface MultiModelChartProps {
   timeRange?: 'all' | '72h';
 }
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
 
 export default function MultiModelChart({ models, timeRange = 'all' }: MultiModelChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);

@@ -9,6 +9,9 @@ import MultiModelChart from './components/charts/MultiModelChart';
 import ModelCard from './components/models/ModelCard';
 import DeepSeekLogo from './components/common/DeepSeekLogo';
 import PermissionIndicator from './components/ai/PermissionIndicator';
+import TradingChart from './components/charts/TradingChart';
+import MultiAssetChart from './components/charts/MultiAssetChart';
+import PerformanceComparisonChart from './components/charts/PerformanceComparisonChart';
 
 // ✨ 性能优化: 懒加载非关键组件,减少首屏加载时间
 const TradeListComplete = dynamic(() => import('./components/trades/TradeListComplete'), {
@@ -19,11 +22,6 @@ const TradeListComplete = dynamic(() => import('./components/trades/TradeListCom
 const AIDecisionChat = dynamic(() => import('./components/chat/AIDecisionChat'), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载AI聊天...</div></div>
-});
-
-const TradingChart = dynamic(() => import('./components/charts/TradingChart'), {
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载图表...</div></div>
 });
 
 const PositionsList = dynamic(() => import('./components/positions/PositionsList'), {
@@ -51,12 +49,14 @@ const IntelligencePanel = dynamic(() => import('./components/intelligence/Intell
   loading: () => <div className="flex items-center justify-center h-64"><div className="text-gray-400">加载情报面板...</div></div>
 });
 
-const API_BASE = 'http://localhost:8000/api/v1';
+import { API_BASE } from '../lib/api';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'chart' | 'trades' | 'chat' | 'positions' | 'readme' | 'ai' | 'decisions' | 'performance' | 'intelligence'>('trades');
   const [timeRange, setTimeRange] = useState<'all' | '72h'>('all');
   const [selectedModel, setSelectedModel] = useState<string>('all');
+  const [selectedSymbol, setSelectedSymbol] = useState<string>('BTCUSDT'); // 默认BTC交易对
+  const [chartMode, setChartMode] = useState<'performance' | 'multi' | 'single'>('performance'); // 图表模式：性能对比 / 多资产对比 / 单资产K线
   const [apiStatus, setApiStatus] = useState({ status: 'checking', version: '0.0.0' });
   const [accountData, setAccountData] = useState<any>(null);
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
@@ -74,8 +74,8 @@ export default function Home() {
   // 使用useMemo稳定models引用，避免React重新渲染错误
   const modelsWithData = useMemo(() => modelsData, [JSON.stringify(modelsData)]);
 
-  // 使用真实的单一账户余额
-  const totalValue = modelsWithData.length > 0 ? modelsWithData[0].value : 0;
+  // 使用真实的账户余额（优先使用 accountData，兼容旧的 models 数据）
+  const totalValue = accountData?.equity || accountData?.balance || (modelsWithData.length > 0 ? modelsWithData[0].value : 0);
   const currentModel = modelsWithData.length > 0 ? modelsWithData[0] : null;
 
   // ✨ 性能优化: 使用统一的仪表板API
@@ -147,9 +147,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="h-screen flex flex-col bg-white text-gray-900">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-3 shadow-sm">
+      <header className="flex-none bg-white border-b border-gray-200 px-6 py-3 shadow-sm">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900 flex items-center">
             {/* Ghost Icon */}
@@ -207,74 +207,113 @@ export default function Home() {
 
       <PriceTicker />
 
-      {/* Main Content */}
-      <div className="flex h-[calc(100vh-140px)]">
+      {/* Main Content - 自适应高度 */}
+      <div className="flex flex-1 overflow-hidden">
         {/* Left - Chart Area */}
         <div className="flex-1 flex flex-col overflow-hidden border-r border-gray-200 bg-white">
-          {/* Top Stats */}
-          <div className="bg-white px-6 py-4 border-b border-gray-200">
-            <div className="flex items-end justify-between">
-              <div>
-                <div className="text-sm text-gray-500 mb-1">账户总价值</div>
-                <div className="flex items-baseline space-x-3">
-                  {loadingModels ? (
-                    <span className="text-2xl text-gray-400 animate-pulse">加载中...</span>
-                  ) : (
-                    <span className="text-4xl font-bold text-gray-900">
-                      ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-                    </span>
-                  )}
-                </div>
+          {/* Top Stats & Chart Mode Selector */}
+          <div className="bg-white px-6 py-3 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              {/* 账户总价值 */}
+              <div className="flex items-baseline space-x-3">
+                <div className="text-xs text-gray-500">账户总价值</div>
+                {!accountData ? (
+                  <span className="text-xl text-gray-400 animate-pulse">加载中...</span>
+                ) : (
+                  <span className="text-3xl font-bold text-gray-900">
+                    ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                  </span>
+                )}
               </div>
-              {/* AI模型标签已删除 */}
-            </div>
-          </div>
 
-          {/* Tabs */}
-          <div className="bg-white border-b border-gray-200 px-6">
-            <div className="flex space-x-6">
-              <button 
-                onClick={() => setTimeRange('all')}
-                className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
-                  timeRange === 'all' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                ALL
-              </button>
-              <button 
-                onClick={() => setTimeRange('72h')}
-                className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
-                  timeRange === '72h' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                72H
-              </button>
+              {/* 时间范围 & 图表模式切换 */}
+              <div className="flex items-center gap-2">
+                {/* 时间范围按钮 */}
+                <button
+                  onClick={() => setTimeRange(timeRange === 'all' ? '72h' : 'all')}
+                  className="px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 bg-gray-100 text-gray-600 hover:text-gray-900"
+                >
+                  <span>{timeRange === 'all' ? 'ALL' : '72H'}</span>
+                </button>
+
+                {/* 图表模式切换 */}
+                <button
+                  onClick={() => setChartMode('performance')}
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
+                    chartMode === 'performance'
+                      ? 'bg-gradient-to-r from-orange-500 to-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <span>📈</span>
+                  <span>BTC vs 账户收益</span>
+                </button>
+                <button
+                  onClick={() => setChartMode('multi')}
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
+                    chartMode === 'multi'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <span>📊</span>
+                  <span>多资产对比</span>
+                </button>
+                <button
+                  onClick={() => setChartMode('single')}
+                  className={`px-3 py-2 text-xs font-bold rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
+                    chartMode === 'single'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <span>🕯️</span>
+                  <span>单资产K线</span>
+                </button>
+                
+                {/* 单资产模式下的交易对选择器 */}
+                {chartMode === 'single' && (
+                  <select 
+                    value={selectedSymbol}
+                    onChange={(e) => setSelectedSymbol(e.target.value)}
+                    className="px-3 py-2 text-xs font-bold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
+                    <option value="DOGEUSDT">DOGE/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                  </select>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Chart */}
-          <div className="flex-1 bg-white p-6">
-            <MultiModelChart models={modelsWithData} timeRange={timeRange} />
-          </div>
-
-          {/* Model Cards */}
-          <div className="bg-gray-50 border-t border-gray-200 p-4">
-            <div className="flex flex-col gap-2">
-              {modelsWithData.map((model, index) => (
-                <div 
-                  key={index}
-                  onClick={() => handleModelClick(model.slug)}
-                  className={selectedModel === model.slug ? 'ring-2 ring-blue-500 rounded-lg' : ''}
-                >
-                  <ModelCard model={model} />
-                </div>
-              ))}
-            </div>
+          <div className="flex-1 overflow-hidden bg-white p-2">
+            {/* 图表内容 */}
+            {chartMode === 'performance' ? (
+              <PerformanceComparisonChart symbol="BTCUSDT" />
+            ) : chartMode === 'multi' ? (
+              <MultiAssetChart 
+                assets={[
+                  { symbol: 'BTCUSDT', name: 'BTC', color: '#f7931a', enabled: true },
+                  { symbol: 'ETHUSDT', name: 'ETH', color: '#627eea', enabled: true },
+                  { symbol: 'SOLUSDT', name: 'SOL', color: '#00d4aa', enabled: true },
+                  { symbol: 'XRPUSDT', name: 'XRP', color: '#23292f', enabled: false },
+                  { symbol: 'DOGEUSDT', name: 'DOGE', color: '#c2a633', enabled: false },
+                  { symbol: 'BNBUSDT', name: 'BNB', color: '#f3ba2f', enabled: false },
+                ]}
+              />
+            ) : (
+              <TradingChart symbol={selectedSymbol} />
+            )}
           </div>
         </div>
 
         {/* Right - Content Area */}
-        <div className="w-[600px] bg-white flex flex-col">
+        <div className="w-[600px] bg-white flex flex-col overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="mb-3">
               <div className="flex flex-wrap gap-2">

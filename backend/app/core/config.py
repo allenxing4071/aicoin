@@ -1,6 +1,7 @@
 """Application configuration"""
 
 from pydantic_settings import BaseSettings
+from pydantic import Field, validator
 from typing import Optional
 import os
 
@@ -11,10 +12,10 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "AIcoin Trading System"
     APP_VERSION: str = "3.2.0"
-    DEBUG: bool = True
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"  # 🔒 默认关闭 DEBUG
     
     # Database
-    DATABASE_URL: str = "postgresql://aicoin:aicoin_secure_password_2024@localhost:5433/aicoin"
+    DATABASE_URL: str = "postgresql://aicoin:aicoin_secure_password_2024@localhost:5432/aicoin"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
@@ -51,8 +52,9 @@ class Settings(BaseSettings):
     KLINE_INTERVALS: list = ["1m", "5m", "15m", "1h", "4h", "1d"]
     
     # Security
-    SECRET_KEY: str = "dev-secret-key-change-in-production"
-    JWT_SECRET_KEY: str = "jwt-secret-key-change-in-production"
+    # 🔒 安全升级: JWT 密钥必须从环境变量读取
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
@@ -131,6 +133,10 @@ class Settings(BaseSettings):
     ENABLE_QWEN_SEARCH: bool = False  # Qwen联网搜索（需API Key，按需启用）
     ENABLE_QWEN_DEEP_ANALYSIS: bool = True  # Qwen深度分析（默认启用）
     
+    # RSS News Source Configuration
+    ENABLE_RSS_REAL_DATA: bool = True  # 启用真实RSS数据（默认开启）
+    RSS_USE_MOCK: bool = False  # 是否使用Mock数据（生产环境设为False）
+    
     # 注意：搜索功能由Qwen负责，不是DeepSeek
     # DeepSeek只负责交易决策，不做搜索
     
@@ -178,7 +184,9 @@ class Settings(BaseSettings):
     
     # API Settings
     API_V1_PREFIX: str = "/api/v1"
-    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:8000"]
+    # 🔒 安全升级: CORS 配置从环境变量读取
+    # 默认值，如果环境变量是字符串会自动解析
+    CORS_ORIGINS: list = ["http://192.168.31.185", "http://localhost:3000"]
     
     class Config:
         env_file = ".env"

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import axios from 'axios';
 import CoinIcon from '../common/CoinIcon';
+import ExchangeSelector from '../exchange/ExchangeSelector';
 
 interface TickerData {
   symbol: string;
@@ -12,7 +13,7 @@ interface TickerData {
   timestamp?: string;
 }
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
 
 export default function PriceTicker() {
   const [tickers, setTickers] = useState<TickerData[]>([]);
@@ -82,28 +83,36 @@ export default function PriceTicker() {
 
   return (
     <div className="bg-white border-b border-gray-200">
-      <div className="flex items-center py-3 px-6 gap-8">
-        {tickers.map((ticker, index) => (
-          <div key={ticker.symbol} className="flex items-center space-x-2">
-            <CoinIcon symbol={ticker.symbol} size={20} />
-            <span className="text-gray-900 font-semibold">
-              ${ticker.price.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })}
-            </span>
-            <span className={`flex items-center text-sm ${
-              ticker.change24h >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {ticker.change24h >= 0 ? (
-                <TrendingUp className="w-3 h-3 mr-1" />
-              ) : (
-                <TrendingDown className="w-3 h-3 mr-1" />
-              )}
-              {Math.abs(ticker.change24h).toFixed(2)}%
-            </span>
-          </div>
-        ))}
+      <div className="flex items-center justify-between py-3 px-6">
+        {/* 左侧：价格滚动条 */}
+        <div className="flex items-center gap-8 flex-1 overflow-x-auto">
+          {tickers.map((ticker, index) => (
+            <div key={ticker.symbol} className="flex items-center space-x-2">
+              <CoinIcon symbol={ticker.symbol} size={20} />
+              <span className="text-gray-900 font-semibold">
+                ${ticker.price.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </span>
+              <span className={`flex items-center text-sm ${
+                ticker.change24h >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {ticker.change24h >= 0 ? (
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                ) : (
+                  <TrendingDown className="w-3 h-3 mr-1" />
+                )}
+                {Math.abs(ticker.change24h).toFixed(2)}%
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* 右侧：交易所选择器 */}
+        <div className="flex-shrink-0 ml-6">
+          <ExchangeSelector />
+        </div>
       </div>
     </div>
   );

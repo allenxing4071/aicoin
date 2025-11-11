@@ -28,7 +28,8 @@ class BasePlatformAdapter(ABC):
         role: str,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        enabled: bool = True
+        enabled: bool = True,
+        provider: Optional[str] = None  # 新增：数据库provider标识
     ):
         """
         初始化平台适配器
@@ -39,12 +40,14 @@ class BasePlatformAdapter(ABC):
             api_key: API密钥（如需要）
             base_url: API基础URL（如需要）
             enabled: 是否启用
+            provider: 数据库provider标识（qwen/baidu/tencent/volcano等）
         """
         self.platform_name = platform_name
         self.role = role
         self.api_key = api_key
         self.base_url = base_url
         self.enabled = enabled
+        self.provider = provider or self._infer_provider(platform_name)
         
         # 统计信息
         self.call_count = 0
@@ -53,7 +56,23 @@ class BasePlatformAdapter(ABC):
         self.total_cost = 0.0
         self.last_call_time: Optional[datetime] = None
         
-        logger.info(f"✅ 平台适配器初始化: {platform_name} ({role})")
+        logger.info(f"✅ 平台适配器初始化: {platform_name} ({role}) [provider={self.provider}]")
+    
+    def _infer_provider(self, platform_name: str) -> str:
+        """从平台名称推断provider"""
+        name_lower = platform_name.lower()
+        if 'qwen' in name_lower or '阿里' in name_lower or 'aliyun' in name_lower:
+            return 'qwen'
+        elif 'baidu' in name_lower or '百度' in name_lower:
+            return 'baidu'
+        elif 'tencent' in name_lower or '腾讯' in name_lower:
+            return 'tencent'
+        elif 'volcano' in name_lower or '火山' in name_lower:
+            return 'volcano'
+        elif 'aws' in name_lower:
+            return 'aws'
+        else:
+            return 'unknown'
     
     @abstractmethod
     async def analyze(
@@ -117,14 +136,16 @@ class BasePlatformAdapter(ABC):
             "last_call_time": self.last_call_time.isoformat() if self.last_call_time else None
         }
     
-    async def _record_call(self, success: bool, cost: float = 0.0):
+    async def _record_call(self, success: bool, cost: float = 0.0, response_time: float = 0.0):
         """
-        记录调用统计
+        记录调用统计（实时同步到数据库）
         
         Args:
             success: 是否成功
             cost: 调用成本
+            response_time: 响应时间（毫秒）
         """
+        # 1. 更新内存统计
         self.call_count += 1
         if success:
             self.success_count += 1
@@ -132,6 +153,21 @@ class BasePlatformAdapter(ABC):
             self.failure_count += 1
         self.total_cost += cost
         self.last_call_time = datetime.now()
+        
+        # 2. 实时同步到数据库
+        if self.provider and self.provider != 'unknown':
+            try:
+                from app.services.intelligence.platform_manager import platform_manager
+                # 异步更新数据库（不阻塞当前调用）
+                await platform_manager.update_platform_stats(
+                    provider=self.provider,
+                    success=success,
+                    response_time=response_time,
+                    cost=cost
+                )
+                logger.debug(f"✅ 平台统计已同步: {self.platform_name} (provider={self.provider})")
+            except Exception as e:
+                logger.warning(f"⚠️  数据库统计同步失败 ({self.platform_name}): {e}")
     
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}(name={self.platform_name}, role={self.role}, enabled={self.enabled})>"

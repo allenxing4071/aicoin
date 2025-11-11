@@ -48,7 +48,7 @@ export default function AIJournalPage() {
       setLoading(true);
       setError(null);
       const response = await fetch(
-        `http://localhost:8000/api/v1/ai-journal/daily-journal?target_date=${date}`
+        `/api/v1/ai-journal/daily-journal?target_date=${date}`
       );
       
       if (!response.ok) {

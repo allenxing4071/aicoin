@@ -19,6 +19,7 @@ from app.models.ai_decision import AIDecision
 from app.models.market_data import MarketDataKline
 from app.models.risk_event import RiskEvent
 from app.models.memory import AILesson, AIStrategy, MarketPattern
+from app.models.admin_user import AdminUser
 from app.schemas.admin import (
     AdminResponse,
     PaginationMeta,
@@ -43,15 +44,21 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
-# JWT配置
-SECRET_KEY = "your-secret-key-here-change-in-production"  # 与auth.py统一
+# JWT配置 - 从环境变量读取，提高安全性
+import os
+from app.core.config import settings
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY") or settings.JWT_SECRET_KEY
+
+# 🔒 安全检查: 确保使用强密钥
+# 注：在开发环境允许使用默认密钥
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY must be set in environment variables")
+if SECRET_KEY.startswith("your-") or SECRET_KEY.startswith("jwt-secret"):
+    logger.warning("⚠️ 使用默认JWT密钥，生产环境请务必更换！")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8小时
-
-# 默认管理员账号 (生产环境应存储在数据库中)
-ADMIN_USERS = {
-    "admin": hashlib.sha256("admin123".encode()).hexdigest(),
-}
 
 
 # ============= 认证相关模型 =============
@@ -111,35 +118,78 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 # ============= 认证接口 =============
 
 @router.post("/login", response_model=AdminResponse)
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     """
-    管理员登录
+    管理员登录（正式模式 - 使用数据库验证）
     
-    默认账号:
-    - 用户名: admin
-    - 密码: admin123
+    从数据库中验证用户名和密码
+    🔒 安全升级: 支持 bcrypt + SHA256 混合验证（向后兼容）
     """
-    # 验证用户名和密码
-    password_hash = hashlib.sha256(request.password.encode()).hexdigest()
-    
-    if request.username not in ADMIN_USERS:
-        raise HTTPException(status_code=401, detail="用户名或密码错误")
-    
-    if ADMIN_USERS[request.username] != password_hash:
-        raise HTTPException(status_code=401, detail="用户名或密码错误")
-    
-    # 生成token
-    token = create_access_token(request.username)
-    
-    return AdminResponse(
-        success=True,
-        data=LoginResponse(
-            token=token,
-            username=request.username,
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
-        ),
-        message="登录成功"
-    )
+    try:
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        
+        # 从数据库查询用户
+        result = await db.execute(
+            select(AdminUser).where(AdminUser.username == request.username)
+        )
+        admin_user = result.scalar_one_or_none()
+        
+        # 用户不存在
+        if not admin_user:
+            logger.warning(f"Login failed: user '{request.username}' not found")
+            raise HTTPException(status_code=401, detail="用户名或密码错误")
+        
+        # 检查用户是否激活
+        if not admin_user.is_active:
+            logger.warning(f"Login failed: user '{request.username}' is inactive")
+            raise HTTPException(status_code=401, detail="账户已被禁用")
+        
+        # 🔒 安全升级: 混合验证（bcrypt 优先，SHA256 兼容）
+        password_valid = False
+        need_upgrade = False
+        
+        # 1. 尝试 bcrypt 验证（新密码）
+        if admin_user.hashed_password.startswith("$2b$") or admin_user.hashed_password.startswith("$2a$"):
+            password_valid = pwd_context.verify(request.password, admin_user.hashed_password)
+        # 2. 回退到 SHA256 验证（旧密码）
+        else:
+            password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+            password_valid = (admin_user.hashed_password == password_hash)
+            need_upgrade = True  # 标记需要升级
+        
+        if not password_valid:
+            logger.warning(f"Login failed: incorrect password for user '{request.username}'")
+            raise HTTPException(status_code=401, detail="用户名或密码错误")
+        
+        # 🔒 自动升级: 如果使用旧密码登录，自动升级到 bcrypt
+        if need_upgrade:
+            logger.info(f"Auto-upgrading password hash for user '{request.username}' from SHA256 to bcrypt")
+            admin_user.hashed_password = pwd_context.hash(request.password)
+        
+        # 更新最后登录时间
+        admin_user.last_login = datetime.utcnow()
+        await db.commit()
+        
+        # 生成token
+        token = create_access_token(request.username)
+        
+        logger.info(f"User '{request.username}' logged in successfully")
+        
+        return AdminResponse(
+            success=True,
+            data=LoginResponse(
+                token=token,
+                username=request.username,
+                expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            ),
+            message="登录成功"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail="登录失败，请稍后重试")
 
 
 @router.get("/verify")

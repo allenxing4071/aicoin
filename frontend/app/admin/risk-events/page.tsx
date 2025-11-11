@@ -30,7 +30,7 @@ export default function RiskEventsPage() {
       });
 
       const response = await fetch(
-        `http://localhost:8000/api/v1/admin/risk-events?${params}`
+        `/api/v1/admin/risk-events?${params}`
       );
       const result = await response.json();
 

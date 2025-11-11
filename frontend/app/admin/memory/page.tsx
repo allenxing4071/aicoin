@@ -66,7 +66,7 @@ export default function MemorySystemPage() {
     try {
       setLoading(true);
       const response = await fetch(
-        "http://localhost:8000/api/v1/admin/memory/overview"
+        "/api/v1/admin/memory/overview"
       );
       const result = await response.json();
       if (result.success) {
@@ -83,7 +83,7 @@ export default function MemorySystemPage() {
     try {
       setLoading(true);
       const response = await fetch(
-        "http://localhost:8000/api/v1/intelligence/storage/stats"
+        "/api/v1/intelligence/storage/stats"
       );
       const result = await response.json();
       if (result.success) {

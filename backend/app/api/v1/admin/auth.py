@@ -56,19 +56,24 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode.update({"exp": expire})
-    # 使用固定的SECRET_KEY
-    secret_key = "your-secret-key-here-change-in-production"
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.warning(f"🔑 CREATE TOKEN: Using SECRET_KEY={secret_key}")
+    
+    # 🔒 安全升级: 优先从环境变量读取 JWT 密钥
+    import os
+    secret_key = os.getenv("JWT_SECRET_KEY")
+    if not secret_key:
+        secret_key = settings.JWT_SECRET_KEY
+    
+    if not secret_key or secret_key.startswith("your-") or secret_key.startswith("jwt-secret"):
+        raise ValueError("JWT_SECRET_KEY must be set in environment variables with a strong random value")
+    
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
-    logger.warning(f"✅ Token created: {encoded_jwt[:80]}")
     return encoded_jwt
 
 
 async def verify_admin_token(authorization: Optional[str] = Header(None, alias="Authorization")) -> dict:
     """验证管理员token"""
     import logging
+    import os
     logger = logging.getLogger(__name__)
     
     if not authorization or not authorization.startswith("Bearer "):
@@ -79,10 +84,14 @@ async def verify_admin_token(authorization: Optional[str] = Header(None, alias="
         )
     
     token = authorization.replace("Bearer ", "")
-    # 使用固定的SECRET_KEY
-    secret_key = "your-secret-key-here-change-in-production"
-    logger.warning(f"🔑 VERIFY TOKEN: Using SECRET_KEY={secret_key}")
-    logger.warning(f"📩 Token to verify: {token[:80]}")
+    
+    # 🔒 安全升级: 优先从环境变量读取 JWT 密钥
+    secret_key = os.getenv("JWT_SECRET_KEY")
+    if not secret_key:
+        secret_key = settings.JWT_SECRET_KEY
+    
+    if not secret_key or secret_key.startswith("your-") or secret_key.startswith("jwt-secret"):
+        raise ValueError("JWT_SECRET_KEY must be set in environment variables with a strong random value")
     
     try:
         payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])

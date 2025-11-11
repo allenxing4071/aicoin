@@ -55,21 +55,21 @@ export default function SmartMoneyPage() {
       setLoading(true);
       
       // 获取钱包列表
-      const walletsRes = await fetch('http://localhost:8000/api/v1/smart-money/wallets');
+      const walletsRes = await fetch('/api/v1/smart-money/wallets');
       const walletsData = await walletsRes.json();
       if (Array.isArray(walletsData)) {
         setWallets(walletsData);
       }
 
       // 获取交易记录
-      const txRes = await fetch('http://localhost:8000/api/v1/smart-money/transactions?limit=20');
+      const txRes = await fetch('/api/v1/smart-money/transactions?limit=20');
       const txData = await txRes.json();
       if (txData.success) {
         setTransactions(txData.data);
       }
 
       // 获取统计数据
-      const statsRes = await fetch('http://localhost:8000/api/v1/smart-money/statistics');
+      const statsRes = await fetch('/api/v1/smart-money/statistics');
       const statsData = await statsRes.json();
       if (statsData.success) {
         setStats(statsData.data);

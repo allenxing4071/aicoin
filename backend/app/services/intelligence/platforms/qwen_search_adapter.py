@@ -126,7 +126,8 @@ class QwenSearchAdapter(BasePlatformAdapter):
             
         except Exception as e:
             logger.error(f"❌ Qwen搜索失败: {e}", exc_info=True)
-            await self._record_call(success=False, cost=0.0)
+            response_time = (datetime.now() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
+            await self._record_call(success=False, cost=0.0, response_time=response_time)
             
             return {
                 "platform": self.platform_name,
@@ -213,6 +214,7 @@ class QwenSearchAdapter(BasePlatformAdapter):
             return False
         
         try:
+            start_time = datetime.now()
             # 简单的ping测试
             response = await self.client.chat.completions.create(
                 model=self.model,

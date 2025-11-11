@@ -65,6 +65,9 @@ class AITradingOrchestratorV2:
         self.start_time = None
         self.total_decisions = 0
         self.approved_decisions = 0
+        self.total_trades = 0
+        self.successful_trades = 0
+        self.decision_history = []
         
         logger.info(f"✅ OrchestratorV2 initialized (interval: {decision_interval}s)")
     
@@ -185,6 +188,10 @@ class AITradingOrchestratorV2:
                 logger.info("💼 获取账户状态...")
                 account_state = await self._get_account_state()
                 
+                # === 第2.5步：保存账户快照（每次决策循环）===
+                if loop_count % 1 == 0:  # 每次决策都保存快照
+                    await self._save_account_snapshot(account_state)
+                
                 # === 第3步：AI决策 ===
                 logger.info("🤖 调用DecisionEngineV2...")
                 decision = await self.decision_engine.make_decision(
@@ -199,7 +206,25 @@ class AITradingOrchestratorV2:
                     logger.info(f"✅ 决策通过: {decision.get('action')} {decision.get('symbol')}")
                     self.approved_decisions += 1
                     
-                    execution_result = await self._execute_decision(decision)
+                execution_result = await self._execute_decision(decision)
+                
+                # 记录到决策历史
+                decision_record = {
+                    'timestamp': datetime.now().isoformat(),
+                    'model': 'deepseek-chat-v3.1',
+                    'action': decision.get('action'),
+                    'symbol': decision.get('symbol'),
+                    'success': execution_result.get("success")
+                }
+                self.decision_history.append(decision_record)
+                if len(self.decision_history) > 100:  # 保留最近100条
+                    self.decision_history = self.decision_history[-100:]
+                
+                    # 统计交易
+                    if decision.get('action') not in ['hold', 'close_all']:
+                        self.total_trades += 1
+                        if execution_result.get("success"):
+                            self.successful_trades += 1
                     
                     if execution_result.get("success"):
                         logger.info(f"✅ 执行成功: {execution_result.get('message')}")
@@ -404,9 +429,40 @@ class AITradingOrchestratorV2:
             logger.error(f"获取账户状态失败: {e}")
             return {}
     
-    async def _execute_decision(self, decision: Dict[str, Any]) -> Dict[str, Any]:
-        """执行交易决策"""
+    async def _save_account_snapshot(self, account_state: Dict[str, Any]):
+        """保存账户快照到数据库"""
         try:
+            from app.models.account import AccountSnapshot
+            from sqlalchemy import insert
+            
+            snapshot = AccountSnapshot(
+                timestamp=datetime.utcnow(),
+                balance=Decimal(str(account_state.get("balance", 0))),
+                equity=Decimal(str(account_state.get("equity", 0))),
+                unrealized_pnl=Decimal(str(account_state.get("unrealized_pnl", 0))),
+                realized_pnl=Decimal(str(account_state.get("total_pnl", 0))),
+                total_trades=len(account_state.get("positions", [])),
+                win_rate=None,  # 计算胜率需要历史交易数据
+                sharpe_ratio=None,  # 夏普比率需要更长时间的数据
+                max_drawdown=None  # 最大回撤需要更长时间的数据
+            )
+            
+            self.db_session.add(snapshot)
+            await self.db_session.commit()
+            
+            logger.debug(f"💾 账户快照已保存: balance=${account_state.get('balance', 0):.2f}, equity=${account_state.get('equity', 0):.2f}")
+        
+        except Exception as e:
+            logger.error(f"保存账户快照失败: {e}", exc_info=True)
+            # 回滚事务
+            await self.db_session.rollback()
+    
+    async def _execute_decision(self, decision: Dict[str, Any]) -> Dict[str, Any]:
+        """执行交易决策（支持币安/Hyperliquid）"""
+        try:
+            from app.services.exchange.exchange_factory import ExchangeFactory
+            from decimal import Decimal
+            
             action = decision.get("action")
             symbol = decision.get("symbol")
             size_usd = decision.get("size_usd", 0)
@@ -421,27 +477,44 @@ class AITradingOrchestratorV2:
                 return {"success": True, "message": "强制平仓已执行"}
             
             elif action in ["open_long", "open_short"]:
+                # 获取当前激活的交易所和市场类型
+                adapter = await ExchangeFactory.get_active_exchange()
+                if not adapter:
+                    return {"success": False, "message": "没有激活的交易所"}
+                
+                exchange_info = ExchangeFactory.get_active_exchange_info()
+                market_type = exchange_info.get('market_type', 'spot')
+                
                 # 开仓
-                side = "long" if action == "open_long" else "short"
-                logger.info(f"📈 开仓: {side} {symbol} ${size_usd}")
+                side = "buy" if action == "open_long" else "sell"  # 标准化为 buy/sell
+                logger.info(f"📈 开仓: {side} {symbol} ${size_usd} ({adapter.name} {market_type})")
                 
-                # TODO: 调用trading_service执行真实交易
-                # result = await self.trading_service.place_order(
-                #     symbol=symbol,
-                #     side=side,
-                #     size_usd=size_usd,
-                #     stop_loss_pct=decision.get("stop_loss_pct"),
-                #     take_profit_pct=decision.get("take_profit_pct")
-                # )
+                # 调用统一适配器下单
+                result = await adapter.place_order(
+                    symbol=symbol,
+                    side=side,
+                    size=Decimal(str(size_usd)),  # USD价值
+                    order_type="market",
+                    market_type=market_type
+                )
                 
-                return {"success": True, "message": f"开仓命令已发送: {side} {symbol}"}
+                if result.get('success'):
+                    return {
+                        "success": True, 
+                        "message": f"开仓成功: {side} {symbol} 订单ID: {result.get('order_id')}"
+                    }
+                else:
+                    return {
+                        "success": False, 
+                        "message": f"开仓失败: {result.get('error')}"
+                    }
             
             elif action == "close":
                 # 平仓
                 logger.info(f"📉 平仓: {symbol}")
                 
-                # TODO: 调用trading_service平仓
-                # result = await self.trading_service.close_position(symbol)
+                # TODO: 调用adapter平仓
+                # result = await adapter.close_position(symbol)
                 
                 return {"success": True, "message": f"平仓命令已发送: {symbol}"}
             

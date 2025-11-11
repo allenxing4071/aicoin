@@ -66,11 +66,14 @@ class QwenIntelligenceEngine:
         on_chain_metrics
     ) -> IntelligenceReport:
         """使用Qwen分析所有情报并生成综合报告"""
+        import time
+        
         try:
             # 构建分析prompt
             prompt = self._build_analysis_prompt(news_items, whale_signals, on_chain_metrics)
             
             # 调用Qwen进行分析
+            start_time = time.time()
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -86,6 +89,39 @@ class QwenIntelligenceEngine:
                 temperature=0.3,  # Lower temperature for more factual analysis
                 max_tokens=1500
             )
+            response_time = time.time() - start_time
+            
+            # 提取token和成本信息
+            input_tokens = 0
+            output_tokens = 0
+            cost = 0.0
+            
+            if hasattr(response, 'usage') and response.usage:
+                input_tokens = response.usage.prompt_tokens
+                output_tokens = response.usage.completion_tokens
+                # Qwen定价：输入¥4/M, 输出¥12/M
+                cost = (input_tokens / 1_000_000 * 4.0) + (output_tokens / 1_000_000 * 12.0)
+            
+            # 异步记录使用日志（不阻塞主流程）
+            try:
+                from app.core.database import AsyncSessionLocal
+                from app.services.ai_usage_logger import log_ai_call
+                
+                async with AsyncSessionLocal() as db:
+                    await log_ai_call(
+                        db=db,
+                        model_name=self.model,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        cost=cost,
+                        platform_id=2,  # Qwen平台ID（假设为2）
+                        success=True,
+                        response_time=response_time,
+                        purpose="intelligence",
+                        request_id=f"intel_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    )
+            except Exception as log_error:
+                logger.warning(f"记录Qwen使用日志失败（不影响主流程）: {log_error}")
             
             analysis_text = response.choices[0].message.content
             

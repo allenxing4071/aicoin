@@ -6,72 +6,158 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 import aiohttp
 from .models import NewsItem, WhaleActivity, OnChainMetrics
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class CryptoNewsAPI:
-    """Fetch crypto news from multiple sources"""
+    """Fetch crypto news from multiple sources (RSS Feeds)"""
     
     def __init__(self):
-        self.sources = [
-            "https://cryptopanic.com/api/v1/posts/",  # CryptoPanic
-            "https://min-api.cryptocompare.com/data/v2/news/"  # CryptoCompare
+        # RSS源配置（可以从数据库或Redis动态加载）
+        self.rss_sources = [
+            {
+                "name": "CoinDesk",
+                "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+                "enabled": True
+            },
+            {
+                "name": "CoinTelegraph",
+                "url": "https://cointelegraph.com/rss",
+                "enabled": True
+            }
         ]
+        # 从配置文件读取是否使用Mock数据
+        self.use_mock = getattr(settings, 'RSS_USE_MOCK', False)  # 默认使用真实数据
     
     async def fetch_latest_news(self, limit: int = 10) -> List[NewsItem]:
-        """Fetch latest crypto news"""
+        """Fetch latest crypto news from RSS feeds or mock data"""
         try:
-            news_items = []
-            
-            # Mock data for now (replace with real API calls)
-            mock_news = [
-                {
-                    "title": "Bitcoin突破10万美元大关，机构买盘强劲",
-                    "source": "CoinDesk",
-                    "url": "https://coindesk.com/btc-100k",
-                    "published_at": datetime.now() - timedelta(hours=2),
-                    "content": "比特币价格突破历史新高，主要由机构投资者推动...",
-                    "impact": "high",
-                    "sentiment": "bullish"
-                },
-                {
-                    "title": "以太坊Layer2活跃度创新高",
-                    "source": "Decrypt",
-                    "url": "https://decrypt.co/eth-l2",
-                    "published_at": datetime.now() - timedelta(hours=5),
-                    "content": "Arbitrum和Optimism交易量激增...",
-                    "impact": "medium",
-                    "sentiment": "bullish"
-                },
-                {
-                    "title": "美联储会议纪要：加息周期可能接近尾声",
-                    "source": "Reuters",
-                    "url": "https://reuters.com/fed",
-                    "published_at": datetime.now() - timedelta(hours=8),
-                    "content": "联储官员暗示可能暂停加息...",
-                    "impact": "high",
-                    "sentiment": "neutral"
-                }
-            ]
-            
-            for item in mock_news[:limit]:
-                news_items.append(NewsItem(
-                    title=item["title"],
-                    source=item["source"],
-                    url=item["url"],
-                    published_at=item["published_at"],
-                    content=item["content"],
-                    impact=item["impact"],
-                    sentiment=item["sentiment"]
-                ))
-            
-            logger.info(f"✅ 获取到 {len(news_items)} 条新闻")
-            return news_items
+            # 检查是否使用真实RSS源
+            if not self.use_mock and any(source["enabled"] for source in self.rss_sources):
+                return await self._fetch_from_rss(limit)
+            else:
+                return await self._fetch_mock_data(limit)
             
         except Exception as e:
             logger.error(f"❌ 获取新闻失败: {e}")
             return []
+    
+    async def _fetch_from_rss(self, limit: int) -> List[NewsItem]:
+        """从真实RSS源获取新闻"""
+        try:
+            import feedparser
+            
+            all_news = []
+            
+            for source in self.rss_sources:
+                if not source["enabled"]:
+                    continue
+                
+                try:
+                    logger.info(f"📰 正在获取 {source['name']} RSS...")
+                    
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(source["url"], timeout=aiohttp.ClientTimeout(total=10)) as response:
+                            if response.status == 200:
+                                rss_content = await response.text()
+                                feed = feedparser.parse(rss_content)
+                                
+                                for entry in feed.entries[:5]:  # 每个源取5条
+                                    # 解析发布时间
+                                    published_at = datetime.now()
+                                    if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                                        published_at = datetime(*entry.published_parsed[:6])
+                                    
+                                    # 提取内容摘要
+                                    content = entry.get('summary', '') or entry.get('description', '')
+                                    if content:
+                                        # 清理HTML标签
+                                        import re
+                                        content = re.sub(r'<[^>]+>', '', content)[:200]
+                                    
+                                    news_item = NewsItem(
+                                        title=entry.get('title', 'No Title'),
+                                        source=source['name'],
+                                        url=entry.get('link', ''),
+                                        published_at=published_at,
+                                        content=content,
+                                        impact="medium",  # 默认中等影响，后续由Qwen分析
+                                        sentiment="neutral"  # 默认中性，后续由Qwen分析
+                                    )
+                                    all_news.append(news_item)
+                                
+                                logger.info(f"✓ {source['name']}: 获取到 {len(feed.entries[:5])} 条新闻")
+                            else:
+                                logger.warning(f"⚠️  {source['name']} HTTP {response.status}")
+                                
+                except Exception as e:
+                    logger.error(f"❌ 获取 {source['name']} 失败: {e}")
+                    continue
+            
+            # 按时间排序，返回最新的
+            all_news.sort(key=lambda x: x.published_at, reverse=True)
+            result = all_news[:limit]
+            
+            logger.info(f"✅ RSS源共获取到 {len(result)} 条新闻")
+            return result if result else await self._fetch_mock_data(limit)
+            
+        except ImportError:
+            logger.warning("⚠️  feedparser未安装，回退到Mock数据。请运行: pip install feedparser")
+            return await self._fetch_mock_data(limit)
+        except Exception as e:
+            logger.error(f"❌ RSS解析失败: {e}，回退到Mock数据")
+            return await self._fetch_mock_data(limit)
+    
+    async def _fetch_mock_data(self, limit: int) -> List[NewsItem]:
+        """获取Mock数据（用于测试或RSS源不可用时）"""
+        logger.info("📝 使用Mock数据（测试模式）")
+        
+        mock_news = [
+            {
+                "title": "Bitcoin突破10万美元大关，机构买盘强劲",
+                "source": "CoinDesk",
+                "url": "https://coindesk.com/btc-100k",
+                "published_at": datetime.now() - timedelta(hours=2),
+                "content": "比特币价格突破历史新高，主要由机构投资者推动...",
+                "impact": "high",
+                "sentiment": "bullish"
+            },
+            {
+                "title": "以太坊Layer2活跃度创新高",
+                "source": "Decrypt",
+                "url": "https://decrypt.co/eth-l2",
+                "published_at": datetime.now() - timedelta(hours=5),
+                "content": "Arbitrum和Optimism交易量激增...",
+                "impact": "medium",
+                "sentiment": "bullish"
+            },
+            {
+                "title": "美联储会议纪要：加息周期可能接近尾声",
+                "source": "Reuters",
+                "url": "https://reuters.com/fed",
+                "published_at": datetime.now() - timedelta(hours=8),
+                "content": "联储官员暗示可能暂停加息...",
+                "impact": "high",
+                "sentiment": "neutral"
+            }
+        ]
+        
+        news_items = []
+        for item in mock_news[:limit]:
+            news_items.append(NewsItem(
+                title=item["title"],
+                source=item["source"],
+                url=item["url"],
+                published_at=item["published_at"],
+                content=item["content"],
+                impact=item["impact"],
+                sentiment=item["sentiment"]
+            ))
+        
+        logger.info(f"✅ Mock数据: {len(news_items)} 条新闻")
+        return news_items
 
 
 class OnChainDataAPI:

@@ -55,7 +55,7 @@ export default function StatsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:8000/api/v1/ai-platforms/stats?time_range=${timeRange}`);
+      const res = await fetch(`/api/v1/ai-platforms/stats?time_range=${timeRange}`);
       const data = await res.json();
       if (data.success && data.data) {
         setPlatforms(data.data.platforms);
@@ -76,7 +76,7 @@ export default function StatsPage() {
         return;
       }
       
-      const res = await fetch(`http://localhost:8000/api/v1/ai-platforms/hourly-stats?time_range=${timeRange}`);
+      const res = await fetch(`/api/v1/ai-platforms/hourly-stats?time_range=${timeRange}`);
       const data = await res.json();
       if (data.success && data.data) {
         setHourlyStats(data.data.hourly_stats || []);

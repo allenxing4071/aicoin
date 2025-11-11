@@ -17,6 +17,7 @@ import Link from 'next/link';
 import PageHeader from '@/app/components/common/PageHeader';
 import { unifiedDesignSystem, getThemeStyles } from '@/app/admin/unified-design-system';
 import { StatCardGrid, StatCard } from '@/app/components/common/Cards';
+import CostTrendChart from '@/app/components/charts/CostTrendChart';
 
 interface PlatformCost {
   id: number;
@@ -57,7 +58,7 @@ export default function AICostOverviewPage() {
       setLoading(true);
       
       // 获取平台数据
-      const platformsRes = await fetch('http://localhost:8000/api/v1/intelligence/platforms');
+      const platformsRes = await fetch('/api/v1/intelligence/platforms');
       const platformsData = await platformsRes.json();
       
       if (platformsData.platforms) {
@@ -216,15 +217,10 @@ export default function AICostOverviewPage() {
           </div>
         </div>
 
-        {/* 成本趋势（占位） */}
+        {/* 成本趋势 */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 成本趋势（最近7天）</h3>
-          
-          <div className="text-center py-12 text-gray-500">
-            <div className="text-4xl mb-2">📊</div>
-            <p>成本趋势图表开发中...</p>
-            <p className="text-sm mt-2">将显示最近7天的成本变化趋势</p>
-          </div>
+          <CostTrendChart />
         </div>
       </div>
 
