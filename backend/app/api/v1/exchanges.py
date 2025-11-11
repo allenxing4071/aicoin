@@ -117,15 +117,17 @@ async def _switch_exchange_impl(
         raise HTTPException(status_code=500, detail="切换交易所失败")
 
 
-@router.get("/switch")
-@router.post("/switch")
+@router.get("/switch-exchange")
+@router.post("/switch-exchange")
+@router.get("/actions/switch")
+@router.post("/actions/switch")  
 async def switch_exchange(
     exchange_name: str = Query(..., description="交易所名称 (binance|hyperliquid)"),
     market_type: str = Query("spot", description="市场类型 (spot|futures|perpetual)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    切换交易所（支持GET和POST）
+    切换交易所（支持GET和POST，多个路径兼容）
     
     Args:
         exchange_name: 交易所名称
@@ -165,7 +167,8 @@ async def reload_exchange():
         raise HTTPException(status_code=500, detail=f"重新加载适配器失败: {str(e)}")
 
 
-@router.get("/{exchange_id}")
+@router.get("/config/{exchange_id}")
+@router.get("/{exchange_id}")  # 保留旧路径兼容性
 async def get_exchange_config(
     exchange_id: int,
     db: AsyncSession = Depends(get_db)
@@ -198,7 +201,8 @@ async def get_exchange_config(
         raise HTTPException(status_code=500, detail=f"获取交易所配置失败: {str(e)}")
 
 
-@router.put("/{exchange_id}")
+@router.put("/config/{exchange_id}")
+@router.put("/{exchange_id}")  # 保留旧路径兼容性
 async def update_exchange_config(
     exchange_id: int,
     display_name: Optional[str] = None,
@@ -250,7 +254,8 @@ async def update_exchange_config(
         raise HTTPException(status_code=500, detail=f"更新交易所配置失败: {str(e)}")
 
 
-@router.delete("/{exchange_id}")
+@router.delete("/config/{exchange_id}")
+@router.delete("/{exchange_id}")  # 保留旧路径兼容性
 async def delete_exchange_config(
     exchange_id: int,
     db: AsyncSession = Depends(get_db)

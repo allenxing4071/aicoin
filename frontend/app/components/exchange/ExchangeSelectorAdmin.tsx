@@ -63,7 +63,7 @@ export default function ExchangeSelectorAdmin() {
       console.log(`切换交易所: ${exchange}, 市场类型: ${targetMarket}`);
       
       const response = await axios.post(
-        `${API_BASE}/exchanges/switch?exchange_name=${exchange}&market_type=${targetMarket}`
+        `${API_BASE}/exchanges/switch-exchange?exchange_name=${exchange}&market_type=${targetMarket}`
       );
       
       if (response.data.success) {
