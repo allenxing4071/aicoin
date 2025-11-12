@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { usePermissions as usePermissionsHook } from '../hooks/usePermissions';
 
 interface PermissionsContextType {
@@ -19,10 +19,21 @@ interface PermissionsContextType {
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 export function PermissionsProvider({ children }: { children: React.ReactNode }) {
-  const permissions = usePermissionsHook();
+  const permissionsData = usePermissionsHook();
+  
+  // 使用useMemo稳定permissions数组引用，避免React Error #310
+  const value = useMemo(() => ({
+    ...permissionsData,
+    permissions: permissionsData.permissions || []
+  }), [
+    permissionsData.user,
+    permissionsData.permissions?.join(','), // 使用字符串作为稳定依赖
+    permissionsData.loading,
+    permissionsData.userRole
+  ]);
   
   return (
-    <PermissionsContext.Provider value={permissions}>
+    <PermissionsContext.Provider value={value}>
       {children}
     </PermissionsContext.Provider>
   );
