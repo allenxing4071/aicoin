@@ -20,6 +20,16 @@ import { usePermissions } from '../../hooks/usePermissions';
 const { TabPane } = Tabs;
 const { Option } = Select;
 
+// 配置axios拦截器，自动添加JWT token
+const axiosInstance = axios.create();
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('admin_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 interface LogFile {
   name: string;
   size: number;
@@ -59,7 +69,7 @@ const LogManagementPage: React.FC = () => {
   const fetchFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/v1/admin/logs/files');
+      const response = await axiosInstance.get('/api/v1/admin/logs/files');
       if (response.data.success) {
         setFiles(response.data.data);
       } else {
@@ -76,7 +86,7 @@ const LogManagementPage: React.FC = () => {
   // 加载日志统计
   const fetchStats = useCallback(async () => {
     try {
-      const response = await axios.get('/api/v1/admin/logs/stats');
+      const response = await axiosInstance.get('/api/v1/admin/logs/stats');
       if (response.data.success) {
         setStats(response.data.data);
       }
@@ -88,7 +98,7 @@ const LogManagementPage: React.FC = () => {
   // 加载日志级别
   const fetchLogLevel = useCallback(async () => {
     try {
-      const response = await axios.get('/api/v1/admin/logs/level');
+      const response = await axiosInstance.get('/api/v1/admin/logs/level');
       if (response.data.success) {
         setLogLevel(response.data.data.level);
       }
@@ -109,7 +119,7 @@ const LogManagementPage: React.FC = () => {
   const handleViewLog = async (filename: string) => {
     setLoading(true);
     try {
-      const response = await axios.get(`/api/v1/admin/logs/view`, {
+      const response = await axiosInstance.get(`/api/v1/admin/logs/view`, {
         params: { filename, lines: viewLines }
       });
       if (response.data.success) {
@@ -130,7 +140,7 @@ const LogManagementPage: React.FC = () => {
   // 下载日志文件
   const handleDownloadLog = async (filename: string) => {
     try {
-      const response = await axios.get(`/api/v1/admin/logs/download`, {
+      const response = await axiosInstance.get(`/api/v1/admin/logs/download`, {
         params: { filename },
         responseType: 'blob'
       });
@@ -157,7 +167,7 @@ const LogManagementPage: React.FC = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          const response = await axios.post('/api/v1/admin/logs/cleanup');
+          const response = await axiosInstance.post('/api/v1/admin/logs/cleanup');
           if (response.data.success) {
             const { deleted_count, freed_space } = response.data.data;
             message.success(`清理完成！删除 ${deleted_count} 个文件，释放 ${(freed_space / 1024 / 1024).toFixed(2)} MB 空间`);
@@ -177,7 +187,7 @@ const LogManagementPage: React.FC = () => {
   // 更新日志级别
   const handleUpdateLogLevel = async (level: string) => {
     try {
-      const response = await axios.post('/api/v1/admin/logs/level', { level });
+      const response = await axiosInstance.post('/api/v1/admin/logs/level', { level });
       if (response.data.success) {
         message.success(response.data.message || '日志级别已更新');
         setLogLevel(level);
