@@ -1,287 +1,489 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Table, Tag, Space, Button, DatePicker, Select, message, Card, Statistic, Row, Col } from 'antd';
-import { ReloadOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Tabs, Statistic, Tag, Select, Button, Table, Space, message, Modal, Alert, Switch, Tooltip, Progress } from 'antd';
+import {
+  FileTextOutlined,
+  WarningOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  DownloadOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+  EyeOutlined,
+  SettingOutlined,
+  ThunderboltOutlined
+} from '@ant-design/icons';
 import axios from 'axios';
-import dayjs from 'dayjs';
+import { usePermissions } from '../../hooks/usePermissions';
 
-const { RangePicker } = DatePicker;
+const { TabPane } = Tabs;
 const { Option } = Select;
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-
-interface LogEntry {
-  id: number;
-  timestamp: string;
-  level: string;
-  module: string;
-  message: string;
-  user?: string;
-  ip_address?: string;
-  request_id?: string;
+interface LogFile {
+  name: string;
+  size: number;
+  modified: string;
+  lines: number;
 }
 
 interface LogStats {
-  total_logs: number;
+  total_files: number;
+  total_size: number;
+  log_types: {
+    all: { files: number; size: number };
+    error: { files: number; size: number };
+    ai_decisions: { files: number; size: number };
+    trading: { files: number; size: number };
+  };
+  alerts: {
     error_count: number;
     warning_count: number;
-  info_count: number;
+    critical_count: number;
+    recent_errors: Array<{ message: string; level: string }>;
+  };
 }
 
-export default function LogsPage() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [stats, setStats] = useState<LogStats>({
-    total_logs: 0,
-    error_count: 0,
-    warning_count: 0,
-    info_count: 0,
-  });
+const LogManagementPage: React.FC = () => {
+  const { hasPermission } = usePermissions();
   const [loading, setLoading] = useState(false);
-  const [levelFilter, setLevelFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+  const [files, setFiles] = useState<LogFile[]>([]);
+  const [stats, setStats] = useState<LogStats | null>(null);
+  const [logLevel, setLogLevel] = useState('INFO');
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [viewContent, setViewContent] = useState('');
+  const [viewFileName, setViewFileName] = useState('');
+  const [viewLines, setViewLines] = useState(100);
 
-  useEffect(() => {
-    fetchLogs();
-    fetchStats();
-  }, [levelFilter, dateRange]);
-
-  const fetchLogs = async () => {
+  // 加载日志文件列表
+  const fetchFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('admin_token');
-      const params: any = {};
-      
-      if (levelFilter !== 'all') {
-        params.level = levelFilter;
-      }
-      
-      if (dateRange) {
-        params.start_date = dateRange[0].format('YYYY-MM-DD');
-        params.end_date = dateRange[1].format('YYYY-MM-DD');
-      }
-
-      const response = await axios.get(`${API_BASE}/api/v1/admin/logs`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
-
+      const response = await axios.get('/api/v1/admin/logs/files');
       if (response.data.success) {
-        setLogs(response.data.data || []);
+        setFiles(response.data.data);
+      } else {
+        message.error('获取日志文件失败');
       }
-    } catch (error: any) {
-      message.error('获取日志失败: ' + (error.response?.data?.detail || error.message));
+    } catch (error) {
+      console.error('Failed to fetch log files:', error);
+      message.error('获取日志文件失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 加载日志统计
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/v1/admin/logs/stats');
+      if (response.data.success) {
+        setStats(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch log stats:', error);
+    }
+  }, []);
+
+  // 加载日志级别
+  const fetchLogLevel = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/v1/admin/logs/level');
+      if (response.data.success) {
+        setLogLevel(response.data.data.level);
+      }
+    } catch (error) {
+      console.error('Failed to fetch log level:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (hasPermission('log:view')) {
+      fetchFiles();
+      fetchStats();
+      fetchLogLevel();
+    }
+  }, [hasPermission, fetchFiles, fetchStats, fetchLogLevel]);
+
+  // 查看日志文件
+  const handleViewLog = async (filename: string) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`/api/v1/admin/logs/view`, {
+        params: { filename, lines: viewLines }
+      });
+      if (response.data.success) {
+        setViewFileName(filename);
+        setViewContent(response.data.data.content);
+        setViewModalVisible(true);
+      } else {
+        message.error('查看日志失败');
+      }
+    } catch (error) {
+      console.error('Failed to view log:', error);
+      message.error('查看日志失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchStats = async () => {
+  // 下载日志文件
+  const handleDownloadLog = async (filename: string) => {
     try {
-      const token = localStorage.getItem('admin_token');
-      const response = await axios.get(`${API_BASE}/api/v1/admin/logs/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await axios.get(`/api/v1/admin/logs/download`, {
+        params: { filename },
+        responseType: 'blob'
       });
-
-      if (response.data.success) {
-        setStats(response.data.data);
-      }
-    } catch (error) {
-      console.error('获取日志统计失败:', error);
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      const token = localStorage.getItem('admin_token');
-      const response = await axios.get(`${API_BASE}/api/v1/admin/logs/export`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob',
-      });
-
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `logs_${dayjs().format('YYYY-MM-DD_HH-mm-ss')}.csv`);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
-      message.success('日志导出成功');
-    } catch (error: any) {
-      message.error('导出失败: ' + (error.response?.data?.detail || error.message));
+      message.success('日志下载成功');
+    } catch (error) {
+      console.error('Failed to download log:', error);
+      message.error('日志下载失败');
     }
   };
 
-  const handleCleanup = async () => {
+  // 清理日志
+  const handleCleanupLogs = async () => {
+    Modal.confirm({
+      title: '确认清理日志？',
+      content: '将删除90天前的所有轮转日志文件（当前日志不受影响）',
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const response = await axios.post('/api/v1/admin/logs/cleanup');
+          if (response.data.success) {
+            const { deleted_count, freed_space } = response.data.data;
+            message.success(`清理完成！删除 ${deleted_count} 个文件，释放 ${(freed_space / 1024 / 1024).toFixed(2)} MB 空间`);
+            fetchFiles();
+            fetchStats();
+          } else {
+            message.error('清理失败');
+          }
+        } catch (error) {
+          console.error('Failed to cleanup logs:', error);
+          message.error('清理失败');
+        }
+      }
+    });
+  };
+
+  // 更新日志级别
+  const handleUpdateLogLevel = async (level: string) => {
     try {
-      const token = localStorage.getItem('admin_token');
-      await axios.post(
-        `${API_BASE}/api/v1/admin/logs/cleanup`,
-        { days: 30 },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      message.success('清理完成');
-      fetchLogs();
-      fetchStats();
-    } catch (error: any) {
-      message.error('清理失败: ' + (error.response?.data?.detail || error.message));
+      const response = await axios.post('/api/v1/admin/logs/level', { level });
+      if (response.data.success) {
+        message.success(response.data.message || '日志级别已更新');
+        setLogLevel(level);
+      } else {
+        message.error('更新失败');
+      }
+    } catch (error) {
+      console.error('Failed to update log level:', error);
+      message.error('更新失败');
     }
   };
 
-  const getLevelColor = (level: string) => {
-    switch (level.toUpperCase()) {
-      case 'ERROR':
-        return 'red';
-      case 'WARNING':
-        return 'orange';
-      case 'INFO':
-        return 'blue';
-      case 'DEBUG':
-        return 'default';
-      default:
-        return 'default';
-    }
+  // 格式化文件大小
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
   };
 
-  const columns = [
+  // 文件列表表格列
+  const fileColumns = [
     {
-      title: '时间',
-      dataIndex: 'timestamp',
-      key: 'timestamp',
-      width: 180,
-      render: (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
+      title: '文件名',
+      dataIndex: 'name',
+      key: 'name',
+      render: (name: string) => {
+        let icon = <FileTextOutlined />;
+        let color = 'default';
+        if (name.includes('error')) {
+          icon = <CloseCircleOutlined />;
+          color = 'red';
+        } else if (name.includes('ai_decision')) {
+          icon = <ThunderboltOutlined />;
+          color = 'purple';
+        }
+        return (
+          <Space>
+            <Tag color={color} icon={icon}>{name}</Tag>
+          </Space>
+        );
+      }
     },
     {
-      title: '级别',
-      dataIndex: 'level',
-      key: 'level',
-      width: 100,
-      render: (level: string) => (
-        <Tag color={getLevelColor(level)}>{level.toUpperCase()}</Tag>
-      ),
+      title: '大小',
+      dataIndex: 'size',
+      key: 'size',
+      render: (size: number) => formatSize(size),
+      sorter: (a: LogFile, b: LogFile) => a.size - b.size
     },
     {
-      title: '模块',
-      dataIndex: 'module',
-      key: 'module',
-      width: 150,
+      title: '行数',
+      dataIndex: 'lines',
+      key: 'lines',
+      render: (lines: number) => lines.toLocaleString(),
+      sorter: (a: LogFile, b: LogFile) => a.lines - b.lines
     },
     {
-      title: '消息',
-      dataIndex: 'message',
-      key: 'message',
-      ellipsis: true,
+      title: '修改时间',
+      dataIndex: 'modified',
+      key: 'modified',
+      sorter: (a: LogFile, b: LogFile) => new Date(a.modified).getTime() - new Date(b.modified).getTime()
     },
     {
-      title: '用户',
-      dataIndex: 'user',
-      key: 'user',
-      width: 120,
-    },
-    {
-      title: 'IP地址',
-      dataIndex: 'ip_address',
-      key: 'ip_address',
-      width: 140,
-    },
-  ];
-
-    return (
-    <div style={{ padding: '24px' }}>
-      <h1 style={{ fontSize: '24px', marginBottom: '24px' }}>📋 日志管理</h1>
-
-      {/* 统计卡片 */}
-      <Row gutter={16} style={{ marginBottom: '24px' }}>
-        <Col span={6}>
-          <Card>
-            <Statistic title="总日志数" value={stats.total_logs} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="错误"
-              value={stats.error_count}
-              valueStyle={{ color: '#cf1322' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="警告"
-              value={stats.warning_count}
-              valueStyle={{ color: '#fa8c16' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="信息"
-              value={stats.info_count}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* 筛选和操作 */}
-      <Card style={{ marginBottom: '16px' }}>
-        <Space wrap>
-          <Select
-            value={levelFilter}
-            onChange={setLevelFilter}
-            style={{ width: 120 }}
-          >
-            <Option value="all">全部级别</Option>
-            <Option value="error">ERROR</Option>
-            <Option value="warning">WARNING</Option>
-            <Option value="info">INFO</Option>
-            <Option value="debug">DEBUG</Option>
-          </Select>
-
-          <RangePicker
-            value={dateRange}
-            onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
-            placeholder={['开始日期', '结束日期']}
-          />
-
-          <Button icon={<ReloadOutlined />} onClick={fetchLogs}>
-            刷新
-          </Button>
-
-          <Button icon={<DownloadOutlined />} onClick={handleExport}>
-            导出CSV
-          </Button>
-
+      title: '操作',
+      key: 'actions',
+      render: (_: any, record: LogFile) => (
+        <Space>
           <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={handleCleanup}
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewLog(record.name)}
           >
-            清理30天前日志
+            查看
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownloadLog(record.name)}
+          >
+            下载
           </Button>
         </Space>
-      </Card>
+      )
+    }
+  ];
 
-      {/* 日志表格 */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={logs}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            pageSize: 50,
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条`,
-          }}
-          scroll={{ x: 1200 }}
-        />
-      </Card>
+  if (!hasPermission('log:view')) {
+    return (
+      <div className="p-6">
+        <Alert message="您没有权限访问日志管理" type="warning" showIcon />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* 页面标题 */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+            <FileTextOutlined className="mr-3 text-blue-600" />
+            日志管理中心
+          </h1>
+          <p className="text-gray-500 mt-2">实时监控系统日志、错误报警、性能追踪</p>
+        </div>
+
+        {/* 统计卡片 */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <Statistic
+                title="总文件数"
+                value={stats.total_files}
+                prefix={<FileTextOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <Statistic
+                title="占用空间"
+                value={formatSize(stats.total_size)}
+                prefix={<FileTextOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <Statistic
+                title="错误日志"
+                value={stats.alerts.error_count}
+                prefix={<CloseCircleOutlined />}
+                valueStyle={{ color: '#ff4d4f' }}
+              />
+            </Card>
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <Statistic
+                title="警告日志"
+                value={stats.alerts.warning_count}
+                prefix={<WarningOutlined />}
+                valueStyle={{ color: '#faad14' }}
+              />
+            </Card>
+          </div>
+        )}
+
+        {/* 报警区域 */}
+        {stats && stats.alerts.critical_count > 0 && (
+          <Alert
+            message={`检测到 ${stats.alerts.critical_count} 条严重错误！`}
+            description="请及时查看错误日志并处理"
+            type="error"
+            showIcon
+            icon={<CloseCircleOutlined />}
+            className="mb-6"
+          />
+        )}
+
+        {/* 最近错误 */}
+        {stats && stats.alerts.recent_errors.length > 0 && (
+          <Card title="最近错误" className="mb-6 shadow-sm">
+            <Space direction="vertical" className="w-full">
+              {stats.alerts.recent_errors.map((error, index) => (
+                <Alert
+                  key={index}
+                  message={<Tag color={error.level === 'CRITICAL' ? 'red' : 'orange'}>{error.level}</Tag>}
+                  description={<code className="text-xs">{error.message}</code>}
+                  type={error.level === 'CRITICAL' ? 'error' : 'warning'}
+                  showIcon
+                  className="mb-2"
+                />
+              ))}
+            </Space>
+          </Card>
+        )}
+
+        {/* 操作栏 */}
+        <Card className="mb-6 shadow-sm">
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                fetchFiles();
+                fetchStats();
+              }}
+              loading={loading}
+            >
+              刷新
+            </Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleCleanupLogs}
+              disabled={!hasPermission('log:clean')}
+            >
+              清理旧日志
+            </Button>
+            <div className="flex items-center space-x-2">
+              <SettingOutlined />
+              <span>日志级别:</span>
+              <Select
+                value={logLevel}
+                style={{ width: 120 }}
+                onChange={handleUpdateLogLevel}
+                disabled={!hasPermission('log:config')}
+              >
+                <Option value="DEBUG">DEBUG</Option>
+                <Option value="INFO">INFO</Option>
+                <Option value="WARNING">WARNING</Option>
+                <Option value="ERROR">ERROR</Option>
+                <Option value="CRITICAL">CRITICAL</Option>
+              </Select>
+              <Tooltip title="修改后需要重启后端服务才能完全生效">
+                <WarningOutlined className="text-orange-500" />
+              </Tooltip>
+            </div>
+          </Space>
+        </Card>
+
+        {/* 日志分类统计 */}
+        {stats && (
+          <Card title="日志分类统计" className="mb-6 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="border-l-4 border-blue-500 pl-4">
+                <div className="text-gray-500 text-sm">所有日志</div>
+                <div className="text-2xl font-bold text-blue-600">{stats.log_types.all.files} 个文件</div>
+                <div className="text-gray-400 text-xs">{formatSize(stats.log_types.all.size)}</div>
+              </div>
+              <div className="border-l-4 border-red-500 pl-4">
+                <div className="text-gray-500 text-sm">错误日志</div>
+                <div className="text-2xl font-bold text-red-600">{stats.log_types.error.files} 个文件</div>
+                <div className="text-gray-400 text-xs">{formatSize(stats.log_types.error.size)}</div>
+              </div>
+              <div className="border-l-4 border-purple-500 pl-4">
+                <div className="text-gray-500 text-sm">AI决策日志</div>
+                <div className="text-2xl font-bold text-purple-600">{stats.log_types.ai_decisions.files} 个文件</div>
+                <div className="text-gray-400 text-xs">{formatSize(stats.log_types.ai_decisions.size)}</div>
+              </div>
+              <div className="border-l-4 border-green-500 pl-4">
+                <div className="text-gray-500 text-sm">交易日志</div>
+                <div className="text-2xl font-bold text-green-600">{stats.log_types.trading.files} 个文件</div>
+                <div className="text-gray-400 text-xs">{formatSize(stats.log_types.trading.size)}</div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* 文件列表 */}
+        <Card title="日志文件列表" className="shadow-sm">
+          <Table
+            columns={fileColumns}
+            dataSource={files}
+            rowKey="name"
+            loading={loading}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `共 ${total} 个文件`
+            }}
+          />
+        </Card>
+
+        {/* 查看日志模态框 */}
+        <Modal
+          title={`查看日志: ${viewFileName}`}
+          open={viewModalVisible}
+          onCancel={() => setViewModalVisible(false)}
+          width={900}
+          footer={[
+            <Button key="close" onClick={() => setViewModalVisible(false)}>
+              关闭
+            </Button>,
+            <Button
+              key="download"
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={() => handleDownloadLog(viewFileName)}
+            >
+              下载完整日志
+            </Button>
+          ]}
+        >
+          <div className="mb-3">
+            <span className="mr-2">显示最后:</span>
+            <Select
+              value={viewLines}
+              style={{ width: 120 }}
+              onChange={(value) => {
+                setViewLines(value);
+                handleViewLog(viewFileName);
+              }}
+            >
+              <Option value={50}>50 行</Option>
+              <Option value={100}>100 行</Option>
+              <Option value={200}>200 行</Option>
+              <Option value={500}>500 行</Option>
+            </Select>
+          </div>
+          <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-auto max-h-96 text-xs font-mono">
+            {viewContent}
+          </pre>
+        </Modal>
+      </div>
     </div>
   );
-}
+};
+
+export default LogManagementPage;
