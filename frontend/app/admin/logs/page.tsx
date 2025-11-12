@@ -113,7 +113,8 @@ const LogManagementPage: React.FC = () => {
       fetchStats();
       fetchLogLevel();
     }
-  }, [hasPermission, fetchFiles, fetchStats, fetchLogLevel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPermission]);
 
   // 查看日志文件
   const handleViewLog = async (filename: string) => {
