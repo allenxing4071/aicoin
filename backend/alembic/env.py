@@ -10,7 +10,9 @@ config = context.config
 
 # 优先使用环境变量中的 DATABASE_URL
 if os.getenv("DATABASE_URL"):
-    config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
+    # Alembic 需要同步驱动，确保使用 postgresql:// 而不是 postgresql+asyncpg://
+    db_url = os.getenv("DATABASE_URL").replace("postgresql+asyncpg://", "postgresql://")
+    config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
