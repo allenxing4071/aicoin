@@ -132,7 +132,7 @@ async def get_ai_health_data(db: AsyncSession) -> Dict[str, Any]:
     """获取AI健康状态"""
     try:
         from app.main import ai_orchestrator
-        from app.services.decision.engine_v2 import DecisionEngineV2
+        from app.services.decision.decision_engine_v2 import DecisionEngineV2
         
         if ai_orchestrator:
             orchestrator_status = ai_orchestrator.get_status()
