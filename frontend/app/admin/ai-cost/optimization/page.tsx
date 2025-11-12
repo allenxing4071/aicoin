@@ -33,12 +33,7 @@ export default function OptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [changing, setChanging] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-    fetchCurrentInterval();
-  }, []);
-
-  const fetchCurrentInterval = async () => {
+  const fetchCurrentInterval = useCallback(async () => {
     try {
       const res = await fetch('/health');
       const data = await res.json();
@@ -48,9 +43,9 @@ export default function OptimizationPage() {
     } catch (error) {
       console.error('获取决策间隔失败:', error);
     }
-  };
+  }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/v1/ai-cost/decision-interval-analysis');
@@ -63,7 +58,13 @@ export default function OptimizationPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    fetchCurrentInterval();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChangeInterval = async (intervalSeconds: number) => {
     if (!confirm(`确定要切换到 ${intervals.find(i => i.interval_seconds === intervalSeconds)?.name} 模式吗？`)) {

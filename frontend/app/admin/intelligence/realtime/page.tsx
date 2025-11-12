@@ -12,7 +12,7 @@
  * - 风险和机会
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/app/components/common/PageHeader';
 import { unifiedDesignSystem, getThemeStyles } from '@/app/admin/unified-design-system';
 import { StatCardGrid, StatCard } from '@/app/components/common/Cards';
@@ -41,23 +41,7 @@ export default function RealtimeIntelligencePage() {
   // 使用统一的橙色主题
   const theme = getThemeStyles('orange');
 
-  useEffect(() => {
-    fetchReports();
-    
-    // 自动刷新
-    let interval: NodeJS.Timeout;
-    if (autoRefresh) {
-      interval = setInterval(() => {
-        fetchReports();
-      }, 30000); // 每30秒刷新
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [autoRefresh]);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/v1/intelligence/reports?limit=20');
@@ -74,7 +58,24 @@ export default function RealtimeIntelligencePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchReports();
+    
+    // 自动刷新
+    let interval: NodeJS.Timeout;
+    if (autoRefresh) {
+      interval = setInterval(() => {
+        fetchReports();
+      }, 30000); // 每30秒刷新
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefresh]);
 
   const getSentimentColor = (sentiment: string) => {
     if (sentiment === 'BULLISH') return 'bg-green-100 text-green-800 border-green-500';

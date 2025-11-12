@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PageHeader from '../../components/common/PageHeader';
 
 interface ModelPerf {
@@ -23,14 +23,7 @@ export default function ModelPerformancePage() {
   const [perfData, setPerfData] = useState<PerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPerformance();
-    // 每30秒刷新一次
-    const interval = setInterval(fetchPerformance, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchPerformance = async () => {
+  const fetchPerformance = useCallback(async () => {
     try {
       const response = await fetch("/api/v1/decision/performance");
       const data = await response.json();
@@ -40,7 +33,15 @@ export default function ModelPerformancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchPerformance();
+    // 每30秒刷新一次
+    const interval = setInterval(fetchPerformance, 30000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const changeStrategy = async (strategy: string) => {
     try {

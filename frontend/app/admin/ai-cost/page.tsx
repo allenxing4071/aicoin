@@ -47,13 +47,7 @@ export default function AICostOverviewPage() {
   // 使用统一的橙色主题
   const theme = getThemeStyles('orange');
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000); // 每30秒刷新
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -91,7 +85,14 @@ export default function AICostOverviewPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // 每30秒刷新
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (

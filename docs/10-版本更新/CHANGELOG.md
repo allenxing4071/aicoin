@@ -1,5 +1,175 @@
 # AIcoin 更新日志
 
+## v3.3.0 (2025-11-12) - 当前版本
+
+### 🔐 核心功能：企业级RBAC权限系统
+
+#### 1. RBAC权限管理
+- ✅ **细粒度权限控制** - 页面/API/按钮三个级别
+- ✅ **系统角色** - super_admin、admin、risk_manager、trader、analyst、viewer
+- ✅ **动态权限配置** - 无需重启系统
+- ✅ **角色继承** - 支持父子角色关系
+- ✅ **审计日志** - 完整记录权限变更
+
+#### 2. 数据模型
+- 新增`permissions`表 - 35个系统权限
+- 新增`roles`表 - 6个系统角色
+- 新增`role_permissions`表 - 角色权限关联
+- 新增`permission_audit_logs`表 - 权限审计日志
+- 扩展`admin_users`表 - 添加role_id和custom_permissions字段
+
+#### 3. 前端集成
+- `/admin/rbac/roles` - 角色管理页面
+- `/admin/rbac/permissions` - 权限管理页面
+- `PermissionsProvider` - 权限上下文
+- `usePermissions` - 权限Hook
+- `PermissionGuard` - 权限守卫组件
+- 动态菜单渲染 - 基于用户权限
+
+#### 4. 后端API
+- 权限管理API - 增删改查权限
+- 角色管理API - 角色和权限分配
+- 审计日志API - 查询权限变更记录
+- 权限校验中间件 - @require_permissions装饰器
+
+### 📋 系统管理增强
+
+- **数据备份系统** - 自动备份、手动备份、备份管理
+- **日志管理系统** - 多级日志、文件管理、实时监控
+- **用户管理简化** - 集成RBAC，统一权限管理
+
+### 🐛 Bug修复
+
+1. **React useMemo依赖问题** - 修复登录后页面崩溃（Error #310）
+2. **AI成本页面500错误** - 修复数据库表缺失问题
+3. **Redoc页面访问** - 修复API文档页面无法访问
+
+### 📚 文档更新
+
+- `docs/03-技术架构/08-RBAC权限系统.md` - RBAC完整文档
+- `docs/07-部署运维/08-数据备份与清理指南.md` - 备份系统文档
+- `docs/07-部署运维/09-日志管理系统.md` - 日志系统文档
+- `docs/10-版本更新/v3.3.0_RBAC系统发布.md` - 版本发布说明
+- `README.md` - 更新至v3.3.0
+
+---
+
+## v3.2.0 (2025-11-10)
+
+### ✨ 新增功能
+
+#### 1. 版本管理系统
+- 成熟的版本管理机制
+- 前端动态版本获取
+- 版本号统一管理
+
+#### 2. 安全规范
+- 敏感信息管理规范
+- .gitignore优化
+- 环境变量最佳实践
+
+### 🎨 样式统一优化
+
+#### 1. 设计系统
+- 统一设计系统（unified-design-system.ts）
+- 可复用卡片组件库
+- 93%代码重复减少
+
+#### 2. 性能优化
+- Docker镜像优化（40%体积减少）
+- 数据库索引优化
+- Next.js编译优化
+
+### 📚 文档完善
+
+- `docs/07-部署运维/07-版本管理指南.md`
+- `docs/07-部署运维/08-版本发布流程.md`
+- `docs/07-部署运维/00-敏感信息管理规范.md`
+
+---
+
+## v3.1.0 (2025-11-08)
+
+### 🤖 AI多平台集成
+
+#### 1. AI平台管理
+- **DeepSeek** - 交易决策引擎
+- **Qwen (通义千问)** - 情报分析
+- **Doubao (豆包)** - 辅助分析
+- 三平台统一管理界面
+
+#### 2. AI成本管理系统
+- 成本概览 - 总成本统计和趋势
+- 平台统计 - 各平台使用详情
+- 预算设置 - 预算配置和预警
+- 成本优化 - 智能优化建议
+
+#### 3. AI平台性能监控
+- 调用统计 - 实时监控调用量和趋势
+- 成功率分析 - 失败原因和稳定性评估
+- 响应时间分析 - P50/P95/P99延迟监控
+- 平台对比 - 多维度性能对比
+
+#### 4. 情报分析系统
+- 实时情报 - 最新市场情报流
+- AI综合分析 - 多平台情报分析
+- 历史报告 - 情报历史记录
+
+### 🎨 前端功能
+
+#### 新增页面
+- `/admin/ai-platforms` - AI平台管理
+- `/admin/ai-platforms/stats` - 平台统计
+- `/admin/ai-platforms/success-rate` - 成功率分析
+- `/admin/ai-platforms/response-time` - 响应时间分析
+- `/admin/ai-cost` - AI成本概览
+- `/admin/ai-cost/budget` - 预算设置
+- `/admin/ai-cost/optimization` - 成本优化
+- `/admin/intelligence` - 情报系统
+
+### 🔧 后端功能
+
+#### 新增API
+- AI平台统计API - `/api/v1/ai-platforms/stats`
+- 成本管理API - `/api/v1/ai-platforms/cost/*`
+- 预算管理API - `/api/v1/ai-platforms/budget/*`
+- 情报分析API - `/api/v1/intelligence/*`
+
+#### 数据库
+- `ai_model_usage_log` - AI使用日志
+- `ai_platform_budget` - 平台预算配置
+- `intelligence_reports` - 情报报告
+
+### 📚 文档
+
+- `docs/03-技术架构/07-AI平台性能监控系统.md`
+- `docs/06-快速参考/06-AI多平台使用指南.md`
+- `docs/07-部署运维/05-AI平台API密钥配置.md`
+
+---
+
+## v3.0.0 (2025-11-06)
+
+### 🎉 重大更新
+
+#### 1. Qwen情报系统
+- 双AI引擎架构（Qwen情报 + DeepSeek决策）
+- 自动情报收集和分析
+- 30分钟自动更新
+- Redis + PostgreSQL双层存储
+
+#### 2. AI日记系统
+- 每日交易总结
+- AI性能分析
+- 经验教训记录
+
+#### 3. 权限等级管理
+- L0-L5动态权限系统
+- 智能约束框架
+- 权限自动升降级
+
+---
+
 ## v2.1 (2025-11-04)
 
 ### 🎉 核心新功能

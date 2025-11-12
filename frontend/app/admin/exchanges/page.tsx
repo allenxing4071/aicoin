@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import PageHeader from '../../components/common/PageHeader';
 
@@ -33,17 +33,7 @@ export default function ExchangesPage() {
   const [activeExchange, setActiveExchange] = useState<ExchangeInfo | null>(null);
   const [switching, setSwitching] = useState(false);
 
-  useEffect(() => {
-    fetchExchanges();
-    fetchSupportedExchanges();
-    fetchActiveExchange();
-    
-    // 每5秒自动刷新交易所状态
-    const interval = setInterval(fetchActiveExchange, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchActiveExchange = async () => {
+  const fetchActiveExchange = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE}/exchanges/active`);
       if (response.data.success) {
@@ -59,9 +49,9 @@ export default function ExchangesPage() {
         supports_futures: true
       });
     }
-  };
+  }, []);
 
-  const fetchExchanges = async () => {
+  const fetchExchanges = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE}/exchanges`);
       if (response.data.success) {
@@ -72,9 +62,9 @@ export default function ExchangesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchSupportedExchanges = async () => {
+  const fetchSupportedExchanges = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE}/exchanges/supported`);
       if (response.data.success) {
@@ -83,7 +73,18 @@ export default function ExchangesPage() {
     } catch (error) {
       console.error('获取支持的交易所失败:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchExchanges();
+    fetchSupportedExchanges();
+    fetchActiveExchange();
+    
+    // 每5秒自动刷新交易所状态
+    const interval = setInterval(fetchActiveExchange, 5000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleReload = async () => {
     try {
