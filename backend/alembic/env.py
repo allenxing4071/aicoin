@@ -8,6 +8,10 @@ import sys
 # this is the Alembic Config object
 config = context.config
 
+# 优先使用环境变量中的 DATABASE_URL
+if os.getenv("DATABASE_URL"):
+    config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
+
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
