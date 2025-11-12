@@ -49,6 +49,39 @@ docker compose up -d
 
 详细部署指南: [docs/00-快速开始/DOCKER_QUICK_START.md](./docs/00-快速开始/DOCKER_QUICK_START.md)
 
+### 🌐 生产环境部署
+
+#### 方式一：Git 自动化部署（推荐）
+
+```bash
+# 标准部署（重新构建镜像）
+./scripts/deploy-git.sh
+
+# 快速部署（仅重启服务）
+./scripts/deploy-git-quick.sh
+
+# 紧急回滚
+./scripts/deploy-git-rollback.sh HEAD~1
+```
+
+**优势：**
+- ✅ 完整版本控制
+- ✅ 一键回滚任意版本
+- ✅ 完整审计追踪
+- ✅ 符合 GitOps 最佳实践
+
+详细指南: [docs/07-部署运维/10-Git自动化部署指南.md](./docs/07-部署运维/10-Git自动化部署指南.md)  
+快速参考: [scripts/DEPLOY_CHEATSHEET.md](./scripts/DEPLOY_CHEATSHEET.md)
+
+#### 方式二：rsync 快速同步（开发环境）
+
+```bash
+# 快速同步本地代码到服务器
+./scripts/deploy-rsync.sh
+```
+
+**适用场景：** 开发阶段快速迭代测试
+
 ---
 
 ## 🏗️ 技术架构

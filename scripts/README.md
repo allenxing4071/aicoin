@@ -1,219 +1,270 @@
-# 🔧 Scripts目录说明
+# AIcoin 项目部署脚本使用指南
 
-> **最后更新**: 2025-11-09  
-> **版本**: v3.2
+## 📁 脚本概览
 
----
+本目录提供了三种部署方式，适用于不同场景：
 
-## 📁 目录结构
-
-```
-scripts/
-├── deploy/              # 部署类脚本
-├── monitor/             # 监控类脚本
-├── test/                # 测试类脚本
-├── utils/               # 工具类脚本
-├── ssh/                 # SSH/远程类脚本
-├── start.sh             # 启动脚本
-├── start_all.sh         # 启动所有服务
-├── start_testnet.sh     # 启动测试网
-├── stop_all.sh          # 停止所有服务
-└── stop_system_emergency.sh  # 紧急停止
-```
+| 脚本文件 | 适用场景 | 速度 | 推荐度 |
+|---------|---------|------|--------|
+| `deploy-rsync.sh` | 开发阶段快速迭代 | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ |
+| `deploy-git.sh` | 生产环境正式发布 | ⚡⚡ | ⭐⭐⭐⭐ |
+| `deploy-quick.sh` | 仅修改配置文件时 | ⚡⚡⚡⚡ | ⭐⭐⭐ |
 
 ---
 
-## 🚀 部署类脚本 (deploy/)
+## 🚀 快速开始
 
-### deploy_prod.sh
-**用途**: 生产环境部署  
-**使用**: `./scripts/deploy/deploy_prod.sh`
+### 1️⃣ 赋予脚本执行权限（首次使用）
 
-### deploy_to_remote.sh
-**用途**: 部署到远程服务器  
-**使用**: `./scripts/deploy/deploy_to_remote.sh`
-
-### remote_quick_deploy.sh
-**用途**: 快速远程部署  
-**使用**: `./scripts/deploy/remote_quick_deploy.sh`
-
-### build_docker.sh
-**用途**: 构建Docker镜像  
-**使用**: `./scripts/deploy/build_docker.sh`
-
----
-
-## 📊 监控类脚本 (monitor/)
-
-### monitor_system.sh
-**用途**: 系统监控  
-**使用**: `./scripts/monitor/monitor_system.sh`
-
-### monitor_trading.sh
-**用途**: 交易监控  
-**使用**: `./scripts/monitor/monitor_trading.sh`
-
-### alert_config.sh
-**用途**: 告警配置  
-**使用**: `./scripts/monitor/alert_config.sh`
-
----
-
-## 🧪 测试类脚本 (test/)
-
-### test_admin_api.sh
-**用途**: 测试管理API  
-**使用**: `./scripts/test/test_admin_api.sh`
-
-### test_api_endpoints.sh
-**用途**: 测试API端点  
-**使用**: `./scripts/test/test_api_endpoints.sh`
-
-### test_ai_decision.py
-**用途**: 测试AI决策  
-**使用**: `python ./scripts/test/test_ai_decision.py`
-
----
-
-## 🛠️ 工具类脚本 (utils/)
-
-### cleanup_project.sh
-**用途**: 清理项目文件  
-**使用**: `./scripts/utils/cleanup_project.sh`
-
-### restore_data.sh
-**用途**: 恢复数据  
-**使用**: `./scripts/utils/restore_data.sh`
-
-### sync_api_keys.sh
-**用途**: 同步API密钥  
-**使用**: `./scripts/utils/sync_api_keys.sh`
-
-### fix_v3_issues.sh
-**用途**: 修复v3问题  
-**使用**: `./scripts/utils/fix_v3_issues.sh`
-
-### cleanup.sh
-**用途**: 清理临时文件  
-**使用**: `./scripts/utils/cleanup.sh`
-
-### replace_headers.sh
-**用途**: 替换文件头  
-**使用**: `./scripts/utils/replace_headers.sh`
-
-### update_page_headers.sh
-**用途**: 更新页面头部  
-**使用**: `./scripts/utils/update_page_headers.sh`
-
-### database_optimization.sql
-**用途**: 数据库优化检查  
-**使用**: 
 ```bash
-docker compose exec -T db psql -U aicoin -d aicoin < scripts/utils/database_optimization.sql
+chmod +x scripts/deploy-*.sh
 ```
 
----
+### 2️⃣ 选择合适的脚本执行
 
-## 🔐 SSH/远程类脚本 (ssh/)
+#### 方式 A：rsync 快速部署（推荐开发环境）
 
-### setup_ssh_key.sh
-**用途**: 设置SSH密钥  
-**使用**: `./scripts/ssh/setup_ssh_key.sh`
-
-### setup_ssh_key_manual.sh
-**用途**: 手动设置SSH密钥  
-**使用**: `./scripts/ssh/setup_ssh_key_manual.sh`
-
-### check_remote_env.sh
-**用途**: 检查远程环境  
-**使用**: `./scripts/ssh/check_remote_env.sh`
-
-### init_remote_db.sh
-**用途**: 初始化远程数据库  
-**使用**: `./scripts/ssh/init_remote_db.sh`
-
-### install_cursor_desktop.sh
-**用途**: 安装Cursor桌面版  
-**使用**: `./scripts/ssh/install_cursor_desktop.sh`
-
-### install_cursor_server.sh
-**用途**: 安装Cursor服务器版  
-**使用**: `./scripts/ssh/install_cursor_server.sh`
-
----
-
-## ▶️ 启动/停止脚本
-
-### start.sh
-**用途**: 启动开发环境  
-**使用**: `./scripts/start.sh`
-
-### start_all.sh
-**用途**: 启动所有服务  
-**使用**: `./scripts/start_all.sh`
-
-### start_testnet.sh
-**用途**: 启动测试网环境  
-**使用**: `./scripts/start_testnet.sh`
-
-### stop_all.sh
-**用途**: 停止所有服务  
-**使用**: `./scripts/stop_all.sh`
-
-### stop_system_emergency.sh
-**用途**: 紧急停止系统  
-**使用**: `./scripts/stop_system_emergency.sh`
-
----
-
-## 📝 使用建议
-
-### 开发环境
 ```bash
-# 启动开发环境
-./scripts/start.sh
-
-# 测试API
-./scripts/test/test_api_endpoints.sh
-
-# 停止服务
-./scripts/stop_all.sh
+./scripts/deploy-rsync.sh
 ```
 
-### 生产部署
+**优点：**
+- ✅ 速度最快（增量传输）
+- ✅ 无需 git commit
+- ✅ 适合频繁修改代码
+
+**缺点：**
+- ⚠️ 不记录版本历史
+- ⚠️ 需要确保本地代码可靠
+
+---
+
+#### 方式 B：Git 标准部署（推荐生产环境）
+
 ```bash
-# 构建镜像
-./scripts/deploy/build_docker.sh
-
-# 部署到生产
-./scripts/deploy/deploy_prod.sh
-
-# 监控系统
-./scripts/monitor/monitor_system.sh
+./scripts/deploy-git.sh
 ```
 
-### 数据库维护
+**优点：**
+- ✅ 有版本控制
+- ✅ 可追踪每次部署
+- ✅ 便于回滚
+
+**缺点：**
+- ⚠️ 需要先 commit
+- ⚠️ 速度稍慢
+
+**注意事项：**
+- 会自动检测未提交的更改并提示
+- 会自动推送到远程仓库
+- 需要配置 Git 远程仓库
+
+---
+
+#### 方式 C：快速重启（仅重启服务）
+
 ```bash
-# 检查数据库
-docker compose exec -T db psql -U aicoin -d aicoin < scripts/utils/database_optimization.sql
+./scripts/deploy-quick.sh
+```
 
-# 备份数据
-./scripts/utils/restore_data.sh backup
+**适用场景：**
+- ✅ 修改了 `.env` 环境变量
+- ✅ 修改了 `docker-compose.yml`
+- ✅ 服务异常需要重启
 
-# 恢复数据
-./scripts/utils/restore_data.sh restore
+**注意：**
+- ⚠️ 不会同步代码
+- ⚠️ 不会重新构建镜像
+
+---
+
+## 🔧 高级配置
+
+### 修改服务器地址
+
+编辑脚本开头的配置区域：
+
+```bash
+SERVER_USER="root"
+SERVER_HOST="47.250.132.166"
+SERVER_PATH="/root/AIcoin"
+SSH_KEY="/path/to/your/ssh-key.pem"
+```
+
+### 修改 Git 分支
+
+在 `deploy-git.sh` 中修改：
+
+```bash
+GIT_BRANCH="main"  # 改为你的目标分支
+GIT_REMOTE="origin"
+```
+
+### 自定义 rsync 排除规则
+
+在 `deploy-rsync.sh` 中修改 `--exclude` 参数：
+
+```bash
+rsync -avz --delete \
+    --exclude='node_modules/' \
+    --exclude='your-custom-folder/' \
+    ...
 ```
 
 ---
 
-## ⚠️ 注意事项
+## 📝 部署流程详解
 
-1. **权限**: 所有脚本需要执行权限 (`chmod +x script.sh`)
-2. **环境**: 确保在项目根目录执行
-3. **配置**: 检查环境变量和配置文件
-4. **备份**: 生产操作前先备份数据
+### rsync 部署流程
+
+```
+1️⃣ 检查本地环境
+    ↓
+2️⃣ 测试服务器连接
+    ↓
+3️⃣ rsync 同步代码（增量）
+    ↓
+4️⃣ 服务器上重新构建 Docker 镜像
+    ↓
+5️⃣ 重启所有服务
+    ↓
+6️⃣ 验证部署状态
+```
+
+### Git 部署流程
+
+```
+1️⃣ 检查本地 Git 状态
+    ↓
+2️⃣ 提交并推送代码到远程仓库
+    ↓
+3️⃣ 服务器上 git pull 最新代码
+    ↓
+4️⃣ 服务器上重新构建 Docker 镜像
+    ↓
+5️⃣ 重启所有服务
+    ↓
+6️⃣ 验证部署状态
+```
 
 ---
 
-**维护者**: AIcoin Team  
-**最后更新**: 2025-11-09
+## ⚠️ 常见问题
+
+### Q1: SSH 连接失败
+
+**解决方案：**
+```bash
+# 检查 SSH 密钥权限
+chmod 400 ssh-configs/cloud-servers/AIcoin.pem
+
+# 手动测试连接
+ssh -i ssh-configs/cloud-servers/AIcoin.pem root@47.250.132.166
+```
+
+### Q2: rsync 速度慢
+
+**原因：** 可能是首次同步或网络问题
+
+**解决方案：**
+- 首次同步会较慢（需要传输所有文件）
+- 后续同步会很快（仅传输修改的文件）
+- 检查网络连接质量
+
+### Q3: Docker 构建失败
+
+**解决方案：**
+```bash
+# SSH 到服务器手动查看日志
+ssh -i ssh-configs/cloud-servers/AIcoin.pem root@47.250.132.166
+
+cd /root/AIcoin
+docker compose logs backend
+docker compose logs frontend
+```
+
+### Q4: 服务启动失败
+
+**解决方案：**
+```bash
+# 查看容器状态
+docker compose ps
+
+# 查看具体错误
+docker compose logs --tail=100
+
+# 手动重启
+docker compose restart
+```
+
+---
+
+## 🔐 安全性说明
+
+### rsync 安全性
+
+- ✅ 使用 SSH 加密传输
+- ✅ 使用私钥认证
+- ✅ 自动跳过敏感文件（.env.local）
+- ⚠️ 确保 SSH 密钥权限正确（400）
+
+### Git 安全性
+
+- ✅ 有版本追踪和审计日志
+- ✅ 可以回滚到任意版本
+- ⚠️ 敏感文件需要添加到 `.gitignore`
+- ⚠️ 不要将 SSH 密钥提交到 Git
+
+---
+
+## 📊 性能对比
+
+### 传输速度测试（参考）
+
+| 方法 | 首次部署 | 增量部署 | 优势 |
+|------|---------|---------|------|
+| rsync | ~30秒 | ~5秒 | 仅传输修改文件 |
+| Git | ~45秒 | ~10秒 | 有版本控制 |
+| Docker Hub | ~3分钟 | ~3分钟 | 不依赖网络带宽 |
+
+---
+
+## 🎯 推荐使用策略
+
+### 开发阶段（推荐 rsync）
+
+```bash
+# 修改代码后
+./scripts/deploy-rsync.sh
+
+# 仅修改配置
+./scripts/deploy-quick.sh
+```
+
+### 测试/预发布阶段（推荐 Git）
+
+```bash
+# 提交代码
+git add .
+git commit -m "feature: 新功能"
+
+# 部署
+./scripts/deploy-git.sh
+```
+
+### 生产环境（推荐 Git + Tag）
+
+```bash
+# 打标签
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# 部署
+./scripts/deploy-git.sh
+```
+
+---
+
+## 📞 技术支持
+
+如有问题，请联系技术团队或查看项目文档。
