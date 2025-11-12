@@ -368,7 +368,7 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     }
     
     return items;
-  }, [permLoading, permissions?.length ?? 0, userRole]); // 使用permissions.length作为依赖，确保始终是数字
+  }, [permLoading, (permissions || []).sort().join(','), userRole]); // 使用排序后的字符串作为稳定依赖
 
   // 移除下拉菜单，改为顶部按钮
 

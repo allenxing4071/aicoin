@@ -92,7 +92,7 @@ if ! ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
     exit 1
 fi
 log_success "服务器连接正常"
-echo ""
+    echo ""
 
 # 3️⃣ 在服务器上初始化或更新 Git 仓库
 log_step "3/6" "拉取最新代码 (分支: $GIT_BRANCH)..."
@@ -109,7 +109,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "\${BLUE}📡 服务器端操作开始...${NC}"
-echo ""
+    echo ""
 
 # 检查 Git 是否安装
 if ! command -v git &> /dev/null; then
