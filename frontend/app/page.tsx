@@ -72,7 +72,7 @@ export default function Home() {
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set(['trades']));
 
   // 使用useMemo稳定models引用，避免React重新渲染错误
-  const modelsWithData = useMemo(() => modelsData, [JSON.stringify(modelsData)]);
+  const modelsWithData = useMemo(() => modelsData, [modelsData]);
 
   // 使用真实的账户余额（优先使用 accountData，兼容旧的 models 数据）
   const totalValue = accountData?.equity || accountData?.balance || (modelsWithData.length > 0 ? modelsWithData[0].value : 0);
