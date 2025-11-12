@@ -4,6 +4,7 @@ import React, { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import AuthGuard from "./AuthGuard";
+import { PermissionsProvider, usePermissions } from './PermissionsProvider';
 import { Layout, Menu, Space } from "antd";
 import {
   DashboardOutlined,
@@ -36,9 +37,10 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+function AdminLayoutInner({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { hasPermission, loading: permLoading, permissions, userRole } = usePermissions();
   const [username, setUsername] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -58,212 +60,315 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return <AuthGuard>{children}</AuthGuard>;
   }
 
-  // 菜单项配置 - 智能化命名
-  const menuItems: MenuProps["items"] = [
-    {
+  // 根据权限动态生成菜单项 - 使用 useMemo 避免重复渲染
+  const menuItems = React.useMemo(() => {
+    // 如果权限还在加载，返回空数组
+    if (permLoading) {
+      return [];
+    }
+    
+    // 辅助函数：检查权限（在 useMemo 内部）
+    const checkPermission = (permission: string): boolean => {
+      if (userRole === 'super_admin') return true;
+      return permissions?.includes(permission) || false;
+    };
+    
+    const items: MenuProps["items"] = [];
+    
+    // 智能驾驶舱 - 所有人都可以访问
+    items.push({
       key: "/admin",
       icon: <DashboardOutlined />,
       label: <Link href="/admin">智能驾驶舱</Link>,
-    },
-    {
-      key: "exchange-group",
-      icon: <SwapOutlined />,
-      label: "交易网关",
-      children: [
-        {
-          key: "/admin/exchanges",
-          label: <Link href="/admin/exchanges">交易所接入</Link>,
-        },
-      ],
-    },
-    {
-      key: "ai-platforms-group",
-      icon: <CloudOutlined />,
-      label: "AI平台管理",
-      children: [
-        {
-          key: "model-config",
-          label: "模型配置中心",
-          children: [
-            {
-              key: "/admin/ai-platforms/intelligence",
-              label: <Link href="/admin/ai-platforms/intelligence">情报模型（Qwen系列）</Link>,
-            },
-            {
-              key: "/admin/ai-platforms/decision",
-              label: <Link href="/admin/ai-platforms/decision">决策模型（DeepSeek）</Link>,
-            },
-            {
-              key: "/admin/ai-platforms/analysis",
-              label: <Link href="/admin/ai-platforms/analysis">分析模型（预留）</Link>,
-            },
-          ],
-        },
-        {
-          key: "cost-management",
-          label: "成本管理",
-          children: [
-            {
-              key: "/admin/ai-cost",
-              label: <Link href="/admin/ai-cost">实时监控</Link>,
-            },
-            {
-              key: "/admin/ai-cost/budget",
-              label: <Link href="/admin/ai-cost/budget">预算设置</Link>,
-            },
-            {
-              key: "/admin/ai-cost/optimization",
-              label: <Link href="/admin/ai-cost/optimization">决策间隔优化</Link>,
-            },
-          ],
-        },
-        {
-          key: "performance-monitoring",
-          label: "性能监控",
-          children: [
-            {
-              key: "/admin/ai-platforms/stats",
-              label: <Link href="/admin/ai-platforms/stats">调用统计</Link>,
-            },
-            {
-              key: "/admin/ai-platforms/success-rate",
-              label: <Link href="/admin/ai-platforms/success-rate">成功率分析</Link>,
-            },
-            {
-              key: "/admin/ai-platforms/response-time",
-              label: <Link href="/admin/ai-platforms/response-time">响应时间</Link>,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      key: "intelligence-group",
-      icon: <FileSearchOutlined />,
-      label: "情报中枢",
-      children: [
-        {
-          key: "data-sources",
-          label: "数据源管理",
-          children: [
-            {
-              key: "/admin/intelligence/rss",
-              label: <Link href="/admin/intelligence/rss">RSS新闻源</Link>,
-            },
-            {
-              key: "/admin/intelligence/whale",
-              label: <Link href="/admin/intelligence/whale">巨鲸监控</Link>,
-            },
-            {
-              key: "/admin/intelligence/onchain",
-              label: <Link href="/admin/intelligence/onchain">链上数据</Link>,
-            },
-            {
-              key: "/admin/intelligence/kol",
-              label: <Link href="/admin/intelligence/kol">KOL追踪</Link>,
-            },
-            {
-              key: "/admin/intelligence/smart-money",
-              label: <Link href="/admin/intelligence/smart-money">聪明钱跟单</Link>,
-            },
-          ],
-        },
-        {
-          key: "intelligence-analysis",
-          label: "情报分析",
-          children: [
-            {
-              key: "/admin/intelligence/realtime",
-              label: <Link href="/admin/intelligence/realtime">实时情报</Link>,
-            },
-            {
-              key: "/admin/intelligence/reports",
-              label: <Link href="/admin/intelligence/reports">历史报告</Link>,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      key: "trading-group",
-      icon: <LineChartOutlined />,
-      label: "交易引擎",
-      children: [
-        {
-          key: "/admin/trading",
-          label: <Link href="/admin/trading">AI工作日志</Link>,
-        },
-        {
-          key: "/admin/trades",
-          label: <Link href="/admin/trades">成交明细</Link>,
-        },
-        {
-          key: "/admin/orders",
-          label: <Link href="/admin/orders">订单追踪</Link>,
-        },
-        {
-          key: "/admin/accounts",
-          label: <Link href="/admin/accounts">资产快照</Link>,
-        },
-      ],
-    },
-    {
-      key: "memory-group",
-      icon: <BulbOutlined />,
-      label: "神经网络",
-      children: [
-        {
-          key: "/admin/memory",
-          label: <Link href="/admin/memory">记忆矩阵</Link>,
-        },
-      ],
-    },
-    {
-      key: "ai-decision-group",
-      icon: <RobotOutlined />,
-      label: "智能决策",
-      children: [
-        {
-          key: "/admin/ai-decisions",
-          label: <Link href="/admin/ai-decisions">决策轨迹</Link>,
-        },
-        {
-          key: "/admin/model-performance",
-          label: <Link href="/admin/model-performance">模型评估</Link>,
-        },
-      ],
-    },
-    {
-      key: "data-management-group",
-      icon: <DatabaseOutlined />,
-      label: "数据湖",
-      children: [
-        {
-          key: "/admin/market-data",
-          label: <Link href="/admin/market-data">市场行情</Link>,
-        },
-      ],
-    },
-    {
-      key: "system-management-group",
-      icon: <SettingOutlined />,
-      label: "系统控制",
-      children: [
-        {
-          key: "/admin/risk-events",
-          label: <Link href="/admin/risk-events">风控预警</Link>,
-        },
-        {
-          key: "/admin/permissions",
-          label: <Link href="/admin/permissions">权限矩阵</Link>,
-        },
-        {
-          key: "/admin/users",
-          label: <Link href="/admin/users">用户中心</Link>,
-        },
-      ],
-    },
-  ];
+    });
+    
+    // 交易网关 - 需要 exchange:view 权限
+    if (checkPermission('exchange:view')) {
+      items.push({
+        key: "exchange-group",
+        icon: <SwapOutlined />,
+        label: "交易网关",
+        children: [
+          {
+            key: "/admin/exchanges",
+            label: <Link href="/admin/exchanges">交易所接入</Link>,
+          },
+        ],
+      });
+    }
+    
+    // AI平台管理 - 需要 ai:view 权限
+    if (checkPermission('ai:view')) {
+      items.push({
+        key: "ai-platforms-group",
+        icon: <CloudOutlined />,
+        label: "AI平台管理",
+        children: [
+          {
+            key: "model-config",
+            label: "模型配置中心",
+            children: [
+              {
+                key: "/admin/ai-platforms/intelligence",
+                label: <Link href="/admin/ai-platforms/intelligence">情报模型（Qwen系列）</Link>,
+              },
+              {
+                key: "/admin/ai-platforms/decision",
+                label: <Link href="/admin/ai-platforms/decision">决策模型（DeepSeek）</Link>,
+              },
+              {
+                key: "/admin/ai-platforms/analysis",
+                label: <Link href="/admin/ai-platforms/analysis">分析模型（预留）</Link>,
+              },
+            ],
+          },
+          {
+            key: "cost-management",
+            label: "成本管理",
+            children: [
+              {
+                key: "/admin/ai-cost",
+                label: <Link href="/admin/ai-cost">实时监控</Link>,
+              },
+              {
+                key: "/admin/ai-cost/budget",
+                label: <Link href="/admin/ai-cost/budget">预算设置</Link>,
+              },
+              {
+                key: "/admin/ai-cost/optimization",
+                label: <Link href="/admin/ai-cost/optimization">决策间隔优化</Link>,
+              },
+            ],
+          },
+          {
+            key: "performance-monitoring",
+            label: "性能监控",
+            children: [
+              {
+                key: "/admin/ai-platforms/stats",
+                label: <Link href="/admin/ai-platforms/stats">调用统计</Link>,
+              },
+              {
+                key: "/admin/ai-platforms/success-rate",
+                label: <Link href="/admin/ai-platforms/success-rate">成功率分析</Link>,
+              },
+              {
+                key: "/admin/ai-platforms/response-time",
+                label: <Link href="/admin/ai-platforms/response-time">响应时间</Link>,
+              },
+            ],
+          },
+        ],
+      });
+    }
+    
+    // 情报中枢 - 需要 intel:view 权限
+    if (checkPermission('intel:view')) {
+      items.push({
+        key: "intelligence-group",
+        icon: <FileSearchOutlined />,
+        label: "情报中枢",
+        children: [
+          {
+            key: "data-sources",
+            label: "数据源管理",
+            children: [
+              {
+                key: "/admin/intelligence/rss",
+                label: <Link href="/admin/intelligence/rss">RSS新闻源</Link>,
+              },
+              {
+                key: "/admin/intelligence/whale",
+                label: <Link href="/admin/intelligence/whale">巨鲸监控</Link>,
+              },
+              {
+                key: "/admin/intelligence/onchain",
+                label: <Link href="/admin/intelligence/onchain">链上数据</Link>,
+              },
+              {
+                key: "/admin/intelligence/kol",
+                label: <Link href="/admin/intelligence/kol">KOL追踪</Link>,
+              },
+              {
+                key: "/admin/intelligence/smart-money",
+                label: <Link href="/admin/intelligence/smart-money">聪明钱跟单</Link>,
+              },
+            ],
+          },
+          {
+            key: "intelligence-analysis",
+            label: "情报分析",
+            children: [
+              {
+                key: "/admin/intelligence/realtime",
+                label: <Link href="/admin/intelligence/realtime">实时情报</Link>,
+              },
+              {
+                key: "/admin/intelligence/reports",
+                label: <Link href="/admin/intelligence/reports">历史报告</Link>,
+              },
+            ],
+          },
+        ],
+      });
+    }
+    
+    // 交易引擎 - 需要 trades:view 权限
+    if (checkPermission('trades:view')) {
+      items.push({
+        key: "trading-group",
+        icon: <LineChartOutlined />,
+        label: "交易引擎",
+        children: [
+          {
+            key: "/admin/trading",
+            label: <Link href="/admin/trading">AI工作日志</Link>,
+          },
+          {
+            key: "/admin/trades",
+            label: <Link href="/admin/trades">成交明细</Link>,
+          },
+          {
+            key: "/admin/orders",
+            label: <Link href="/admin/orders">订单追踪</Link>,
+          },
+          {
+            key: "/admin/accounts",
+            label: <Link href="/admin/accounts">资产快照</Link>,
+          },
+        ],
+      });
+    }
+    
+    // 神经网络 - 需要 memory:view 权限
+    if (checkPermission('memory:view')) {
+      items.push({
+        key: "memory-group",
+        icon: <BulbOutlined />,
+        label: "神经网络",
+        children: [
+          {
+            key: "/admin/memory",
+            label: <Link href="/admin/memory">记忆矩阵</Link>,
+          },
+        ],
+      });
+    }
+    
+    // 智能决策 - 需要 ai:view 权限
+    if (checkPermission('ai:view')) {
+      items.push({
+        key: "ai-decision-group",
+        icon: <RobotOutlined />,
+        label: "智能决策",
+        children: [
+          {
+            key: "/admin/ai-decisions",
+            label: <Link href="/admin/ai-decisions">决策轨迹</Link>,
+          },
+          {
+            key: "/admin/model-performance",
+            label: <Link href="/admin/model-performance">模型评估</Link>,
+          },
+        ],
+      });
+    }
+    
+    // 数据湖 - 需要 system:view 权限
+    if (checkPermission('system:view')) {
+      items.push({
+        key: "data-management-group",
+        icon: <DatabaseOutlined />,
+        label: "数据湖",
+        children: [
+          {
+            key: "/admin/market-data",
+            label: <Link href="/admin/market-data">市场行情</Link>,
+          },
+        ],
+      });
+    }
+    
+    // 系统控制 - 根据子菜单权限动态生成
+    const systemChildren: any[] = [];
+    
+    if (checkPermission('risk:view')) {
+      systemChildren.push({
+        key: "/admin/risk-events",
+        label: <Link href="/admin/risk-events">风控预警</Link>,
+      });
+    }
+    
+    // RBAC权限管理（新增）
+    if (userRole === 'super_admin') {
+      systemChildren.push({
+        key: "rbac-group",
+        label: "权限管理",
+        children: [
+          {
+            key: "/admin/rbac/permissions",
+            label: <Link href="/admin/rbac/permissions">权限配置</Link>,
+          },
+          {
+            key: "/admin/rbac/roles",
+            label: <Link href="/admin/rbac/roles">角色管理</Link>,
+          },
+        ],
+      });
+    }
+    
+    if (checkPermission('permissions:view')) {
+      systemChildren.push({
+        key: "/admin/permissions",
+        label: <Link href="/admin/permissions">权限矩阵</Link>,
+      });
+    }
+    
+    if (checkPermission('users:view')) {
+      systemChildren.push({
+        key: "/admin/users",
+        label: <Link href="/admin/users">用户中心</Link>,
+      });
+    }
+    
+    if (checkPermission('backup:view')) {
+      systemChildren.push({
+        key: "/admin/backup",
+        label: <Link href="/admin/backup">数据备份</Link>,
+      });
+    }
+    
+    if (checkPermission('logs:view')) {
+      systemChildren.push({
+        key: "/admin/logs",
+        label: <Link href="/admin/logs">日志管理</Link>,
+      });
+    }
+    
+    if (checkPermission('system:view')) {
+      systemChildren.push({
+        key: "/admin/database",
+        label: <Link href="/admin/database">数据库管理</Link>,
+      });
+      
+      systemChildren.push({
+        key: "/admin/api-docs",
+        label: <Link href="/admin/api-docs">API文档</Link>,
+      });
+    }
+    
+    // 只有当有子菜单时才显示系统控制
+    if (systemChildren.length > 0) {
+      items.push({
+        key: "system-management-group",
+        icon: <SettingOutlined />,
+        label: "系统控制",
+        children: systemChildren,
+      });
+    }
+    
+    return items;
+  }, [permLoading, JSON.stringify(permissions), userRole]); // 使用JSON字符串化避免数组引用变化
 
   // 移除下拉菜单，改为顶部按钮
 
@@ -426,9 +531,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <Menu
             mode="inline"
             selectedKeys={[pathname]}
-            defaultOpenKeys={menuItems
-              .filter((item: any) => item?.children)
-              .map((item: any) => item.key as string)}
+            defaultOpenKeys={[]}  // 默认关闭所有菜单
             items={menuItems}
             style={{
               border: "none",
@@ -585,5 +688,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </Layout>
       </Layout>
     </AuthGuard>
+  );
+}
+
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  return (
+    <PermissionsProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </PermissionsProvider>
   );
 }

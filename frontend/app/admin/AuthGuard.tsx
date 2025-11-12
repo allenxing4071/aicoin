@@ -10,31 +10,32 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 如果是登录页面,直接显示,不需要认证
-    if (pathname === "/admin/login") {
-      setIsAuthenticated(true);
-      setIsLoading(false);
-      return;
-    }
+    const checkAuth = async () => {
+      // 如果是登录页面,直接显示,不需要认证
+      if (pathname === "/admin/login") {
+        setIsAuthenticated(true);
+        setIsLoading(false);
+        return;
+      }
 
-    // 检查是否有token
-    const token = localStorage.getItem("admin_token");
+      // 检查是否有token
+      const token = localStorage.getItem("admin_token");
+      
+      // 正式模式：没有token直接跳转登录页
+      if (!token) {
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        router.push("/admin/login");
+        return;
+      }
+
+      // 有token就验证
+      await validateToken(token);
+    };
     
-    // 正式模式：没有token直接跳转登录页
-    if (!token) {
-      router.push("/admin/login");
-      setIsLoading(false);
-      return;
-    }
-
-    // 只在首次加载时验证token，不在每次路由变化时验证
-    if (isLoading) {
-      validateToken(token);
-    } else {
-      // 已经验证过，直接设置为已认证
-      setIsAuthenticated(true);
-    }
-  }, [pathname, router, isLoading]);
+    checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]); // pathname 变化时重新检查
 
   const validateToken = async (token: string) => {
     try {

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PageHeader from '../../components/common/PageHeader';
+import { PermissionGuard } from '../../components/auth/PermissionGuard';
+import { usePermissions } from '../PermissionsProvider';
 
 interface User {
   id: number;
@@ -14,12 +16,31 @@ interface User {
   last_login?: string;
 }
 
+interface RoleInfo {
+  value: string;
+  label: string;
+  description: string;
+  permission_count: number;
+}
+
+interface RolePermissions {
+  role: string;
+  display_name: string;
+  permissions: string[];
+}
+
 export default function UsersPage() {
   const router = useRouter();
+  const { hasPermission, loading: permLoading } = usePermissions();
+  
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  
+  // 角色信息
+  const [roles, setRoles] = useState<RoleInfo[]>([]);
+  const [selectedRolePermissions, setSelectedRolePermissions] = useState<RolePermissions | null>(null);
   
   // 表单状态
   const [formData, setFormData] = useState({
@@ -61,10 +82,56 @@ export default function UsersPage() {
     },
   ];
 
+  // 加载数据
   useEffect(() => {
     loadUsers();
+    loadRoles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // 组件挂载时加载一次
+
+  const loadRoles = async () => {
+    try {
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
+      
+      const response = await fetch("/api/v1/admin/users/roles", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setRoles(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("加载角色列表失败:", error);
+    }
+  };
+
+  const loadRolePermissions = async (role: string) => {
+    try {
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
+      
+      const response = await fetch(`/api/v1/admin/users/roles/${role}/permissions`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setSelectedRolePermissions(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("加载角色权限失败:", error);
+    }
+  };
 
   const loadUsers = async () => {
     setLoading(true);
@@ -305,6 +372,8 @@ export default function UsersPage() {
     return date.toLocaleString("zh-CN");
   };
 
+  // 移除页面级权限检查，由菜单控制访问
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -322,15 +391,17 @@ export default function UsersPage() {
         description="管理系统用户和账户"
         color="blue"
         actions={
-          <button
-            onClick={handleAddUser}
-            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm hover:shadow-md rounded-xl transition-all flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>添加用户</span>
-          </button>
+          <PermissionGuard permission="users:create">
+            <button
+              onClick={handleAddUser}
+              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm hover:shadow-md rounded-xl transition-all flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>添加用户</span>
+            </button>
+          </PermissionGuard>
         }
       />
 
@@ -467,43 +538,51 @@ export default function UsersPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="编辑"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      {!(user.username === "admin" && user.is_active) && (
+                      <PermissionGuard permission="users:update">
                         <button
-                          onClick={() => handleToggleActive(user)}
-                          className={user.is_active ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
-                          title={user.is_active ? "禁用" : "启用"}
-                        >
-                          {user.is_active ? (
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          )}
-                        </button>
-                      )}
-                      {user.username !== "admin" && (
-                        <button
-                          onClick={() => handleDeleteUser(user)}
-                          className="text-red-600 hover:text-red-900"
-                          title="删除"
+                          onClick={() => handleEditUser(user)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="编辑"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
-                      )}
+                      </PermissionGuard>
+                      
+                      <PermissionGuard permission="users:update">
+                        {!(user.username === "admin" && user.is_active) && (
+                          <button
+                            onClick={() => handleToggleActive(user)}
+                            className={user.is_active ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
+                            title={user.is_active ? "禁用" : "启用"}
+                          >
+                            {user.is_active ? (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                      </PermissionGuard>
+                      
+                      <PermissionGuard permission="users:delete">
+                        {user.username !== "admin" && (
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            className="text-red-600 hover:text-red-900"
+                            title="删除"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </PermissionGuard>
                     </div>
                   </td>
                 </tr>
@@ -565,19 +644,50 @@ export default function UsersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   角色 *
                 </label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="viewer">观察者</option>
-                  <option value="trader">交易员</option>
-                  <option value="admin">管理员</option>
-                </select>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  {roles.map((role) => (
+                    <div
+                      key={role.value}
+                      onClick={() => {
+                        setFormData({ ...formData, role: role.value });
+                        loadRolePermissions(role.value);
+                      }}
+                      className={`p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                        formData.role === role.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="font-medium text-sm text-gray-900">{role.label}</div>
+                      <div className="text-xs text-gray-600 mt-1">{role.description}</div>
+                      <div className="text-xs text-blue-600 mt-1">
+                        {role.permission_count} 项权限
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* 权限预览 */}
+                {selectedRolePermissions && formData.role === selectedRolePermissions.role && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 max-h-40 overflow-y-auto">
+                    <div className="text-xs font-medium text-gray-700 mb-2">
+                      {selectedRolePermissions.display_name} 的权限：
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedRolePermissions.permissions.map((perm) => (
+                        <span
+                          key={perm}
+                          className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded"
+                        >
+                          {perm}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center">

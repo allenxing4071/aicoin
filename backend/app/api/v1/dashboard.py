@@ -17,25 +17,31 @@ logger = logging.getLogger(__name__)
 async def get_api_status_data() -> Dict[str, Any]:
     """获取API状态"""
     try:
-        from app.services.orchestrator_v2 import orchestrator
+        from app.main import ai_orchestrator
         
-        status_info = orchestrator.get_status()
-        return {
-            "status": "healthy",
-            "app": "AIcoin Trading System",
-            "version": "1.0.0",
-            "orchestrator_status": {
-                "is_running": status_info.get("is_running", False),
-                "permission_level": status_info.get("permission_level", "L0"),
-                "runtime_hours": status_info.get("runtime_hours", 0),
-                "total_decisions": status_info.get("total_decisions", 0),
-                "approved_decisions": status_info.get("approved_decisions", 0),
-                "approval_rate": status_info.get("approval_rate", 0),
-                "decision_interval": status_info.get("decision_interval", 60)
+        if ai_orchestrator:
+            status_info = ai_orchestrator.get_status()
+            return {
+                "status": "healthy",
+                "app": "AIcoin Trading System",
+                "version": "1.0.0",
+                "orchestrator_status": {
+                    "is_running": status_info.get("is_running", False),
+                    "permission_level": status_info.get("permission_level", "L0"),
+                    "runtime_hours": status_info.get("runtime_hours", 0),
+                    "total_decisions": status_info.get("total_decisions", 0),
+                    "approved_decisions": status_info.get("approved_decisions", 0),
+                    "approval_rate": status_info.get("approval_rate", 0),
+                    "decision_interval": status_info.get("decision_interval", 60)
+                }
             }
-        }
+        else:
+            return {
+                "status": "unavailable",
+                "version": "N/A"
+            }
     except Exception as e:
-        logger.error(f"获取API状态失败: {e}")
+        logger.error(f"获取API状态失败: {e}", exc_info=True)
         return {
             "status": "unavailable",
             "version": "N/A"
@@ -125,31 +131,36 @@ async def get_models_list_data(db: AsyncSession) -> list:
 async def get_ai_health_data(db: AsyncSession) -> Dict[str, Any]:
     """获取AI健康状态"""
     try:
-        from app.services.orchestrator_v2 import orchestrator
+        from app.main import ai_orchestrator
         from app.services.decision.engine_v2 import DecisionEngineV2
         
-        orchestrator_status = orchestrator.get_status()
-        
-        # 获取决策引擎状态
-        engine = DecisionEngineV2()
-        
-        return {
-            "orchestrator": {
-                "is_running": orchestrator_status.get("is_running", False),
-                "permission_level": orchestrator_status.get("permission_level", "L0"),
-                "runtime_hours": orchestrator_status.get("runtime_hours", 0),
-                "total_decisions": orchestrator_status.get("total_decisions", 0),
-                "approval_rate": orchestrator_status.get("approval_rate", 0),
-                "next_decision_at": orchestrator_status.get("next_decision_at")
-            },
-            "deepseek": {
-                "status": "active",
-                "model": "deepseek-chat",
-                "last_used": datetime.now().isoformat()
+        if ai_orchestrator:
+            orchestrator_status = ai_orchestrator.get_status()
+            
+            return {
+                "orchestrator": {
+                    "is_running": orchestrator_status.get("is_running", False),
+                    "permission_level": orchestrator_status.get("permission_level", "L0"),
+                    "runtime_hours": orchestrator_status.get("runtime_hours", 0),
+                    "total_decisions": orchestrator_status.get("total_decisions", 0),
+                    "approval_rate": orchestrator_status.get("approval_rate", 0),
+                    "next_decision_at": orchestrator_status.get("next_decision_at")
+                },
+                "deepseek": {
+                    "status": "active",
+                    "model": "deepseek-chat",
+                    "last_used": datetime.now().isoformat()
+                }
             }
-        }
+        else:
+            return {
+                "orchestrator": {
+                    "is_running": False,
+                    "permission_level": "L0"
+                }
+            }
     except Exception as e:
-        logger.error(f"获取AI健康数据失败: {e}")
+        logger.error(f"获取AI健康数据失败: {e}", exc_info=True)
         return {
             "orchestrator": {
                 "is_running": False,
@@ -244,9 +255,9 @@ async def get_dashboard_quick():
         Dict: 最小化的仪表板数据
     """
     try:
-        from app.services.orchestrator_v2 import orchestrator
+        from app.main import ai_orchestrator
         
-        status = orchestrator.get_status()
+        status = ai_orchestrator.get_status() if ai_orchestrator else {}
         
         return {
             "success": True,

@@ -188,6 +188,20 @@ class Settings(BaseSettings):
     # 默认值，如果环境变量是字符串会自动解析
     CORS_ORIGINS: list = ["http://192.168.31.185", "http://localhost:3000"]
     
+    # ===== 日志配置 =====
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    LOG_DIR: str = "logs"
+    LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10MB
+    LOG_BACKUP_COUNT: int = 30  # 保留30个备份
+    LOG_RETENTION_DAYS: int = 90  # 日志保留90天
+    
+    # 日志开关（可选）
+    ENABLE_FILE_LOGGING: bool = True
+    ENABLE_CONSOLE_LOGGING: bool = True
+    ENABLE_ERROR_LOGGING: bool = True
+    ENABLE_AI_LOGGING: bool = True
+    ENABLE_TRADING_LOGGING: bool = True
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

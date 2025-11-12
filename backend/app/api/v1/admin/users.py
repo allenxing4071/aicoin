@@ -1,7 +1,7 @@
 """
 管理后台 - 用户管理API
 """
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,13 @@ from passlib.context import CryptContext
 from app.core.database import get_db
 from app.models.admin_user import AdminUser
 from app.api.v1.admin.auth import verify_admin_token
+from app.core.permissions import (
+    get_all_roles, 
+    get_role_permissions, 
+    get_role_display_name,
+    Permission
+)
+from app.core.auth import require_permissions
 
 router = APIRouter()
 
@@ -63,6 +70,44 @@ class UsersStats(BaseModel):
 
 
 # ============ API 端点 ============
+
+@router.get("/roles")
+async def get_roles(
+    token: dict = Depends(verify_admin_token)
+) -> Dict[str, Any]:
+    """
+    获取所有角色信息
+    
+    返回所有可用角色及其权限信息
+    """
+    roles = get_all_roles()
+    return {
+        "success": True,
+        "data": roles
+    }
+
+
+@router.get("/roles/{role}/permissions")
+async def get_role_permissions_api(
+    role: str,
+    token: dict = Depends(verify_admin_token)
+) -> Dict[str, Any]:
+    """
+    获取指定角色的权限列表
+    
+    Args:
+        role: 角色名称
+    """
+    permissions = get_role_permissions(role)
+    return {
+        "success": True,
+        "data": {
+            "role": role,
+            "display_name": get_role_display_name(role),
+            "permissions": [perm.value for perm in permissions]
+        }
+    }
+
 
 @router.get("/stats", response_model=UsersStats)
 async def get_users_stats(
@@ -117,10 +162,10 @@ async def list_users(
     limit: int = 100,
     role: Optional[str] = None,
     is_active: Optional[bool] = None,
-    token: dict = Depends(verify_admin_token),
+    token: dict = Depends(require_permissions(Permission.USERS_VIEW)),
     db: AsyncSession = Depends(get_db)
 ):
-    """获取用户列表"""
+    """获取用户列表 - 需要 users:view 权限"""
     try:
         query = select(AdminUser)
         
@@ -176,10 +221,10 @@ async def get_user(
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
-    token: dict = Depends(verify_admin_token),
+    token: dict = Depends(require_permissions(Permission.USERS_CREATE)),
     db: AsyncSession = Depends(get_db)
 ):
-    """创建新用户"""
+    """创建新用户 - 需要 users:create 权限"""
     try:
         # 检查用户名是否已存在
         username_result = await db.execute(
@@ -240,10 +285,10 @@ async def create_user(
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
-    token: dict = Depends(verify_admin_token),
+    token: dict = Depends(require_permissions(Permission.USERS_UPDATE)),
     db: AsyncSession = Depends(get_db)
 ):
-    """更新用户信息"""
+    """更新用户信息 - 需要 users:update 权限"""
     try:
         # 查找用户
         result = await db.execute(
@@ -308,10 +353,10 @@ async def update_user(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
-    token: dict = Depends(verify_admin_token),
+    token: dict = Depends(require_permissions(Permission.USERS_DELETE)),
     db: AsyncSession = Depends(get_db)
 ):
-    """删除用户"""
+    """删除用户 - 需要 users:delete 权限"""
     try:
         # 查找用户
         result = await db.execute(

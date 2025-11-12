@@ -7,6 +7,7 @@ from app.api.v1 import (
     performance,
     ai,
     admin_db,
+    admin_backup,  # 备份和清理功能
     constraints,
     intelligence,
     exchanges,  # v3.1 新增
@@ -19,6 +20,7 @@ __all__ = [
     'performance',
     'ai',
     'admin_db',
+    'admin_backup',
     'constraints',
     'intelligence',
     'exchanges',

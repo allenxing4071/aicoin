@@ -411,22 +411,63 @@ class AITradingOrchestratorV2:
             return {}
     
     async def _get_account_state(self) -> Dict[str, Any]:
-        """获取账户状态"""
+        """获取账户状态（从真实交易所API）"""
         try:
-            # 从交易服务获取账户信息
-            # TODO: 实现完整的账户状态获取逻辑
+            # 从交易所工厂获取当前活跃的适配器
+            from app.services.exchange.exchange_factory import ExchangeFactory
+            
+            adapter = await ExchangeFactory.get_active_exchange()
+            if not adapter:
+                logger.warning("无法获取活跃的交易所适配器，使用默认值")
+                return {
+                    "balance": 10000.0,
+                    "equity": 10000.0,
+                    "total_pnl": 0.0,
+                    "unrealized_pnl": 0.0,
+                    "positions": [],
+                    "daily_loss_pct": 0.0,
+                    "total_drawdown": 0.0,
+                    "margin_ratio": 1.0,
+                    "asset_exposure": {}
+                }
+            
+            # 从适配器获取账户信息
+            account_info = await adapter.get_account_info()
+            
+            logger.debug(f"🔍 原始账户信息: {account_info}")
+            
+            if not account_info:
+                logger.warning("无法获取账户信息，使用默认值")
+                return {
+                    "balance": 10000.0,
+                    "equity": 10000.0,
+                    "total_pnl": 0.0,
+                    "unrealized_pnl": 0.0,
+                    "positions": [],
+                    "daily_loss_pct": 0.0,
+                    "total_drawdown": 0.0,
+                    "margin_ratio": 1.0,
+                    "asset_exposure": {}
+                }
+            
+            # 提取关键账户信息
             account_state = {
-                "balance": 10000.0,
-                "total_pnl": 0.0,
-                "positions": [],
-                "daily_loss_pct": 0.0,
-                "total_drawdown": 0.0,
-                "margin_ratio": 1.0,
-                "asset_exposure": {}
+                "balance": float(account_info.get("balance", 0)),
+                "equity": float(account_info.get("equity", 0)),
+                "total_pnl": float(account_info.get("total_pnl", 0)),
+                "unrealized_pnl": float(account_info.get("unrealized_pnl", 0)),
+                "positions": account_info.get("positions", []),
+                "daily_loss_pct": 0.0,  # 需要计算
+                "total_drawdown": 0.0,  # 需要计算
+                "margin_ratio": float(account_info.get("margin_ratio", 1.0)),
+                "asset_exposure": {}  # 需要计算
             }
+            
+            logger.debug(f"📊 账户状态: balance=${account_state['balance']:.2f}, equity=${account_state['equity']:.2f}")
             return account_state
+            
         except Exception as e:
-            logger.error(f"获取账户状态失败: {e}")
+            logger.error(f"获取账户状态失败: {e}", exc_info=True)
             return {}
     
     async def _save_account_snapshot(self, account_state: Dict[str, Any]):

@@ -1,14 +1,14 @@
 """FastAPI main application"""
 
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.redis_client import redis_client
-from app.api.v1 import market, account, performance, ai, admin_db, constraints, intelligence
+from app.api.v1 import market, account, performance, ai, admin_db, admin_backup, admin_logs, constraints, intelligence, admin_rbac
 from app.api.v1 import exchanges, market_extended  # v3.1 新增
 from app.api.v1 import ai_cost  # AI成本管理
 from app.api.v1 import kol_tracking, smart_money  # KOL追踪和聪明钱跟单
@@ -26,11 +26,9 @@ from app.services.hyperliquid_trading import HyperliquidTradingService
 from app.services.orchestrator_v2 import AITradingOrchestratorV2
 from app.websocket.manager import websocket_manager
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# ===== 配置日志系统（必须在最开始） =====
+from app.core.logging_config import setup_logging
+setup_logging()
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +74,8 @@ app = FastAPI(
 - **实时通信**: WebSocket
 - **缓存**: Redis
     """,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None,  # 禁用默认文档，使用带权限控制的自定义路由
+    redoc_url=None,
     openapi_tags=[
         {
             "name": "Market Data",
@@ -182,6 +180,16 @@ app.include_router(
     admin_db.router,
     prefix=f"{settings.API_V1_PREFIX}/admin",
     tags=["Admin - Database Viewer"]
+)
+app.include_router(
+    admin_backup.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/backup",
+    tags=["Admin - Backup & Cleanup"]
+)
+app.include_router(
+    admin_logs.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/logs",
+    tags=["Admin - Log Management"]
 )
 app.include_router(
     constraints.router,
@@ -299,6 +307,13 @@ app.include_router(
     smart_money.router,
     prefix=f"{settings.API_V1_PREFIX}",
     tags=["Smart Money"]
+)
+
+# RBAC权限管理
+app.include_router(
+    admin_rbac.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/rbac",
+    tags=["Admin - RBAC"]
 )
 
 
@@ -491,6 +506,35 @@ async def health_check():
         "orchestrator_status": orchestrator_data
     }
 
+
+# ===== 带权限控制的API文档路由 =====
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.responses import HTMLResponse
+from app.api.v1.admin_db import get_current_user
+
+@app.get("/docs", response_class=HTMLResponse, include_in_schema=False)
+async def custom_swagger_ui():
+    """
+    Swagger UI - 公开访问（实际API调用仍需Token认证）
+    """
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - Swagger UI",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+    )
+
+@app.get("/redoc", response_class=HTMLResponse, include_in_schema=False)
+async def custom_redoc():
+    """
+    ReDoc - 公开访问（实际API调用仍需Token认证）
+    """
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
+    )
 
 if __name__ == "__main__":
     import uvicorn

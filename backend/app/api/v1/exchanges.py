@@ -208,6 +208,8 @@ async def update_exchange_config(
     display_name: Optional[str] = None,
     market_type: Optional[str] = None,
     testnet: Optional[bool] = None,
+    api_key: Optional[str] = None,
+    api_secret: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -218,6 +220,8 @@ async def update_exchange_config(
         display_name: 显示名称
         market_type: 市场类型
         testnet: 是否测试网
+        api_key: API密钥
+        api_secret: API密钥密文
         
     Returns:
         Dict: 更新结果
@@ -238,6 +242,10 @@ async def update_exchange_config(
             config.market_type = market_type
         if testnet is not None:
             config.testnet = testnet
+        if api_key is not None:
+            config.api_key_encrypted = ExchangeConfig.encrypt_api_key(api_key)
+        if api_secret is not None:
+            config.api_secret_encrypted = ExchangeConfig.encrypt_api_key(api_secret)
         
         await db.commit()
         await db.refresh(config)

@@ -78,11 +78,12 @@ class LoginResponse(BaseModel):
 
 # ============= 认证辅助函数 =============
 
-def create_access_token(username: str) -> str:
+def create_access_token(username: str, role: str = "viewer") -> str:
     """创建访问令牌"""
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {
         "sub": username,
+        "role": role,  # 添加角色字段
         "exp": expire,
         "iat": datetime.utcnow()
     }
@@ -171,10 +172,10 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
         admin_user.last_login = datetime.utcnow()
         await db.commit()
         
-        # 生成token
-        token = create_access_token(request.username)
+        # 生成token（包含角色信息）
+        token = create_access_token(request.username, admin_user.role)
         
-        logger.info(f"User '{request.username}' logged in successfully")
+        logger.info(f"User '{request.username}' (role: {admin_user.role}) logged in successfully")
         
         return AdminResponse(
             success=True,
@@ -333,21 +334,39 @@ async def get_system_stats(db: AsyncSession = Depends(get_db)):
         total_ai_decisions = await get_table_count(db, AIDecision)
         total_risk_events = await get_table_count(db, RiskEvent)
         
-        # 获取最新账户快照
-        latest_account = None
+        # 🔥 优化: 从实时交易所API获取账户余额（与首页同步）
         latest_balance = None
         latest_equity = None
         
-        result = await db.execute(
-            select(AccountSnapshot)
-            .order_by(desc(AccountSnapshot.timestamp))
-            .limit(1)
-        )
-        latest_account = result.scalar_one_or_none()
-        
-        if latest_account:
-            latest_balance = latest_account.balance
-            latest_equity = latest_account.equity
+        try:
+            from app.services.exchange.exchange_factory import ExchangeFactory
+            
+            # 获取当前激活的交易所适配器
+            adapter = await ExchangeFactory.get_active_exchange()
+            if adapter:
+                # 获取当前市场类型
+                exchange_info = ExchangeFactory.get_active_exchange_info()
+                market_type = exchange_info.get('market_type', 'spot')
+                
+                # 获取实时账户信息
+                account_info = await adapter.get_account_balance(market_type=market_type)
+                latest_balance = float(account_info.get("available_balance", account_info.get("balance", 0)))
+                latest_equity = float(account_info.get("total_balance", account_info.get("equity", 0)))
+                
+                logger.info(f"✅ 从交易所获取实时账户数据: balance={latest_balance}, equity={latest_equity}")
+        except Exception as e:
+            logger.warning(f"⚠️ 无法从交易所获取实时数据，回退到数据库快照: {e}")
+            # 回退到数据库快照
+            result = await db.execute(
+                select(AccountSnapshot)
+                .order_by(desc(AccountSnapshot.timestamp))
+                .limit(1)
+            )
+            latest_account = result.scalar_one_or_none()
+            
+            if latest_account:
+                latest_balance = latest_account.balance
+                latest_equity = latest_account.equity
         
         # 获取各表详细统计
         table_stats = []
