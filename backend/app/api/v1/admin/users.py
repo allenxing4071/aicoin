@@ -90,23 +90,63 @@ async def get_roles(
 @router.get("/roles/{role}/permissions")
 async def get_role_permissions_api(
     role: str,
-    token: dict = Depends(verify_admin_token)
+    token: dict = Depends(verify_admin_token),
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """
-    获取指定角色的权限列表
+    获取指定角色的权限列表（从RBAC数据库）
     
     Args:
-        role: 角色名称
+        role: 角色代码
     """
-    permissions = get_role_permissions(role)
-    return {
-        "success": True,
-        "data": {
-            "role": role,
-            "display_name": get_role_display_name(role),
-            "permissions": [perm.value for perm in permissions]
+    try:
+        # 从数据库查询角色
+        from app.models.permission import Role, RolePermission, Permission as PermModel
+        
+        result = await db.execute(
+            select(Role).where(Role.code == role)
+        )
+        role_obj = result.scalar_one_or_none()
+        
+        if not role_obj:
+            # 如果数据库中没有，回退到旧系统
+            permissions = get_role_permissions(role)
+            return {
+                "success": True,
+                "data": {
+                    "role": role,
+                    "display_name": get_role_display_name(role),
+                    "permissions": [perm.value for perm in permissions]
+                }
+            }
+        
+        # 从数据库获取权限
+        perm_result = await db.execute(
+            select(PermModel)
+            .join(RolePermission)
+            .where(RolePermission.role_id == role_obj.id)
+        )
+        permissions_list = perm_result.scalars().all()
+        
+        return {
+            "success": True,
+            "data": {
+                "role": role,
+                "display_name": role_obj.name,
+                "permissions": [perm.code for perm in permissions_list]
+            }
         }
-    }
+    except Exception as e:
+        # 发生错误时回退到旧系统
+        permissions = get_role_permissions(role)
+        return {
+            "success": True,
+            "data": {
+                "role": role,
+                "display_name": get_role_display_name(role),
+                "permissions": [perm.value for perm in permissions]
+            }
+        }
 
 
 @router.get("/stats", response_model=UsersStats)
