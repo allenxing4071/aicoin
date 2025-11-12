@@ -3,7 +3,7 @@
  * 提供权限检查和角色判断功能
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
 interface User {
@@ -92,51 +92,51 @@ export function usePermissions() {
   /**
    * 检查是否有指定权限
    */
-  const hasPermission = (permission: string): boolean => {
+  const hasPermission = useCallback((permission: string): boolean => {
     // 加载中时，默认返回 true 避免重定向循环
     if (loading) return true;
     if (!user) return false;
     // super_admin 拥有所有权限
-    if (user.role === 'super_admin') return true;
+    if (user?.role === 'super_admin') return true;
     return permissions.includes(permission);
-  };
+  }, [loading, user, permissions]);
   
   /**
    * 检查是否有任意一个指定权限
    */
-  const hasAnyPermission = (...perms: string[]): boolean => {
+  const hasAnyPermission = useCallback((...perms: string[]): boolean => {
     if (loading) return true; // 加载中默认允许
     if (!user) return false;
     if (user.role === 'super_admin') return true;
     return perms.some(p => permissions.includes(p));
-  };
+  }, [loading, user, permissions]);
   
   /**
    * 检查是否有所有指定权限
    */
-  const hasAllPermissions = (...perms: string[]): boolean => {
+  const hasAllPermissions = useCallback((...perms: string[]): boolean => {
     if (loading) return true; // 加载中默认允许
     if (!user) return false;
     if (user.role === 'super_admin') return true;
     return perms.every(p => permissions.includes(p));
-  };
+  }, [loading, user, permissions]);
   
   /**
    * 检查是否是指定角色
    */
-  const isRole = (role: string): boolean => {
+  const isRole = useCallback((role: string): boolean => {
     if (loading) return true; // 加载中默认允许
     return user?.role === role;
-  };
+  }, [loading, user]);
   
   /**
    * 检查是否是任意一个指定角色
    */
-  const isAnyRole = (...roles: string[]): boolean => {
+  const isAnyRole = useCallback((...roles: string[]): boolean => {
     if (loading) return true; // 加载中默认允许
     if (!user) return false;
     return roles.includes(user.role);
-  };
+  }, [loading, user]);
   
   /**
    * 刷新权限信息

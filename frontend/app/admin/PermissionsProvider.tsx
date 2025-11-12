@@ -21,7 +21,8 @@ const PermissionsContext = createContext<PermissionsContextType | undefined>(und
 export function PermissionsProvider({ children }: { children: React.ReactNode }) {
   const permissionsData = usePermissionsHook();
   
-  // 使用useMemo稳定permissions数组引用，避免React Error #310
+  // 使用useMemo稳定整个context value，避免不必要的重渲染
+  // 由于所有函数都已经用useCallback包装，它们的引用是稳定的
   const value = useMemo(() => ({
     ...permissionsData,
     permissions: permissionsData.permissions || []
@@ -29,7 +30,13 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
     permissionsData.user,
     permissionsData.permissions?.join(','), // 使用字符串作为稳定依赖
     permissionsData.loading,
-    permissionsData.userRole
+    permissionsData.userRole,
+    permissionsData.hasPermission,
+    permissionsData.hasAnyPermission,
+    permissionsData.hasAllPermissions,
+    permissionsData.isRole,
+    permissionsData.isAnyRole,
+    permissionsData.refresh
   ]);
   
   return (
