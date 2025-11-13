@@ -307,8 +307,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       });
     }
     
-    // RBAC权限管理（新增）
-    if (userRole === 'super_admin') {
+    // RBAC权限管理（新增）- admin 和 super_admin 都可以访问
+    if (userRole === 'super_admin' || userRole === 'admin') {
       systemChildren.push({
         key: "rbac-group",
         label: "权限管理",
