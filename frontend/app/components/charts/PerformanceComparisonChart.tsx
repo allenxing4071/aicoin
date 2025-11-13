@@ -179,8 +179,16 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
   
   // ✅ 单独的 useEffect 监听 timeRange 变化，重新加载数据
   useEffect(() => {
+    console.log('⚡ useEffect triggered, timeRange:', timeRange);
+    console.log('   chartRef.current:', !!chartRef.current);
+    console.log('   btcLineSeriesRef.current:', !!btcLineSeriesRef.current);
+    console.log('   accountLineSeriesRef.current:', !!accountLineSeriesRef.current);
+    
     if (chartRef.current && btcLineSeriesRef.current && accountLineSeriesRef.current) {
+      console.log('✅ All refs ready, calling loadChartData');
       loadChartData();
+    } else {
+      console.log('❌ Refs not ready, skipping loadChartData');
     }
   }, [timeRange, loadChartData]); // ✅ 添加 loadChartData 依赖
 
@@ -200,6 +208,7 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
   }, [selectedLine]);
 
   const loadChartData = useCallback(async () => {
+    console.log('🔄 loadChartData called with timeRange:', timeRange);
     try {
       setLoading(true);
 
