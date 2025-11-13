@@ -476,10 +476,18 @@ class AITradingOrchestratorV2:
             from app.models.account import AccountSnapshot
             from sqlalchemy import insert
             
+            balance = account_state.get("balance", 0)
+            equity = account_state.get("equity", 0)
+            
+            # ✅ 修复：如果余额和净值都为0，说明API获取失败，不保存快照
+            if balance == 0 and equity == 0:
+                logger.warning("⚠️  账户余额和净值都为0，疑似API获取失败，跳过保存快照")
+                return
+            
             snapshot = AccountSnapshot(
                 timestamp=datetime.utcnow(),
-                balance=Decimal(str(account_state.get("balance", 0))),
-                equity=Decimal(str(account_state.get("equity", 0))),
+                balance=Decimal(str(balance)),
+                equity=Decimal(str(equity)),
                 unrealized_pnl=Decimal(str(account_state.get("unrealized_pnl", 0))),
                 realized_pnl=Decimal(str(account_state.get("total_pnl", 0))),
                 total_trades=len(account_state.get("positions", [])),
@@ -491,7 +499,7 @@ class AITradingOrchestratorV2:
             self.db_session.add(snapshot)
             await self.db_session.commit()
             
-            logger.debug(f"💾 账户快照已保存: balance=${account_state.get('balance', 0):.2f}, equity=${account_state.get('equity', 0):.2f}")
+            logger.debug(f"💾 账户快照已保存: balance=${balance:.2f}, equity=${equity:.2f}")
         
         except Exception as e:
             logger.error(f"保存账户快照失败: {e}", exc_info=True)
