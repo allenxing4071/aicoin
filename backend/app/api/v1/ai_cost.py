@@ -2,12 +2,13 @@
 AI成本管理API
 """
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.database import get_db
+from app.core.auth import get_current_admin_user
 from app.services.ai_cost_manager import get_cost_manager
 from app.services.cloud_billing_sync import get_billing_sync
 from app.models.intelligence_platform import IntelligencePlatform
