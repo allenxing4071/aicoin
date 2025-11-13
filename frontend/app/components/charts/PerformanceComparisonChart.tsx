@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, IChartApi, ISeriesApi, LineStyle, CrosshairMode } from 'lightweight-charts';
 import axios from 'axios';
 
@@ -182,7 +182,7 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
     if (chartRef.current && btcLineSeriesRef.current && accountLineSeriesRef.current) {
       loadChartData();
     }
-  }, [timeRange]);
+  }, [timeRange, loadChartData]); // ✅ 添加 loadChartData 依赖
 
   // 当选择的线改变时，更新可见性
   useEffect(() => {
@@ -199,7 +199,7 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
     }
   }, [selectedLine]);
 
-  const loadChartData = async () => {
+  const loadChartData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -390,7 +390,7 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
       console.error('Failed to load chart data:', error);
       setLoading(false);
     }
-  };
+  }, [symbol, timeRange, btcLineSeriesRef, accountLineSeriesRef]); // ✅ 添加所有依赖项
 
   return (
     <div className="w-full h-full flex flex-col">
