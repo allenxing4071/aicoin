@@ -175,7 +175,14 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [symbol, timeRange]); // ✅ 添加 timeRange 依赖
+  }, [symbol]); // 只在 symbol 变化时重新创建图表
+  
+  // ✅ 单独的 useEffect 监听 timeRange 变化，重新加载数据
+  useEffect(() => {
+    if (chartRef.current && btcLineSeriesRef.current && accountLineSeriesRef.current) {
+      loadChartData();
+    }
+  }, [timeRange]);
 
   // 当选择的线改变时，更新可见性
   useEffect(() => {
