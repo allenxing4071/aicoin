@@ -86,7 +86,7 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
           btcPriceMap.current.set(timestamp, price);
           
           return {
-            time: timestamp,
+            time: timestamp as any,
             value: normalizedValue
           };
         });
@@ -148,7 +148,7 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
           accountPriceMap.current.set(timestamp, balance);
           
           return {
-            time: timestamp,
+            time: timestamp as any,
             value: normalizedValue
           };
         });
