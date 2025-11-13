@@ -51,34 +51,41 @@ export default function AICostOverviewPage() {
     try {
       setLoading(true);
       
-      // 使用stats API获取全部数据 (含真实调用记录)
-      const res = await fetch('/api/v1/ai-platforms/stats?time_range=all');
-      const data = await res.json();
+      // 使用ai-cost API获取成本数据（从intelligence_platforms表读取真实数据）
+      const [summaryRes, platformsRes] = await Promise.all([
+        fetch('/api/v1/ai-cost/summary'),
+        fetch('/api/v1/ai-cost/active-platforms')
+      ]);
       
-      if (data.success && data.data) {
+      const summaryData = await summaryRes.json();
+      const platformsData = await platformsRes.json();
+      
+      if (summaryData.success && summaryData.data) {
+        // 设置汇总数据
+        setSummary({
+          total_cost: summaryData.data.total_cost,
+          month_cost: summaryData.data.month_cost, 
+          today_cost: summaryData.data.today_cost,
+          avg_daily_cost: summaryData.data.month_cost / new Date().getDate(),
+          total_budget: 0,
+          budget_usage: 0
+        });
+      }
+      
+      if (platformsData.success && platformsData.data) {
         // 转换数据格式
-        const platformCosts = data.data.platforms.map((p: any) => ({
+        const platformCosts = platformsData.data.map((p: any) => ({
           id: p.id,
           name: p.name,
           provider: p.provider,
           total_cost: p.total_cost,
           current_month_cost: p.total_cost, // 暂用总成本代替月度成本
-          monthly_budget: 0, // TODO: 需要从platform配置获取
+          monthly_budget: 0,
           usage_percentage: 0,
-          today_cost: 0 // TODO: 需要单独查询今日成本
+          today_cost: 0
         }));
         
         setPlatforms(platformCosts);
-        
-        // 设置汇总数据
-        setSummary({
-          total_cost: data.data.summary.total_cost,
-          month_cost: data.data.summary.total_cost, 
-          today_cost: 0, // TODO: 需要单独查询
-          avg_daily_cost: data.data.summary.total_cost / new Date().getDate(),
-          total_budget: 0,
-          budget_usage: 0
-        });
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
