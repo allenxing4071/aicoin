@@ -9,7 +9,7 @@ class IntelligenceReport(Base):
     """情报报告持久化存储模型"""
     __tablename__ = "intelligence_reports"
     __table_args__ = {
-        'comment': '📊 情报报告 - Qwen情报官收集的市场情报和分析报告，包含新闻、巨鲸活动、链上数据等'
+        'comment': '情报报告 - Qwen情报官收集的市场情报和分析报告，包含新闻、巨鲸活动、链上数据等'
     }
     
     # 主键

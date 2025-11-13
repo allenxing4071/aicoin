@@ -10,7 +10,7 @@ class ModelPerformanceMetric(Base):
     """模型性能指标模型"""
     __tablename__ = "model_performance_metrics"
     __table_args__ = {
-        'comment': '📈 模型性能指标 - 记录各AI模型的决策准确率、盈利率、响应时间等性能数据'
+        'comment': '模型性能指标 - 记录各AI模型的决策准确率、盈利率、响应时间等性能数据'
     }
     
     id = Column(Integer, primary_key=True, index=True)
@@ -76,7 +76,7 @@ class RoutingDecision(Base):
     """路由决策日志模型"""
     __tablename__ = "routing_decisions"
     __table_args__ = {
-        'comment': '🔀 路由决策日志 - 记录AI模型路由策略选择过程和多模型协作决策的详细信息'
+        'comment': '路由决策日志 - 记录AI模型路由策略选择过程和多模型协作决策的详细信息'
     }
     
     id = Column(Integer, primary_key=True, index=True)

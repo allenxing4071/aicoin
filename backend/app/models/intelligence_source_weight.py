@@ -13,7 +13,7 @@ class IntelligenceSourceWeight(Base):
     """
     __tablename__ = "intelligence_source_weights"
     __table_args__ = {
-        'comment': '⚖️ 情报源权重 - 记录各情报源（RSS、API等）的权重和有效性评分，用于智能筛选'
+        'comment': '️ 情报源权重 - 记录各情报源（RSS、API等）的权重和有效性评分，用于智能筛选'
     }
     
     id = Column(Integer, primary_key=True, index=True)
@@ -47,7 +47,7 @@ class IntelligenceFeedback(Base):
     """
     __tablename__ = "intelligence_feedback"
     __table_args__ = {
-        'comment': '💬 情报反馈 - 记录用户对情报的反馈和使用效果，用于优化情报质量'
+        'comment': '情报反馈 - 记录用户对情报的反馈和使用效果，用于优化情报质量'
     }
     
     id = Column(Integer, primary_key=True, index=True)

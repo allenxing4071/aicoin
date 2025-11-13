@@ -12,7 +12,7 @@ class RiskEvent(Base):
     __table_args__ = (
         Index('idx_risk_timestamp', 'timestamp'),
         Index('idx_risk_severity', 'severity'),
-        {'comment': '⚠️ 风控事件 - 记录触发的风控警报、事件类型、严重程度和处理措施'}
+        {'comment': '风控事件 - 记录触发的风控警报、事件类型、严重程度和处理措施'}
     )
     
     id = Column(Integer, primary_key=True, index=True)
