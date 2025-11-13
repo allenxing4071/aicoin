@@ -62,12 +62,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     router.push("/admin/login");
   };
 
-  // 如果是登录页面,不显示layout
-  if (pathname === "/admin/login") {
-    return <AuthGuard>{children}</AuthGuard>;
-  }
-
   // 根据权限动态生成菜单项 - 使用 useMemo 避免重复渲染
+  // 注意：必须在所有条件返回之前调用所有 Hooks，避免 React Error #310
   const menuItems = React.useMemo(() => {
     // 如果权限还在加载，返回空数组
     if (permLoading) {
@@ -376,6 +372,11 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     
     return items;
   }, [permLoading, permissions, userRole]); // 直接使用 permissions 作为依赖
+
+  // 如果是登录页面,不显示layout（必须在所有 Hooks 之后）
+  if (pathname === "/admin/login") {
+    return <AuthGuard>{children}</AuthGuard>;
+  }
 
   // 移除下拉菜单，改为顶部按钮
 
