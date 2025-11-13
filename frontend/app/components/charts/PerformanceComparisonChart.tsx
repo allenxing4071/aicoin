@@ -390,7 +390,7 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
       console.error('Failed to load chart data:', error);
       setLoading(false);
     }
-  }, [symbol, timeRange, btcLineSeriesRef, accountLineSeriesRef]); // ✅ 添加所有依赖项
+  }, [symbol, timeRange]); // ✅ 只依赖 symbol 和 timeRange（ref 不需要作为依赖）
 
   return (
     <div className="w-full h-full flex flex-col">
