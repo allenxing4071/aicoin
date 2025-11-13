@@ -376,7 +376,7 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     }
     
     return items;
-  }, [permLoading, permissions?.length ?? 0, userRole]); // 使用 permissions 数组长度作为稳定依赖
+  }, [permLoading, permissions, userRole]); // 直接使用 permissions 作为依赖
 
   // 移除下拉菜单，改为顶部按钮
 

@@ -364,13 +364,13 @@ async def get_system_stats(db: AsyncSession = Depends(get_db)):
             logger.warning(f"⚠️ 无法从交易所获取实时数据，回退到数据库快照: {e}")
             # 回退到数据库快照
             try:
-                result = await db.execute(
-                    select(AccountSnapshot)
-                    .order_by(desc(AccountSnapshot.timestamp))
-                    .limit(1)
-                )
-                latest_account = result.scalar_one_or_none()
-                
+            result = await db.execute(
+                select(AccountSnapshot)
+                .order_by(desc(AccountSnapshot.timestamp))
+                .limit(1)
+            )
+            latest_account = result.scalar_one_or_none()
+            
                 if latest_account and latest_account.balance and float(latest_account.balance) > 0:
                     # 如果数据库快照中的值是10000（可能是默认值），不返回它
                     balance_val = float(latest_account.balance)
