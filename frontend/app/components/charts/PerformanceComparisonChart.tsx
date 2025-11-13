@@ -120,8 +120,8 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
     });
     accountLineSeriesRef.current = accountSeries;
 
-    // 加载数据
-    loadChartData();
+    // ❌ 移除这里的 loadChartData() 调用，改由第二个 useEffect 统一管理
+    // loadChartData(); 
 
     // 十字光标移动事件 - 显示浮动价格标签
     chart.subscribeCrosshairMove((param) => {
