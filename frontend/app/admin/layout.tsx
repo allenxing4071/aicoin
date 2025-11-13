@@ -134,6 +134,10 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
                 label: <Link href="/admin/ai-cost">实时监控</Link>,
               },
               {
+                key: "/admin/ai-pricing",
+                label: <Link href="/admin/ai-pricing">价格表管理</Link>,
+              },
+              {
                 key: "/admin/ai-cost/budget",
                 label: <Link href="/admin/ai-cost/budget">预算设置</Link>,
               },

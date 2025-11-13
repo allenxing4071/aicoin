@@ -11,6 +11,7 @@ from app.core.redis_client import redis_client
 from app.api.v1 import market, account, performance, ai, admin_db, admin_backup, admin_logs, constraints, intelligence, admin_rbac
 from app.api.v1 import exchanges, market_extended  # v3.1 新增
 from app.api.v1 import ai_cost  # AI成本管理
+from app.api.v1 import ai_pricing  # AI定价管理
 from app.api.v1 import kol_tracking, smart_money  # KOL追踪和聪明钱跟单
 from app.api.v1.endpoints import intelligence_storage, intelligence_platforms, model_performance, ai_journal, platform_budget, platform_stats
 from app.api.v1.admin import permissions as admin_permissions
@@ -287,6 +288,11 @@ app.include_router(
     ai_cost.router,
     prefix=f"{settings.API_V1_PREFIX}/ai-cost",
     tags=["AI Cost Management"]
+)
+app.include_router(
+    ai_pricing.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["AI Pricing Management"]
 )
 app.include_router(
     platform_budget.router,

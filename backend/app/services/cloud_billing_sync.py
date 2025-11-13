@@ -144,25 +144,44 @@ class CloudBillingSync:
         """
         获取阿里云账单数据
         
-        阿里云提供了费用中心 API:
-        https://help.aliyun.com/document_detail/100392.html
+        使用阿里云 BSS OpenAPI:
+        - QueryAccountBalance: 查询账户余额
+        - QueryBillOverview: 查询账单总览
+        - QueryInstanceBill: 查询实例账单
+        
+        文档: https://help.aliyun.com/document_detail/100392.html
         """
         try:
-            # TODO: 实现阿里云账单 API 调用
-            # 这里需要使用阿里云 SDK 或直接调用 API
-            # 示例: QueryBill, QueryAccountBill 等接口
-            
             logger.info("📊 调用阿里云账单 API...")
             
-            # 临时方案：从 API 响应中提取 token 使用量来计算成本
-            # 实际应该调用阿里云的账单查询 API
+            if not platform.api_key:
+                logger.warning("⚠️  阿里云未配置 API Key")
+                return None
             
-            # 返回模拟数据（实际需要调用真实 API）
+            # 阿里云 BSS OpenAPI 需要:
+            # - AccessKeyId
+            # - AccessKeySecret
+            # - 签名机制
+            
+            # 方案1: 使用阿里云 SDK
+            # from alibabacloud_bssopenapi20171214.client import Client
+            # from alibabacloud_tea_openapi import models as open_api_models
+            
+            # 方案2: 直接调用 HTTP API (需要实现签名)
+            # 这里先返回提示信息
+            
+            logger.warning(
+                "⚠️  阿里云账单 API 需要配置:\n"
+                "1. AccessKeyId 和 AccessKeySecret\n"
+                "2. 安装 alibabacloud-bssopenapi SDK\n"
+                "3. 开通费用中心 API 权限"
+            )
+            
             return {
-                "total_cost": platform.total_cost,  # 暂时保持原值
+                "total_cost": platform.total_cost,
                 "total_calls": platform.total_calls,
-                "data_source": "estimated",  # 标记为估算值
-                "note": "需要配置阿里云账单 API"
+                "data_source": "estimated",
+                "note": "需要配置阿里云 AccessKey 和 Secret"
             }
             
         except Exception as e:

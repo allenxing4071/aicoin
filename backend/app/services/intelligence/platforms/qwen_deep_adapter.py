@@ -320,15 +320,21 @@ class QwenDeepAdapter(BasePlatformAdapter):
     
     def _calculate_cost(self, prompt_tokens: int, completion_tokens: int) -> float:
         """
-        计算API调用成本
-        
-        Qwen定价（示例，需根据实际调整）：
-        - Input: $0.50 / 1M tokens
-        - Output: $1.50 / 1M tokens
+        计算API调用成本（使用统一定价管理器）
         """
-        input_cost = (prompt_tokens / 1_000_000) * 0.50
-        output_cost = (completion_tokens / 1_000_000) * 1.50
-        return input_cost + output_cost
+        from app.services.ai_pricing import get_pricing_manager
+        
+        pricing_manager = get_pricing_manager()
+        
+        # 使用统一的定价管理器计算成本
+        cost = pricing_manager.calculate_cost(
+            provider=self.provider or "qwen",
+            model="qwen-plus",  # 默认使用 qwen-plus
+            input_tokens=prompt_tokens,
+            output_tokens=completion_tokens
+        )
+        
+        return cost
     
     async def health_check(self) -> bool:
         """健康检查"""
