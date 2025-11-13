@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.database import get_db
-from app.core.auth import get_current_admin_user
+from app.api.v1.admin_db import get_current_user
 from app.services.ai_cost_manager import get_cost_manager
 from app.services.cloud_billing_sync import get_billing_sync
 from app.models.intelligence_platform import IntelligencePlatform
@@ -325,7 +325,7 @@ async def reset_monthly_costs(db: AsyncSession = Depends(get_db)):
 @router.post("/reset-costs")
 async def reset_platform_costs(
     db: AsyncSession = Depends(get_db),
-    current_user: Dict = Depends(get_current_admin_user)
+    current_user: Dict = Depends(get_current_user)
 ):
     """
     重置所有平台成本为0
