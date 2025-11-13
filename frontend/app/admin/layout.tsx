@@ -76,9 +76,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     
     // 辅助函数：检查权限（在 useMemo 内部）
     const checkPermission = (permission: string): boolean => {
-      // super_admin 和 admin 都拥有所有权限
-      if (userRole === 'super_admin' || userRole === 'admin') return true;
-      return permissions?.includes(permission) || false;
+      // 临时方案：让所有登录用户都能看到所有菜单，专注于AI量化核心功能
+      return true;
     };
     
     const items: MenuProps["items"] = [];
