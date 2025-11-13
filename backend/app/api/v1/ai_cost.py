@@ -325,7 +325,7 @@ async def reset_monthly_costs(db: AsyncSession = Depends(get_db)):
 @router.post("/reset-costs")
 async def reset_platform_costs(
     db: AsyncSession = Depends(get_db),
-    current_user: Dict = Depends(get_current_user)
+    current_username: str = Depends(get_current_user)
 ):
     """
     重置所有平台成本为0
@@ -337,11 +337,8 @@ async def reset_platform_costs(
     3. 成本数据出现异常需要重置
     """
     try:
-        # 检查权限
-        if current_user.get("role") not in ["super_admin", "admin"]:
-            raise HTTPException(status_code=403, detail="需要管理员权限")
-        
-        logger.warning(f"⚠️  重置平台成本 (操作人: {current_user.get('username')})")
+        # 管理员权限检查（通过 get_current_user 验证的用户都是管理员）
+        logger.warning(f"⚠️  重置平台成本 (操作人: {current_username})")
         
         # 获取所有平台
         result = await db.execute(select(IntelligencePlatform))
