@@ -403,6 +403,11 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
 
   return (
     <div className="w-full h-full flex flex-col">
+      {/* 🔍 调试信息 */}
+      <div className="mb-2 px-4 py-2 bg-red-100 border-2 border-red-500 rounded text-center">
+        <span className="text-red-900 font-bold">🔍 DEBUG: timeRange = {timeRange}</span>
+      </div>
+      
       {/* 图表控制栏 */}
       <div className="mb-4 px-4 py-3 bg-gradient-to-r from-orange-50 to-blue-50 rounded-lg border-2 border-gray-200">
         <div className="flex items-center justify-between">
