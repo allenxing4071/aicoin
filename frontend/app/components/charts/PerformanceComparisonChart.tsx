@@ -35,6 +35,153 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
   const btcPriceMap = useRef<Map<number, number>>(new Map());
   const accountPriceMap = useRef<Map<number, number>>(new Map());
 
+  // 加载图表数据的函数（必须在使用它的useEffect之前定义）
+  const loadChartData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('admin_token');
+      
+      // 获取BTC价格数据
+      const btcResponse = await axios.get(`/api/v1/market/klines?symbol=${symbol}&interval=1h&limit=500`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // 获取账户快照数据
+      const accountResponse = await axios.get('/api/v1/accounts/snapshots', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (btcResponse.data && Array.isArray(btcResponse.data)) {
+        // 处理BTC数据
+        const btcKlines = btcResponse.data;
+        
+        // 根据timeRange过滤数据
+        let filteredBtcKlines = btcKlines;
+        if (timeRange === '72h') {
+          const now = Date.now();
+          const hours72 = 72 * 60 * 60 * 1000;
+          filteredBtcKlines = btcKlines.filter((k: any) => {
+            const timestamp = new Date(k.timestamp).getTime();
+            return (now - timestamp) <= hours72;
+          });
+        }
+
+        if (filteredBtcKlines.length === 0) {
+          console.warn('No BTC data available');
+          return;
+        }
+
+        // 获取起始价格作为基准
+        const basePrice = parseFloat(filteredBtcKlines[0].close);
+        
+        // 清空并重建价格映射
+        btcPriceMap.current.clear();
+        
+        const btcChartData = filteredBtcKlines.map((kline: any) => {
+          const price = parseFloat(kline.close);
+          const timestamp = Math.floor(new Date(kline.timestamp).getTime() / 1000);
+          const normalizedValue = ((price - basePrice) / basePrice) * 100;
+          
+          // 存储真实价格
+          btcPriceMap.current.set(timestamp, price);
+          
+          return {
+            time: timestamp,
+            value: normalizedValue
+          };
+        });
+
+        setBtcData(btcChartData);
+        
+        // 更新BTC统计数据
+        const latestPrice = parseFloat(filteredBtcKlines[filteredBtcKlines.length - 1].close);
+        const priceChange = latestPrice - basePrice;
+        const priceChangePercent = (priceChange / basePrice) * 100;
+        
+        setStats(prev => ({
+          ...prev,
+          btc: {
+            current: latestPrice,
+            change: priceChange,
+            changePercent: priceChangePercent
+          }
+        }));
+
+        // 更新图表数据
+        if (btcLineSeriesRef.current) {
+          btcLineSeriesRef.current.setData(btcChartData);
+        }
+      }
+
+      if (accountResponse.data && Array.isArray(accountResponse.data)) {
+        // 处理账户数据
+        const snapshots = accountResponse.data;
+        
+        // 根据timeRange过滤数据
+        let filteredSnapshots = snapshots;
+        if (timeRange === '72h') {
+          const now = Date.now();
+          const hours72 = 72 * 60 * 60 * 1000;
+          filteredSnapshots = snapshots.filter((s: any) => {
+            const timestamp = new Date(s.timestamp).getTime();
+            return (now - timestamp) <= hours72;
+          });
+        }
+
+        if (filteredSnapshots.length === 0) {
+          console.warn('No account data available');
+          return;
+        }
+
+        // 获取起始余额作为基准
+        const baseBalance = parseFloat(filteredSnapshots[0].balance || '10000');
+        
+        // 清空并重建余额映射
+        accountPriceMap.current.clear();
+        
+        const accountChartData = filteredSnapshots.map((snapshot: any) => {
+          const balance = parseFloat(snapshot.balance || '10000');
+          const timestamp = Math.floor(new Date(snapshot.timestamp).getTime() / 1000);
+          const normalizedValue = ((balance - baseBalance) / baseBalance) * 100;
+          
+          // 存储真实余额
+          accountPriceMap.current.set(timestamp, balance);
+          
+          return {
+            time: timestamp,
+            value: normalizedValue
+          };
+        });
+
+        setAccountData(accountChartData);
+        
+        // 更新账户统计数据
+        const latestBalance = parseFloat(filteredSnapshots[filteredSnapshots.length - 1].balance || '10000');
+        const balanceChange = latestBalance - baseBalance;
+        const balanceChangePercent = (balanceChange / baseBalance) * 100;
+        
+        setStats(prev => ({
+          ...prev,
+          account: {
+            current: latestBalance,
+            change: balanceChange,
+            changePercent: balanceChangePercent
+          }
+        }));
+
+        // 更新图表数据
+        if (accountLineSeriesRef.current) {
+          accountLineSeriesRef.current.setData(accountChartData);
+        }
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error('加载图表数据失败:', error);
+      setLoading(false);
+    }
+  }, [symbol, timeRange]);
+
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -199,348 +346,145 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
     }
   }, [selectedLine]);
 
-  const loadChartData = useCallback(async () => {
-    try {
-      setLoading(true);
+  // loadChartData 已在文件顶部定义，这里不需要重复定义
 
-      // 1. 获取BTC价格历史
-      const btcResponse = await axios.get(`/api/v1/market/klines/multi/${symbol}?intervals=1h`);
-      
-      if (btcResponse.data.success && btcResponse.data.data.klines['1h']) {
-        let klines = btcResponse.data.data.klines['1h'];
-        
-        // ✅ 根据 timeRange 筛选数据
-        if (timeRange === '72h') {
-          const now = Date.now() / 1000; // 当前时间（秒）
-          const hours72Ago = now - (72 * 60 * 60); // 72小时前
-          klines = klines.filter((k: any) => k.timestamp >= hours72Ago);
-        }
-        
-        // BTC价格数据（标准化）
-        const firstPrice = parseFloat(klines[0].close);
-        btcPriceMap.current.clear();
-        const btcLineData = klines.map((k: any) => {
-          const price = parseFloat(k.close);
-          const timestamp = k.timestamp;
-          btcPriceMap.current.set(timestamp, price); // 存储真实价格
-          return {
-            time: timestamp as any,
-            value: (price / firstPrice) * 100, // 标准化到100
-          };
-        });
-
-        setBtcData(klines);
-        
-        if (btcLineSeriesRef.current) {
-          btcLineSeriesRef.current.setData(btcLineData);
-        }
-
-        // 计算BTC统计
-        const currentBtcPrice = parseFloat(klines[klines.length - 1].close);
-        const btcChange = currentBtcPrice - firstPrice;
-        const btcChangePercent = (btcChange / firstPrice) * 100;
-
-        setStats(prev => ({
-          ...prev,
-          btc: {
-            current: currentBtcPrice,
-            change: btcChange,
-            changePercent: btcChangePercent,
-          }
-        }));
-      }
-
-      // 2. 获取账户价值历史
-      try {
-        const accountHistoryResponse = await axios.get('/api/v1/dashboard/account-history?limit=100');
-        
-        if (accountHistoryResponse.data && accountHistoryResponse.data.length > 0) {
-          let history = accountHistoryResponse.data;
-          
-          // ✅ 根据 timeRange 筛选数据
-          if (timeRange === '72h') {
-            const now = Date.now();
-            const hours72Ago = now - (72 * 60 * 60 * 1000); // 72小时前（毫秒）
-            history = history.filter((item: any) => {
-              const itemTime = new Date(item.timestamp).getTime();
-              return itemTime >= hours72Ago;
-            });
-          }
-          
-          // 检查数据是否有足够的变化（至少0.1%的波动）
-          const firstValue = history[0].balance;
-          const lastValue = history[history.length - 1].balance;
-          const changePercent = Math.abs((lastValue - firstValue) / firstValue) * 100;
-          
-          // 如果数据变化太小（小于0.1%），认为是无效数据，使用模拟数据
-          if (changePercent < 0.1 || history.length < 10) {
-            console.warn(`账户历史数据变化太小(${changePercent.toFixed(4)}%)或数据点不足(${history.length}个)，使用模拟数据展示`);
-            throw new Error('Insufficient data variation');
-          }
-          
-          // 账户价值数据（标准化）
-          accountPriceMap.current.clear();
-          const accountLineData = history.map((item: any) => {
-            const timestamp = Math.floor(new Date(item.timestamp).getTime() / 1000);
-            const balance = item.balance;
-            accountPriceMap.current.set(timestamp, balance); // 存储真实余额
-            return {
-              time: timestamp as any,
-              value: (balance / firstValue) * 100, // 标准化到100
-            };
-          });
-
-          setAccountData(history);
-          
-          if (accountLineSeriesRef.current) {
-            accountLineSeriesRef.current.setData(accountLineData);
-          }
-
-          // 计算账户统计
-          const currentValue = history[history.length - 1].balance;
-          const valueChange = currentValue - firstValue;
-          const valueChangePercent = (valueChange / firstValue) * 100;
-
-          setStats(prev => ({
-            ...prev,
-            account: {
-              current: currentValue,
-              change: valueChange,
-              changePercent: valueChangePercent,
-            }
-          }));
-        } else {
-          throw new Error('No account history data');
-        }
-      } catch (accountError) {
-        console.warn('使用模拟账户数据（等待真实交易数据）:', accountError);
-        
-        // 使用更真实的模拟数据：基于BTC价格波动生成账户收益曲线
-        if (btcData.length > 0 && accountLineSeriesRef.current) {
-          const klines = btcData;
-          const firstBtcPrice = parseFloat(klines[0].close);
-          const currentAccountBalance = 10000; // 假设初始余额10000 USDT
-          
-          // 生成模拟账户数据：跟随BTC但有自己的策略表现
-          // 策略：初期跑赢BTC，中期震荡，后期略微跑输
-          accountPriceMap.current.clear();
-          const mockAccountData = klines.map((k: any, index: number) => {
-            const btcPrice = parseFloat(k.close);
-            const btcChange = (btcPrice - firstBtcPrice) / firstBtcPrice; // BTC涨跌幅
-            
-            // 模拟策略收益：
-            // - 前1/3时间：跑赢BTC 2%
-            // - 中间1/3：震荡，有时跑赢有时跑输
-            // - 后1/3：略微跑输1%
-            const progress = index / klines.length;
-            let strategyMultiplier = 1.0;
-            
-            if (progress < 0.33) {
-              // 前期：策略表现好，放大收益
-              strategyMultiplier = 1.02 + Math.sin(index * 0.1) * 0.01;
-            } else if (progress < 0.66) {
-              // 中期：震荡
-              strategyMultiplier = 1.0 + Math.sin(index * 0.2) * 0.015;
-            } else {
-              // 后期：略微跑输
-              strategyMultiplier = 0.99 + Math.sin(index * 0.15) * 0.008;
-            }
-            
-            // 计算账户余额
-            const accountChange = btcChange * strategyMultiplier;
-            const accountBalance = currentAccountBalance * (1 + accountChange);
-            
-            // 存储真实余额
-            accountPriceMap.current.set(k.timestamp, accountBalance);
-            
-            return {
-              time: k.timestamp as any,
-              value: (accountBalance / currentAccountBalance) * 100, // 标准化到100
-            };
-          });
-          
-          accountLineSeriesRef.current.setData(mockAccountData);
-          
-          // 计算模拟统计
-          const firstMockBalance = currentAccountBalance;
-          const lastMockBalance = currentAccountBalance * (mockAccountData[mockAccountData.length - 1].value / 100);
-          const mockChange = lastMockBalance - firstMockBalance;
-          const mockChangePercent = (mockChange / firstMockBalance) * 100;
-          
-          setStats(prev => ({
-            ...prev,
-            account: {
-              current: lastMockBalance,
-              change: mockChange,
-              changePercent: mockChangePercent,
-            }
-          }));
-          
-          console.log(`📊 使用模拟数据: 初始 $${firstMockBalance.toFixed(2)}, 当前 $${lastMockBalance.toFixed(2)}, 变化 ${mockChangePercent.toFixed(2)}%`);
-        }
-      }
-
-      // 自动调整视图
-      if (chartRef.current) {
-        chartRef.current.timeScale().fitContent();
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to load chart data:', error);
-      setLoading(false);
-    }
-  }, [symbol, timeRange]); // ✅ 只依赖 symbol 和 timeRange（ref 不需要作为依赖）
+  // 以下是原有的其他功能代码
+  const handleLineToggle = (line: 'both' | 'btc' | 'account') => {
+    setSelectedLine(line);
+  };
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* 图表控制栏 */}
-      <div className="mb-4 px-4 py-3 bg-gradient-to-r from-orange-50 to-blue-50 rounded-lg border-2 border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            {/* BTC统计 */}
-            <div 
-              className={`cursor-pointer transition-all ${selectedLine === 'btc' ? 'scale-105' : ''}`}
-              onClick={() => setSelectedLine(selectedLine === 'btc' ? 'both' : 'btc')}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 rounded-full bg-[#f7931a]"></div>
-                <div className="text-xs font-semibold text-gray-600">BTC价格趋势</div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <div className="text-xl font-bold text-gray-900">
-                  ${stats.btc.current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <div className={`text-sm font-semibold ${stats.btc.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {stats.btc.changePercent >= 0 ? '+' : ''}{stats.btc.changePercent.toFixed(2)}%
-                </div>
-              </div>
-            </div>
-
-            {/* 分隔线 */}
-            <div className="h-12 w-px bg-gray-300"></div>
-
-            {/* 账户价值统计 */}
-            <div 
-              className={`cursor-pointer transition-all ${selectedLine === 'account' ? 'scale-105' : ''}`}
-              onClick={() => setSelectedLine(selectedLine === 'account' ? 'both' : 'account')}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                <div className="text-xs font-semibold text-gray-600">合约账户收益</div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <div className="text-xl font-bold text-gray-900">
-                  ${stats.account.current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <div className={`text-sm font-semibold ${stats.account.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {stats.account.changePercent >= 0 ? '+' : ''}{stats.account.changePercent.toFixed(2)}%
-                </div>
-              </div>
-            </div>
-
-            {/* 分隔线 */}
-            <div className="h-12 w-px bg-gray-300"></div>
-
-            {/* 对比结果 */}
-            <div>
-              <div className="text-xs font-semibold text-gray-600 mb-1">策略表现</div>
-              <div className="flex items-center gap-2">
-                {stats.account.changePercent > stats.btc.changePercent ? (
-                  <>
-                    <div className="text-xl font-bold text-green-600">
-                      ✓ 跑赢 {(stats.account.changePercent - stats.btc.changePercent).toFixed(2)}%
-                    </div>
-                  </>
-                ) : stats.account.changePercent < stats.btc.changePercent ? (
-                  <>
-                    <div className="text-xl font-bold text-red-600">
-                      ✗ 跑输 {(stats.btc.changePercent - stats.account.changePercent).toFixed(2)}%
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-xl font-bold text-gray-600">
-                    = 持平
-                  </div>
-                )}
-              </div>
-            </div>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {/* 图表容器 */}
+      <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />
+      
+      {/* 加载状态 */}
+      {loading && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'rgba(255, 255, 255, 0.9)',
+          padding: '20px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          加载中...
+        </div>
+      )}
+      
+      {/* 浮动价格标签 */}
+      {tooltipData.visible && (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${tooltipData.x}px`,
+            top: `${tooltipData.y - 40}px`,
+            background: tooltipData.color,
+            color: '#ffffff',
+            padding: '6px 12px',
+            borderRadius: '6px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            pointerEvents: 'none',
+            zIndex: 1000,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {tooltipData.price}
+        </div>
+      )}
+      
+      {/* 统计信息面板 */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        background: 'rgba(255, 255, 255, 0.95)',
+        padding: '12px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        zIndex: 100,
+        minWidth: '200px'
+      }}>
+        <div style={{ marginBottom: '8px' }}>
+          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>BTC价格</div>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f7931a' }}>
+            ${stats.btc.current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-
-          {/* 视图切换按钮 */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSelectedLine('both')}
-              className={`px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-                selectedLine === 'both'
-                  ? 'bg-gray-900 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              两条线对比
-            </button>
-            <button
-              onClick={() => setSelectedLine('btc')}
-              className={`px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-                selectedLine === 'btc'
-                  ? 'bg-[#f7931a] text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              仅BTC
-            </button>
-            <button
-              onClick={() => setSelectedLine('account')}
-              className={`px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-                selectedLine === 'account'
-                  ? 'bg-blue-500 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              仅账户
-            </button>
+          <div style={{ fontSize: '12px', color: stats.btc.changePercent >= 0 ? '#10b981' : '#ef4444' }}>
+            {stats.btc.changePercent >= 0 ? '+' : ''}{stats.btc.changePercent.toFixed(2)}%
+          </div>
+        </div>
+        
+        <div>
+          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>账户价值</div>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#3b82f6' }}>
+            ${stats.account.current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+          </div>
+          <div style={{ fontSize: '12px', color: stats.account.changePercent >= 0 ? '#10b981' : '#ef4444' }}>
+            {stats.account.changePercent >= 0 ? '+' : ''}{stats.account.changePercent.toFixed(2)}%
           </div>
         </div>
       </div>
-
-      {/* 图表容器 - 底部留出空间给时间轴标签 */}
-      <div className="flex-1 relative pb-12">
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto"></div>
-              <p className="mt-4 text-sm font-medium text-gray-700">加载对比数据...</p>
-            </div>
-          </div>
-        )}
-        <div ref={chartContainerRef} className="absolute top-0 left-0 right-0 bottom-12 w-full h-[calc(100%-3rem)]" />
-        
-        {/* 浮动价格标签 */}
-        {tooltipData.visible && (
-          <div 
-            className="absolute pointer-events-none z-40"
-            style={{
-              left: `${tooltipData.x}px`,
-              top: `${tooltipData.y - 40}px`,
-              transform: 'translateX(-50%)'
-            }}
-          >
-            <div 
-              className="px-3 py-1.5 rounded-md shadow-lg text-white text-sm font-semibold whitespace-nowrap"
-              style={{ backgroundColor: tooltipData.color }}
-            >
-              {tooltipData.price}
-            </div>
-            <div 
-              className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-0 h-0"
-              style={{
-                borderLeft: '6px solid transparent',
-                borderRight: '6px solid transparent',
-                borderTop: `6px solid ${tooltipData.color}`
-              }}
-            />
-          </div>
-        )}
+      
+      {/* 线条切换按钮 */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        background: 'rgba(255, 255, 255, 0.95)',
+        padding: '8px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        zIndex: 100,
+        display: 'flex',
+        gap: '4px'
+      }}>
+        <button
+          onClick={() => handleLineToggle('both')}
+          style={{
+            padding: '4px 8px',
+            fontSize: '12px',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            background: selectedLine === 'both' ? '#3b82f6' : '#e5e7eb',
+            color: selectedLine === 'both' ? '#ffffff' : '#374151'
+          }}
+        >
+          全部
+        </button>
+        <button
+          onClick={() => handleLineToggle('btc')}
+          style={{
+            padding: '4px 8px',
+            fontSize: '12px',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            background: selectedLine === 'btc' ? '#f7931a' : '#e5e7eb',
+            color: selectedLine === 'btc' ? '#ffffff' : '#374151'
+          }}
+        >
+          BTC
+        </button>
+        <button
+          onClick={() => handleLineToggle('account')}
+          style={{
+            padding: '4px 8px',
+            fontSize: '12px',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            background: selectedLine === 'account' ? '#3b82f6' : '#e5e7eb',
+            color: selectedLine === 'account' ? '#ffffff' : '#374151'
+          }}
+        >
+          账户
+        </button>
       </div>
     </div>
   );
