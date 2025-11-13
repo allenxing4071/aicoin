@@ -12,7 +12,7 @@
  * - 显示预算告警
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/app/components/common/PageHeader';
 import { unifiedDesignSystem, getThemeStyles } from '@/app/admin/unified-design-system';
