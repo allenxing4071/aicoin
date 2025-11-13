@@ -179,15 +179,14 @@ class BasePlatformAdapter(ABC):
             async with AsyncSessionLocal() as db:
                 usage_log = AIModelUsageLog(
                     model_name=f"{self.provider}_{self.platform_type}" if hasattr(self, 'platform_type') else self.provider,
-                    request_id=f"{self.provider}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
+                    decision_id=f"{self.provider}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                    prompt_tokens=input_tokens,
+                    completion_tokens=output_tokens,
                     cost=cost,
                     response_time=response_time / 1000.0 if response_time > 0 else None,  # 转换为秒
                     success=success,
                     error_message=None if success else "调用失败",
                     purpose="intelligence",
-                    symbol=None,
                     timestamp=datetime.utcnow()
                 )
                 db.add(usage_log)
