@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 import logging
 
-from app.api.v1.admin.auth import get_current_admin_user
+from app.api.v1.admin_db import get_current_user
 from app.services.ai_pricing import get_pricing_manager
 
 logger = logging.getLogger(__name__)
@@ -131,7 +131,7 @@ async def calculate_cost(request: CostCalculationRequest):
 @router.post("/update-price")
 async def update_price(
     request: PriceUpdateRequest,
-    current_user: Dict = Depends(get_current_admin_user)
+    current_user: Dict = Depends(get_current_user)
 ):
     """
     更新模型价格（需要管理员权限）
