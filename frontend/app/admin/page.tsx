@@ -349,22 +349,24 @@ export default function AdminPage() {
           />
         </div>
 
-        {stats?.latest_account_balance && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl shadow p-6">
-              <div className="text-sm text-gray-500 mb-1">最新账户余额</div>
-              <div className="text-2xl font-bold text-gray-900">
-                ${parseFloat(stats.latest_account_balance).toFixed(2)}
-              </div>
-            </div>
-            <div className="bg-white rounded-xl shadow p-6">
-              <div className="text-sm text-gray-500 mb-1">最新账户净值</div>
-              <div className="text-2xl font-bold text-gray-900">
-                ${parseFloat(stats.latest_account_equity || "0").toFixed(2)}
-              </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl shadow p-6">
+            <div className="text-sm text-gray-500 mb-1">最新账户余额</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats?.latest_account_balance !== null && stats?.latest_account_balance !== undefined 
+                ? `$${parseFloat(String(stats.latest_account_balance)).toFixed(2)}`
+                : <span className="text-gray-400 text-lg">获取中...</span>}
             </div>
           </div>
-        )}
+          <div className="bg-white rounded-xl shadow p-6">
+            <div className="text-sm text-gray-500 mb-1">最新账户净值</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats?.latest_account_equity !== null && stats?.latest_account_equity !== undefined 
+                ? `$${parseFloat(String(stats.latest_account_equity)).toFixed(2)}`
+                : <span className="text-gray-400 text-lg">获取中...</span>}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 数据表列表 */}

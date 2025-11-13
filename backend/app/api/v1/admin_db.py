@@ -350,23 +350,39 @@ async def get_system_stats(db: AsyncSession = Depends(get_db)):
                 
                 # 获取实时账户信息
                 account_info = await adapter.get_account_balance(market_type=market_type)
-                latest_balance = float(account_info.get("available_balance", account_info.get("balance", 0)))
-                latest_equity = float(account_info.get("total_balance", account_info.get("equity", 0)))
+                balance_value = account_info.get("available_balance") or account_info.get("balance", 0)
+                equity_value = account_info.get("total_balance") or account_info.get("equity", 0)
+                
+                # 只有当值大于0时才设置（避免显示错误的默认值）
+                if balance_value and float(balance_value) > 0:
+                    latest_balance = str(float(balance_value))
+                if equity_value and float(equity_value) > 0:
+                    latest_equity = str(float(equity_value))
                 
                 logger.info(f"✅ 从交易所获取实时账户数据: balance={latest_balance}, equity={latest_equity}")
         except Exception as e:
             logger.warning(f"⚠️ 无法从交易所获取实时数据，回退到数据库快照: {e}")
             # 回退到数据库快照
-            result = await db.execute(
-                select(AccountSnapshot)
-                .order_by(desc(AccountSnapshot.timestamp))
-                .limit(1)
-            )
-            latest_account = result.scalar_one_or_none()
-            
-            if latest_account:
-                latest_balance = latest_account.balance
-                latest_equity = latest_account.equity
+            try:
+                result = await db.execute(
+                    select(AccountSnapshot)
+                    .order_by(desc(AccountSnapshot.timestamp))
+                    .limit(1)
+                )
+                latest_account = result.scalar_one_or_none()
+                
+                if latest_account and latest_account.balance and float(latest_account.balance) > 0:
+                    # 如果数据库快照中的值是10000（可能是默认值），不返回它
+                    balance_val = float(latest_account.balance)
+                    if balance_val != 10000.0:
+                        latest_balance = str(latest_account.balance)
+                if latest_account and latest_account.equity and float(latest_account.equity) > 0:
+                    # 如果数据库快照中的值是10000（可能是默认值），不返回它
+                    equity_val = float(latest_account.equity)
+                    if equity_val != 10000.0:
+                        latest_equity = str(latest_account.equity)
+            except Exception as db_err:
+                logger.warning(f"⚠️ 无法从数据库获取账户快照: {db_err}")
         
         # 获取各表详细统计
         table_stats = []

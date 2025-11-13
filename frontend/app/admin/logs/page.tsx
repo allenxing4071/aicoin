@@ -67,7 +67,7 @@ const LogManagementPage: React.FC = () => {
 
   // 加载日志文件列表
   const fetchFiles = useCallback(async () => {
-    setLoading(true);
+      setLoading(true);
     try {
       const response = await axiosInstance.get('/api/v1/admin/logs/files');
       if (response.data.success) {
@@ -118,7 +118,7 @@ const LogManagementPage: React.FC = () => {
 
   // 查看日志文件
   const handleViewLog = async (filename: string) => {
-    setLoading(true);
+      setLoading(true);
     try {
       const response = await axiosInstance.get(`/api/v1/admin/logs/view`, {
         params: { filename, lines: viewLines }
@@ -176,8 +176,8 @@ const LogManagementPage: React.FC = () => {
             fetchStats();
           } else {
             message.error('清理失败');
-          }
-        } catch (error) {
+      }
+    } catch (error) {
           console.error('Failed to cleanup logs:', error);
           message.error('清理失败');
         }
@@ -224,7 +224,7 @@ const LogManagementPage: React.FC = () => {
           icon = <ThunderboltOutlined />;
           color = 'purple';
         }
-        return (
+    return (
           <Space>
             <Tag color={color} icon={icon}>{name}</Tag>
           </Space>
@@ -298,7 +298,7 @@ const LogManagementPage: React.FC = () => {
         </div>
 
         {/* 统计卡片 */}
-        {stats && (
+      {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card className="shadow-sm hover:shadow-md transition-shadow">
               <Statistic
@@ -332,7 +332,7 @@ const LogManagementPage: React.FC = () => {
                 valueStyle={{ color: '#faad14' }}
               />
             </Card>
-          </div>
+            </div>
         )}
 
         {/* 报警区域 */}
@@ -435,7 +435,7 @@ const LogManagementPage: React.FC = () => {
               </div>
             </div>
           </Card>
-        )}
+      )}
 
         {/* 文件列表 */}
         <Card title="日志文件列表" className="shadow-sm">
@@ -487,7 +487,7 @@ const LogManagementPage: React.FC = () => {
               <Option value={200}>200 行</Option>
               <Option value={500}>500 行</Option>
             </Select>
-          </div>
+        </div>
           <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-auto max-h-96 text-xs font-mono">
             {viewContent}
           </pre>

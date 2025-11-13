@@ -42,7 +42,7 @@ export function usePermissions() {
         const decoded = jwtDecode<JWTPayload>(token);
         const userInfo: User = {
           username: decoded.sub,
-          role: decoded.role,
+          role: decoded.role || 'admin', // 默认角色为 admin
         };
         if (isMounted) {
           setUser(userInfo);
@@ -50,8 +50,10 @@ export function usePermissions() {
         
         // 从API获取角色的权限列表
         try {
+          // 确保 role 不为 undefined
+          const role = decoded.role || 'admin';
           const response = await fetch(
-            `/api/v1/admin/users/roles/${decoded.role}/permissions`,
+            `/api/v1/admin/users/roles/${role}/permissions`,
             {
               headers: {
                 'Authorization': `Bearer ${token}`

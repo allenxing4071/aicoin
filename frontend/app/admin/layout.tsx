@@ -42,11 +42,18 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
   const router = useRouter();
   const { hasPermission, loading: permLoading, permissions, userRole } = usePermissions();
   const [username, setUsername] = useState<string | null>(null);
+  // 确保侧边栏默认展开
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const user = localStorage.getItem("admin_user");
     setUsername(user);
+    
+    // 从localStorage读取保存的侧边栏状态
+    const saved = localStorage.getItem('admin_sidebar_collapsed');
+    if (saved === 'true') {
+      setCollapsed(true);
+    }
   }, []);
 
   const handleLogout = () => {
@@ -69,7 +76,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     
     // 辅助函数：检查权限（在 useMemo 内部）
     const checkPermission = (permission: string): boolean => {
-      if (userRole === 'super_admin') return true;
+      // super_admin 和 admin 都拥有所有权限
+      if (userRole === 'super_admin' || userRole === 'admin') return true;
       return permissions?.includes(permission) || false;
     };
     
@@ -484,7 +492,14 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
 
             {/* 折叠/展开按钮 - 优化样式 */}
             <button
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={() => {
+                const newCollapsed = !collapsed;
+                setCollapsed(newCollapsed);
+                // 保存状态到localStorage
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('admin_sidebar_collapsed', String(newCollapsed));
+                }
+              }}
               style={{
                 width: "32px",
                 height: "32px",
