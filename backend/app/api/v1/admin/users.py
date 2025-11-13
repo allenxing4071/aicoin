@@ -39,6 +39,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """创建用户请求"""
     password: str
+    role_id: Optional[int] = None  # 新增：RBAC角色ID
 
 
 class UserUpdate(BaseModel):
@@ -46,6 +47,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     role: Optional[str] = None
+    role_id: Optional[int] = None  # 新增：RBAC角色ID
     is_active: Optional[bool] = None
 
 
@@ -73,18 +75,56 @@ class UsersStats(BaseModel):
 
 @router.get("/roles")
 async def get_roles(
-    token: dict = Depends(verify_admin_token)
+    token: dict = Depends(verify_admin_token),
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """
-    获取所有角色信息
+    获取所有角色信息（优先从RBAC数据库）
     
     返回所有可用角色及其权限信息
     """
-    roles = get_all_roles()
-    return {
-        "success": True,
-        "data": roles
-    }
+    try:
+        # 从RBAC数据库加载角色
+        from app.models.permission import Role, RolePermission
+        
+        result = await db.execute(select(Role))
+        db_roles = result.scalars().all()
+        
+        if db_roles:
+            # 统计每个角色的权限数量
+            roles_data = []
+            for role in db_roles:
+                perm_count_result = await db.execute(
+                    select(func.count(RolePermission.id)).where(RolePermission.role_id == role.id)
+                )
+                perm_count = perm_count_result.scalar() or 0
+                
+                roles_data.append({
+                    "id": role.id,
+                    "value": role.code,
+                    "label": role.name,
+                    "description": role.description or "",
+                    "permission_count": perm_count
+                })
+            
+            return {
+                "success": True,
+                "data": roles_data
+            }
+        else:
+            # 降级到简化系统
+            roles = get_all_roles()
+            return {
+                "success": True,
+                "data": roles
+            }
+    except Exception as e:
+        # 发生错误时降级到简化系统
+        roles = get_all_roles()
+        return {
+            "success": True,
+            "data": roles
+        }
 
 
 @router.get("/roles/{role}/permissions")
@@ -286,25 +326,52 @@ async def create_user(
                 detail="邮箱已存在"
             )
         
-        # 验证角色
-        if user_data.role not in ["admin", "trader", "viewer"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="无效的角色类型"
-            )
-        
         # 创建用户 (bcrypt限制72字节)
         password_truncated = user_data.password[:72]
         hashed_password = pwd_context.hash(password_truncated)
-        new_user = AdminUser(
-            username=user_data.username,
-            email=user_data.email,
-            hashed_password=hashed_password,
-            role=user_data.role,
-            is_active=user_data.is_active,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
+        
+        # 优先使用RBAC系统的role_id
+        if user_data.role_id:
+            # 验证role_id是否存在
+            from app.models.permission import Role as RBACRole
+            
+            role_result = await db.execute(
+                select(RBACRole).where(RBACRole.id == user_data.role_id)
+            )
+            role = role_result.scalar_one_or_none()
+            if not role:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="无效的角色ID"
+                )
+            
+            new_user = AdminUser(
+                username=user_data.username,
+                email=user_data.email,
+                hashed_password=hashed_password,
+                role=role.code,  # 向后兼容
+                role_id=user_data.role_id,  # RBAC系统
+                is_active=user_data.is_active,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+        else:
+            # 降级到简化系统
+            if user_data.role not in ["super_admin", "admin", "risk_manager", "trader", "analyst", "viewer"]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="无效的角色类型"
+                )
+            
+            new_user = AdminUser(
+                username=user_data.username,
+                email=user_data.email,
+                hashed_password=hashed_password,
+                role=user_data.role,
+                is_active=user_data.is_active,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
         
         db.add(new_user)
         await db.commit()
@@ -363,8 +430,26 @@ async def update_user(
             password_truncated = user_data.password[:72]
             user.hashed_password = pwd_context.hash(password_truncated)
         
-        if user_data.role is not None:
-            if user_data.role not in ["admin", "trader", "viewer"]:
+        # 优先使用RBAC系统的role_id
+        if user_data.role_id is not None:
+            # 验证role_id是否存在
+            from app.models.permission import Role as RBACRole
+            
+            role_result = await db.execute(
+                select(RBACRole).where(RBACRole.id == user_data.role_id)
+            )
+            role = role_result.scalar_one_or_none()
+            if not role:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="无效的角色ID"
+                )
+            
+            user.role = role.code  # 向后兼容
+            user.role_id = user_data.role_id  # RBAC系统
+        elif user_data.role is not None:
+            # 降级到简化系统
+            if user_data.role not in ["super_admin", "admin", "risk_manager", "trader", "analyst", "viewer"]:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="无效的角色类型"

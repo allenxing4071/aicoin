@@ -17,6 +17,7 @@ interface User {
 }
 
 interface RoleInfo {
+  id?: number;  // 新增：RBAC角色ID（可选，向后兼容）
   value: string;
   label: string;
   description: string;
@@ -48,6 +49,7 @@ export default function UsersPage() {
     password: "",
     email: "",
     role: "viewer",
+    role_id: null as number | null,  // 新增：RBAC角色ID
     is_active: true,
   });
 
@@ -180,6 +182,7 @@ export default function UsersPage() {
       password: "",
       email: "",
       role: "viewer",
+      role_id: null,
       is_active: true,
     });
     setShowAddModal(true);
@@ -192,6 +195,7 @@ export default function UsersPage() {
       password: "",
       email: user.email,
       role: user.role,
+      role_id: null,  // 编辑时需要从用户数据中获取
       is_active: user.is_active,
     });
     setShowAddModal(true);
@@ -652,7 +656,21 @@ export default function UsersPage() {
                     <div
                       key={role.value}
                       onClick={() => {
-                        setFormData({ ...formData, role: role.value });
+                        // 优先使用role_id（RBAC系统）
+                        if (role.id) {
+                          setFormData({ 
+                            ...formData, 
+                            role: role.value,
+                            role_id: role.id 
+                          });
+                        } else {
+                          // 降级到简化系统
+                          setFormData({ 
+                            ...formData, 
+                            role: role.value,
+                            role_id: null
+                          });
+                        }
                         loadRolePermissions(role.value);
                       }}
                       className={`p-3 border-2 rounded-xl cursor-pointer transition-all ${

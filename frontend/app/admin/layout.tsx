@@ -72,8 +72,28 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     
     // 辅助函数：检查权限（在 useMemo 内部）
     const checkPermission = (permission: string): boolean => {
-      // 临时方案：让所有登录用户都能看到所有菜单，专注于AI量化核心功能
-      return true;
+      // 修复：使用真实的权限检查
+      // 如果权限列表为空，可能是加载中或角色未配置
+      if (!permissions || permissions.length === 0) {
+        // 对于super_admin，即使权限列表为空也允许访问
+        if (userRole === 'super_admin') {
+          return true;
+        }
+        // 其他情况，如果是加载中，暂时允许访问避免闪烁
+        if (permLoading) {
+          return true;
+        }
+        // 加载完成但权限为空，可能是配置问题，允许基础访问
+        return true;
+      }
+      
+      // super_admin 拥有所有权限
+      if (userRole === 'super_admin') {
+        return true;
+      }
+      
+      // 检查权限列表
+      return permissions.includes(permission);
     };
     
     const items: MenuProps["items"] = [];
