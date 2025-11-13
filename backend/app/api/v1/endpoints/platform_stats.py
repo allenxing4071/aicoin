@@ -68,7 +68,8 @@ async def get_platform_stats(
         calls = platform.total_calls or 0
         successful_calls = platform.successful_calls or 0
         failed_calls = platform.failed_calls or 0
-        success_rate = (platform.success_rate * 100) if platform.success_rate else 0.0
+        # 计算成功率（success_rate 不是数据库字段，需要计算）
+        success_rate = (successful_calls / calls * 100) if calls > 0 else 0.0
         cost = platform.total_cost or 0.0
         avg_response_time = platform.avg_response_time
         
