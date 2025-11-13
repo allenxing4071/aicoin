@@ -136,12 +136,12 @@ export default function AICostOverviewPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <PageHeader
-          icon="💰"
-          title="AI成本管理 - 总览"
-          description="实时监控所有AI平台的成本和使用情况"
-          color="green"
-        />
+      <PageHeader
+        icon="💰"
+        title="AI成本管理 - 总览"
+        description="实时监控所有AI平台的成本和使用情况"
+        color="green"
+      />
         <button
           onClick={syncBilling}
           disabled={syncing}

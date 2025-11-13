@@ -408,8 +408,13 @@ class HyperliquidTradingService:
             return False
     
     async def _record_trade(self, symbol: str, side: str, size: float, price: Optional[float], order_id: str):
-        """记录交易"""
+        """记录交易（同时保存到数据库和Redis）"""
         try:
+            from app.models.trade import Trade
+            from app.models.order import Order
+            from app.core.database import AsyncSessionLocal
+            from decimal import Decimal
+            
             trade_data = {
                 "order_id": order_id,
                 "symbol": symbol,
@@ -420,7 +425,43 @@ class HyperliquidTradingService:
                 "pnl": 0.0  # 初始PnL为0
             }
             
-            # 存储到Redis
+            # ✅ 保存到数据库
+            async with AsyncSessionLocal() as db_session:
+                try:
+                    # 1. 保存订单记录
+                    db_order = Order(
+                        symbol=symbol,
+                        side=side.upper(),
+                        type="MARKET",
+                        size=Decimal(str(size)),
+                        filled_size=Decimal(str(size)),
+                        status="FILLED",
+                        exchange_order_id=order_id
+                    )
+                    db_session.add(db_order)
+                    await db_session.flush()  # 获取订单ID
+                    
+                    # 2. 保存成交记录
+                    db_trade = Trade(
+                        order_id=db_order.id,
+                        symbol=symbol,
+                        side=side.upper(),
+                        price=Decimal(str(price)) if price else Decimal('0'),
+                        size=Decimal(str(size)),
+                        pnl=Decimal('0'),
+                        fee=Decimal('0'),
+                        model="hyperliquid_trading"
+                    )
+                    db_session.add(db_trade)
+                    await db_session.commit()
+                    
+                    logger.info(f"✅ Trade saved to database: order_id={db_order.id}, trade_id={db_trade.id}")
+                    
+                except Exception as db_error:
+                    logger.error(f"❌ Failed to save trade to database: {db_error}")
+                    await db_session.rollback()
+            
+            # 存储到Redis（缓存）
             await self.redis_client.set(f"trade:{order_id}", trade_data, expire=86400)
             
             # 更新统计

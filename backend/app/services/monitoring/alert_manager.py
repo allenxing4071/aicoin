@@ -83,7 +83,7 @@ class AlertManager:
         thresholds: Dict[str, float]
     ) -> List[Dict[str, Any]]:
         """
-        检查风险告警
+        检查风险告警（同时保存到数据库）
         
         Returns:
             触发的告警列表
@@ -100,6 +100,14 @@ class AlertManager:
                 {"margin_ratio": margin_ratio}
             )
             alerts.append({"type": "margin_ratio", "value": margin_ratio})
+            
+            # ✅ 保存到数据库
+            await self._save_risk_event(
+                event_type="MARGIN_RATIO_LOW",
+                severity="CRITICAL",
+                description=f"保证金率过低: {margin_ratio:.1%}，低于阈值{thresholds['min_margin_ratio']:.1%}",
+                action_taken="发送告警通知"
+            )
         
         # 2. 回撤告警
         drawdown = account_state.get("total_drawdown", 0.0)
@@ -111,6 +119,14 @@ class AlertManager:
                 {"drawdown": drawdown}
             )
             alerts.append({"type": "drawdown", "value": drawdown})
+            
+            # ✅ 保存到数据库
+            await self._save_risk_event(
+                event_type="MAX_DRAWDOWN_EXCEEDED",
+                severity="CRITICAL",
+                description=f"最大回撤超限: {drawdown:.1%}，超过阈值{thresholds['max_drawdown']:.1%}",
+                action_taken="发送告警通知"
+            )
         
         # 3. 单日亏损告警
         daily_loss = account_state.get("daily_loss_pct", 0.0)
@@ -122,8 +138,45 @@ class AlertManager:
                 {"daily_loss": daily_loss}
             )
             alerts.append({"type": "daily_loss", "value": daily_loss})
+            
+            # ✅ 保存到数据库
+            await self._save_risk_event(
+                event_type="DAILY_LOSS_EXCEEDED",
+                severity="CRITICAL",
+                description=f"单日亏损超限: {daily_loss:.1%}，超过阈值{thresholds['max_daily_loss']:.1%}",
+                action_taken="发送告警通知"
+            )
         
         return alerts
+    
+    async def _save_risk_event(
+        self,
+        event_type: str,
+        severity: str,
+        description: str,
+        action_taken: str,
+        related_trade_id: int = None
+    ):
+        """保存风控事件到数据库"""
+        try:
+            from app.models.risk_event import RiskEvent
+            from app.core.database import AsyncSessionLocal
+            
+            async with AsyncSessionLocal() as db_session:
+                risk_event = RiskEvent(
+                    event_type=event_type,
+                    severity=severity,
+                    description=description,
+                    action_taken=action_taken,
+                    related_trade_id=related_trade_id,
+                    resolved=False
+                )
+                db_session.add(risk_event)
+                await db_session.commit()
+                logger.info(f"✅ Risk event saved to database: {event_type} ({severity})")
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to save risk event to database: {e}")
     
     def get_recent_alerts(self, count: int = 10) -> List[Dict[str, Any]]:
         """获取最近的告警"""

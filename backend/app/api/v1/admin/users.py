@@ -138,15 +138,15 @@ async def get_role_permissions_api(
         }
     except Exception as e:
         # 发生错误时回退到旧系统
-        permissions = get_role_permissions(role)
-        return {
-            "success": True,
-            "data": {
-                "role": role,
-                "display_name": get_role_display_name(role),
-                "permissions": [perm.value for perm in permissions]
-            }
+    permissions = get_role_permissions(role)
+    return {
+        "success": True,
+        "data": {
+            "role": role,
+            "display_name": get_role_display_name(role),
+            "permissions": [perm.value for perm in permissions]
         }
+    }
 
 
 @router.get("/stats", response_model=UsersStats)

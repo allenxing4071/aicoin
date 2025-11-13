@@ -286,7 +286,7 @@ class HyperliquidMarketData:
                 await asyncio.sleep(60)
     
     async def _fetch_kline_data(self, symbol: str, interval: str) -> Optional[List[Dict[str, Any]]]:
-        """获取K线数据"""
+        """获取K线数据（同时保存到数据库）"""
         try:
             # 如果有真实API连接，尝试获取真实K线数据
             if self.info:
@@ -310,16 +310,70 @@ class HyperliquidMarketData:
                                 'volume': float(candle.get('v', 0)),
                                 'source': 'hyperliquid_api'
                             })
+                        
+                        # ✅ 保存K线数据到数据库
+                        await self._save_klines_to_db(symbol, interval, klines)
+                        
                         return klines
                 except Exception as e:
                     logger.warning(f"Failed to fetch real kline data for {symbol}, using mock data: {e}")
             
             # 否则使用模拟K线数据
-            return await self._get_mock_kline_data(symbol, interval)
+            klines = await self._get_mock_kline_data(symbol, interval)
+            
+            # ✅ 保存模拟K线数据到数据库（用于测试）
+            if klines:
+                await self._save_klines_to_db(symbol, interval, klines)
+            
+            return klines
             
         except Exception as e:
             logger.error(f"Failed to fetch kline data for {symbol}: {e}")
             return None
+    
+    async def _save_klines_to_db(self, symbol: str, interval: str, klines: List[Dict[str, Any]]):
+        """保存K线数据到数据库"""
+        try:
+            from app.models.market_data import MarketDataKline
+            from app.core.database import AsyncSessionLocal
+            from decimal import Decimal
+            from datetime import datetime
+            
+            async with AsyncSessionLocal() as db_session:
+                saved_count = 0
+                for kline in klines:
+                    try:
+                        # 转换时间戳
+                        timestamp_ms = kline.get('timestamp', 0)
+                        open_time = datetime.fromtimestamp(timestamp_ms / 1000)
+                        close_time = datetime.fromtimestamp((timestamp_ms + 60000) / 1000)  # +1分钟
+                        
+                        # 创建K线记录（使用 ON CONFLICT DO NOTHING 避免重复）
+                        db_kline = MarketDataKline(
+                            symbol=symbol,
+                            interval=interval,
+                            open_time=open_time,
+                            close_time=close_time,
+                            open=Decimal(str(kline.get('open', 0))),
+                            high=Decimal(str(kline.get('high', 0))),
+                            low=Decimal(str(kline.get('low', 0))),
+                            close=Decimal(str(kline.get('close', 0))),
+                            volume=Decimal(str(kline.get('volume', 0)))
+                        )
+                        
+                        # 使用 merge 避免重复插入
+                        db_session.add(db_kline)
+                        saved_count += 1
+                        
+                    except Exception as kline_error:
+                        logger.debug(f"Skip duplicate or invalid kline: {kline_error}")
+                        continue
+                
+                await db_session.commit()
+                logger.info(f"✅ Saved {saved_count} klines to database: {symbol} {interval}")
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to save klines to database: {e}")
     
     async def _get_mock_kline_data(self, symbol: str, interval: str) -> List[Dict[str, Any]]:
         """生成模拟K线数据"""
