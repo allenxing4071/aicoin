@@ -42,6 +42,7 @@ export default function AICostOverviewPage() {
   const [platforms, setPlatforms] = useState<PlatformCost[]>([]);
   const [summary, setSummary] = useState<CostSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [alerts, setAlerts] = useState<string[]>([]);
   
   // 使用统一的橙色主题
@@ -94,6 +95,29 @@ export default function AICostOverviewPage() {
     }
   }, []);
 
+  const syncBilling = useCallback(async () => {
+    try {
+      setSyncing(true);
+      const res = await fetch('/api/v1/ai-cost/sync-billing', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        alert('✅ 账单同步成功！已从云平台获取最新费用数据。');
+        // 重新加载数据
+        await fetchData();
+      } else {
+        alert('❌ 账单同步失败: ' + (data.error || '未知错误'));
+      }
+    } catch (error) {
+      console.error('Failed to sync billing:', error);
+      alert('❌ 账单同步失败: ' + error);
+    } finally {
+      setSyncing(false);
+    }
+  }, [fetchData]);
+
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000); // 每30秒刷新
@@ -111,12 +135,25 @@ export default function AICostOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        icon="💰"
-        title="AI成本管理 - 总览"
-        description="实时监控所有AI平台的成本和使用情况"
-        color="green"
-      />
+      <div className="flex items-center justify-between">
+        <PageHeader
+          icon="💰"
+          title="AI成本管理 - 总览"
+          description="实时监控所有AI平台的成本和使用情况"
+          color="green"
+        />
+        <button
+          onClick={syncBilling}
+          disabled={syncing}
+          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            syncing
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl'
+          }`}
+        >
+          {syncing ? '🔄 同步中...' : '🔄 同步云平台账单'}
+        </button>
+      </div>
 
       {/* 关键指标卡片 */}
       {summary && (

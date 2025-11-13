@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.core.database import get_db
 from app.services.ai_cost_manager import get_cost_manager
+from app.services.cloud_billing_sync import get_billing_sync
 from app.models.intelligence_platform import IntelligencePlatform
 
 logger = logging.getLogger(__name__)
@@ -427,4 +428,32 @@ async def get_models_with_platforms(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.error(f"获取模型和平台关联信息失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/sync-billing")
+async def sync_cloud_billing(db: AsyncSession = Depends(get_db)):
+    """
+    从云平台同步真实账单数据
+    
+    从各大云平台（阿里云、百度云、腾讯云、火山引擎、DeepSeek）
+    获取真实的使用费用并更新到数据库
+    
+    Returns:
+        同步结果摘要
+    """
+    try:
+        logger.info("🔄 开始同步云平台账单...")
+        
+        billing_sync = get_billing_sync()
+        result = await billing_sync.sync_all_platforms(db)
+        
+        return {
+            "success": True,
+            "message": "账单同步完成",
+            "data": result
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 账单同步失败: {e}")
+        raise HTTPException(status_code=500, detail=f"账单同步失败: {str(e)}")
 
