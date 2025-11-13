@@ -12,7 +12,7 @@
  * - 成本节省预测
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/app/components/common/PageHeader';
 
 interface DecisionInterval {
