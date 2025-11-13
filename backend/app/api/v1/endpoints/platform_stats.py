@@ -55,7 +55,7 @@ async def get_platform_stats(
     )
     platforms = platforms_result.scalars().all()
     
-    # 为每个平台统计调用数据
+    # 为每个平台统计调用数据（直接从 intelligence_platforms 表读取实时数据）
     platform_stats = []
     total_calls = 0
     total_successful = 0
@@ -63,45 +63,14 @@ async def get_platform_stats(
     total_cost = 0.0
     
     for platform in platforms:
-        # 查询该平台在时间范围内的调用日志
-        # 注意：需要根据model_name匹配平台
-        # 假设model_name包含provider信息，或者我们需要建立映射关系
-        
-        # 方案1：通过provider匹配（简化版）
-        # DeepSeek -> deepseek, Qwen -> qwen, 腾讯混元 -> hunyuan, 火山引擎 -> doubao, 百度文心 -> ernie
-        provider_model_map = {
-            "deepseek": ["deepseek"],
-            "qwen": ["qwen"],
-            "tencent": ["hunyuan"],
-            "volcano": ["doubao"],
-            "baidu": ["ernie", "wenxin"],
-        }
-        
-        model_patterns = provider_model_map.get(platform.provider.lower(), [platform.provider.lower()])
-        
-        # 统计调用（使用AIModelUsageLog模型）
-        query = select(
-            func.count(AIModelUsageLog.id).label('count'),
-            func.sum(cast(AIModelUsageLog.success, Integer)).label('successful'),
-            func.sum(AIModelUsageLog.cost).label('total_cost'),
-            func.avg(AIModelUsageLog.response_time).label('avg_response_time')
-        ).where(
-            and_(
-                AIModelUsageLog.timestamp >= start_time,
-                # 模糊匹配model_name
-                func.lower(AIModelUsageLog.model_name).op('~')(f"({'|'.join(model_patterns)})")
-            )
-        )
-        
-        result = await db.execute(query)
-        data = result.first()
-        
-        calls = data.count if data.count else 0
-        successful_calls = int(data.successful) if data.successful else 0
-        failed_calls = calls - successful_calls
-        success_rate = (successful_calls / calls * 100) if calls > 0 else 0.0
-        cost = float(data.total_cost) if data.total_cost else 0.0
-        avg_response_time = float(data.avg_response_time) if data.avg_response_time else None
+        # ✅ 修复：直接从 intelligence_platforms 表读取实时统计数据
+        # 这些数据在每次 AI 调用后都会实时更新
+        calls = platform.total_calls or 0
+        successful_calls = platform.successful_calls or 0
+        failed_calls = platform.failed_calls or 0
+        success_rate = (platform.success_rate * 100) if platform.success_rate else 0.0
+        cost = platform.total_cost or 0.0
+        avg_response_time = platform.avg_response_time
         
         platform_stats.append({
             "id": platform.id,
