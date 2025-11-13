@@ -95,15 +95,15 @@ class QwenSearchAdapter(BasePlatformAdapter):
             
             # 估算成本（根据Qwen定价）
             usage = response.usage
-            cost = self._calculate_cost(
-                usage.prompt_tokens if usage else 0,
-                usage.completion_tokens if usage else 0
-            )
+            input_tokens = usage.prompt_tokens if usage else 0
+            output_tokens = usage.completion_tokens if usage else 0
+            cost = self._calculate_cost(input_tokens, output_tokens)
             
             # 解析响应
             key_findings = self._extract_key_findings(analysis_text)
             
-            await self._record_call(success=True, cost=cost)
+            # ✅ 记录调用（包含token信息）
+            await self._record_call(success=True, cost=cost, response_time=0.0, input_tokens=input_tokens, output_tokens=output_tokens)
             
             result = {
                 "platform": self.platform_name,

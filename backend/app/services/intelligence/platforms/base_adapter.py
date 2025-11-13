@@ -136,7 +136,7 @@ class BasePlatformAdapter(ABC):
             "last_call_time": self.last_call_time.isoformat() if self.last_call_time else None
         }
     
-    async def _record_call(self, success: bool, cost: float = 0.0, response_time: float = 0.0):
+    async def _record_call(self, success: bool, cost: float = 0.0, response_time: float = 0.0, input_tokens: int = 0, output_tokens: int = 0):
         """
         记录调用统计（实时同步到数据库）
         
@@ -144,6 +144,8 @@ class BasePlatformAdapter(ABC):
             success: 是否成功
             cost: 调用成本
             response_time: 响应时间（毫秒）
+            input_tokens: 输入token数量
+            output_tokens: 输出token数量
         """
         # 1. 更新内存统计
         self.call_count += 1
@@ -154,7 +156,7 @@ class BasePlatformAdapter(ABC):
         self.total_cost += cost
         self.last_call_time = datetime.now()
         
-        # 2. 实时同步到数据库
+        # 2. 实时同步到数据库（intelligence_platforms 表）
         if self.provider and self.provider != 'unknown':
             try:
                 from app.services.intelligence.platform_manager import platform_manager
@@ -168,6 +170,31 @@ class BasePlatformAdapter(ABC):
                 logger.debug(f"✅ 平台统计已同步: {self.platform_name} (provider={self.provider})")
             except Exception as e:
                 logger.warning(f"⚠️  数据库统计同步失败 ({self.platform_name}): {e}")
+        
+        # 3. ✅ 新增：记录到 ai_model_usage_log 表（用于详细分析）
+        try:
+            from app.core.database import AsyncSessionLocal
+            from app.models.ai_model_pricing import AIModelUsageLog
+            
+            async with AsyncSessionLocal() as db:
+                usage_log = AIModelUsageLog(
+                    model_name=f"{self.provider}_{self.platform_type}" if hasattr(self, 'platform_type') else self.provider,
+                    request_id=f"{self.provider}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost=cost,
+                    response_time=response_time / 1000.0 if response_time > 0 else None,  # 转换为秒
+                    success=success,
+                    error_message=None if success else "调用失败",
+                    purpose="intelligence",
+                    symbol=None,
+                    timestamp=datetime.utcnow()
+                )
+                db.add(usage_log)
+                await db.commit()
+                logger.debug(f"✅ AI使用日志已记录: {self.platform_name}")
+        except Exception as e:
+            logger.warning(f"⚠️  AI使用日志记录失败 ({self.platform_name}): {e}")
     
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}(name={self.platform_name}, role={self.role}, enabled={self.enabled})>"
