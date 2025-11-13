@@ -13,7 +13,7 @@ class Trade(Base):
         Index('idx_trades_timestamp', 'timestamp'),
         Index('idx_trades_symbol', 'symbol'),
         Index('idx_trades_side', 'side'),
-        {'comment': '成交记录 - 记录所有已成交的交易明细，包括价格、数量、盈亏、AI决策依据等完整信息'}
+        {'comment': '💰 成交记录 - 记录所有已成交的交易明细，包括价格、数量、盈亏、AI决策依据等完整信息'}
     )
     
     id = Column(Integer, primary_key=True, index=True)

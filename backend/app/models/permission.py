@@ -12,11 +12,11 @@ class Permission(Base):
     __tablename__ = "permissions"
     
     id = Column(Integer, primary_key=True, index=True)
-    code = Column(String(100), unique=True, nullable=False, index=True, comment="权限代码，如: users.view")
-    name = Column(String(100), nullable=False, comment="权限名称")
-    description = Column(Text, comment="权限描述")
-    resource_type = Column(String(50), comment="资源类型: page, api, button")
-    resource_path = Column(String(200), comment="资源路径: /admin/users, /api/v1/trades")
+    code = Column(String(100), unique=True, nullable=False, index=True, comment="🔐 权限代码，如: users.view")
+    name = Column(String(100), nullable=False, comment="🔐 权限名称")
+    description = Column(Text, comment="🔐 权限描述")
+    resource_type = Column(String(50), comment="🔐 资源类型: page, api, button")
+    resource_path = Column(String(200), comment="🔐 资源路径: /admin/users, /api/v1/trades")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 关系
@@ -28,11 +28,11 @@ class Role(Base):
     __tablename__ = "roles"
     
     id = Column(Integer, primary_key=True, index=True)
-    code = Column(String(50), unique=True, nullable=False, index=True, comment="角色代码")
-    name = Column(String(100), nullable=False, comment="角色名称")
-    description = Column(Text, comment="角色描述")
-    is_system = Column(Boolean, default=False, comment="系统内置角色不可删除")
-    parent_role_id = Column(Integer, ForeignKey("roles.id"), nullable=True, comment="父角色ID，支持继承")
+    code = Column(String(50), unique=True, nullable=False, index=True, comment="🔐 角色代码")
+    name = Column(String(100), nullable=False, comment="🔐 角色名称")
+    description = Column(Text, comment="🔐 角色描述")
+    is_system = Column(Boolean, default=False, comment="🔐 系统内置角色不可删除")
+    parent_role_id = Column(Integer, ForeignKey("roles.id"), nullable=True, comment="🔐 父角色ID，支持继承")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -56,7 +56,7 @@ class RolePermission(Base):
     
     # 唯一约束
     __table_args__ = (
-        {"schema": None, "comment": "角色权限关联表"},
+        {"schema": None, "comment": "🔐 角色权限关联表"},
     )
 
 
@@ -65,10 +65,10 @@ class PermissionAuditLog(Base):
     __tablename__ = "permission_audit_logs"
     
     id = Column(Integer, primary_key=True, index=True)
-    operator_id = Column(Integer, ForeignKey("admin_users.id"), comment="操作人ID")
-    action = Column(String(50), nullable=False, comment="操作类型: grant, revoke, create_role等")
-    target_type = Column(String(50), comment="目标类型: role, user, permission")
-    target_id = Column(Integer, comment="目标ID")
-    details = Column(JSON, comment="详细信息")
+    operator_id = Column(Integer, ForeignKey("admin_users.id"), comment="🔐 操作人ID")
+    action = Column(String(50), nullable=False, comment="🔐 操作类型: grant, revoke, create_role等")
+    target_type = Column(String(50), comment="🔐 目标类型: role, user, permission")
+    target_id = Column(Integer, comment="🔐 目标ID")
+    details = Column(JSON, comment="🔐 详细信息")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

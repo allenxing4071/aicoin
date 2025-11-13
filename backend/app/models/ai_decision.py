@@ -14,7 +14,7 @@ class AIDecision(Base):
         Index('idx_ai_timestamp', 'timestamp'),
         Index('idx_ai_executed', 'executed'),
         Index('idx_ai_symbol', 'symbol'),
-        {'comment': 'AI决策日志 - 记录AI每次决策的市场数据输入、决策输出、执行状态和拒绝原因'}
+        {'comment': '🤖 AI决策日志 - 记录AI每次决策的市场数据输入、决策输出、执行状态和拒绝原因'}
     )
     
     id = Column(Integer, primary_key=True, index=True)

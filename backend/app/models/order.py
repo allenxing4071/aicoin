@@ -12,7 +12,7 @@ class Order(Base):
     __table_args__ = (
         Index('idx_orders_status', 'status'),
         Index('idx_orders_created', 'created_at'),
-        {'comment': '订单记录 - 记录所有交易订单的创建、执行、成交状态和交易所订单ID'}
+        {'comment': '📝 订单记录 - 记录所有交易订单的创建、执行、成交状态和交易所订单ID'}
     )
     
     id = Column(Integer, primary_key=True, index=True)

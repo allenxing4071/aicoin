@@ -11,7 +11,7 @@ class AccountSnapshot(Base):
     __tablename__ = "account_snapshots"
     __table_args__ = (
         Index('idx_account_timestamp', 'timestamp'),
-        {'comment': '账户快照 - 定期记录账户余额、权益、盈亏、夏普比率等关键财务指标'}
+        {'comment': '📊 账户快照 - 定期记录账户余额、权益、盈亏、夏普比率等关键财务指标'}
     )
     
     id = Column(Integer, primary_key=True, index=True)

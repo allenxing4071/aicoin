@@ -9,7 +9,7 @@ class PermissionLevelConfig(Base):
     """权限等级配置表"""
     __tablename__ = "permission_level_configs"
     __table_args__ = {
-        'comment': '权限等级配置 - 定义L0-L5各等级的交易限制、升降级条件和风控参数'
+        'comment': '⚙️ 权限等级配置 - 定义L0-L5各等级的交易限制、升降级条件和风控参数'
     }
     
     id = Column(Integer, primary_key=True, index=True)

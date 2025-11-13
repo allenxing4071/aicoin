@@ -14,7 +14,7 @@ class AILesson(Base):
         Index('idx_ai_lessons_type', 'lesson_type'),
         Index('idx_ai_lessons_regime', 'market_regime'),
         Index('idx_ai_lessons_confidence', 'confidence_score'),
-        {'comment': 'AI经验教训 - 知识库(L3)，存储AI从历史交易中学习到的成功经验和失败教训'}
+        {'comment': '📚 AI经验教训 - 知识库(L3)，存储AI从历史交易中学习到的成功经验和失败教训'}
     )
     
     id = Column(Integer, primary_key=True, index=True)
@@ -51,7 +51,7 @@ class AIStrategy(Base):
     __table_args__ = (
         Index('idx_ai_strategies_status', 'status'),
         Index('idx_ai_strategies_performance', 'win_rate', 'sharpe_ratio'),
-        {'comment': 'AI策略评估 - 知识库(L3)，记录各交易策略的性能指标、适用条件和历史表现'}
+        {'comment': '📚 AI策略评估 - 知识库(L3)，记录各交易策略的性能指标、适用条件和历史表现'}
     )
     
     id = Column(Integer, primary_key=True, index=True)
@@ -86,7 +86,7 @@ class MarketPattern(Base):
     
     __tablename__ = "market_patterns"
     __table_args__ = {
-        'comment': '市场模式 - AI识别的市场走势模式（趋势反转、突破、盘整等）及其历史表现'
+        'comment': '📚 市场模式 - AI识别的市场走势模式（趋势反转、突破、盘整等）及其历史表现'
     }
     
     id = Column(Integer, primary_key=True, index=True)

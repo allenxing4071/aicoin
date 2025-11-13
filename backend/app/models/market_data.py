@@ -26,7 +26,7 @@ class MarketDataKline(Base):
     __table_args__ = (
         UniqueConstraint('symbol', 'interval', 'open_time', name='uq_kline_symbol_interval_time'),
         Index('idx_kline_symbol_interval_time', 'symbol', 'interval', 'open_time'),
-        {'comment': 'K线数据 - 存储各币种的历史K线图数据（开高低收、成交量等）'}
+        {'comment': '📈 K线数据 - 存储各币种的历史K线图数据（开高低收、成交量等）'}
     )
     
     def __repr__(self):

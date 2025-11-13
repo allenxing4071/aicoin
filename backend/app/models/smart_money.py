@@ -13,6 +13,7 @@ from app.core.database import Base
 class SmartMoneyWallet(Base):
     """聪明钱钱包表"""
     __tablename__ = "smart_money_wallets"
+    __table_args__ = {'comment': '👛 聪明钱钱包 - 管理被标记为聪明钱的钱包地址列表及其历史表现和信誉评分'}
 
     id = Column(Integer, primary_key=True, index=True)
     wallet_address = Column(String(200), nullable=False, unique=True, index=True, comment="钱包地址")
@@ -34,6 +35,7 @@ class SmartMoneyWallet(Base):
 class SmartMoneyTransaction(Base):
     """聪明钱交易表"""
     __tablename__ = "smart_money_transactions"
+    __table_args__ = {'comment': '💎 聪明钱交易 - 追踪大户和聪明钱地址的链上交易行为，用于跟单和市场情绪分析'}
 
     id = Column(Integer, primary_key=True, index=True)
     wallet_id = Column(Integer, ForeignKey("smart_money_wallets.id", ondelete="CASCADE"), nullable=False)
