@@ -1,0 +1,38 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /root/aicoin
+            git pull origin main
+            docker-compose restart backend frontend
+            
+            # 等待服务启动
+            sleep 20
+            
+            # 自动执行重置成本
+            TOKEN=$(curl -s -X POST https://jifenpay.cc/api/v1/admin/login \
+              -H "Content-Type: application/json" \
+              -d '{"username": "admin", "password": "admin123"}' \
+              | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+            
+            curl -X POST https://jifenpay.cc/api/v1/ai-cost/reset-costs \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json"
+            
+            echo "✅ 部署和重置完成"
+
