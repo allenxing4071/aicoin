@@ -6,9 +6,10 @@ import axios from 'axios';
 
 interface PerformanceComparisonChartProps {
   symbol?: string;
+  timeRange?: 'all' | '72h';
 }
 
-export default function PerformanceComparisonChart({ symbol = 'BTCUSDT' }: PerformanceComparisonChartProps) {
+export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRange = 'all' }: PerformanceComparisonChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const btcLineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
@@ -174,7 +175,7 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT' }: Perfo
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [symbol]);
+  }, [symbol, timeRange]); // ✅ 添加 timeRange 依赖
 
   // 当选择的线改变时，更新可见性
   useEffect(() => {
@@ -199,7 +200,14 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT' }: Perfo
       const btcResponse = await axios.get(`/api/v1/market/klines/multi/${symbol}?intervals=1h`);
       
       if (btcResponse.data.success && btcResponse.data.data.klines['1h']) {
-        const klines = btcResponse.data.data.klines['1h'];
+        let klines = btcResponse.data.data.klines['1h'];
+        
+        // ✅ 根据 timeRange 筛选数据
+        if (timeRange === '72h') {
+          const now = Date.now() / 1000; // 当前时间（秒）
+          const hours72Ago = now - (72 * 60 * 60); // 72小时前
+          klines = klines.filter((k: any) => k.timestamp >= hours72Ago);
+        }
         
         // BTC价格数据（标准化）
         const firstPrice = parseFloat(klines[0].close);
@@ -240,7 +248,17 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT' }: Perfo
         const accountHistoryResponse = await axios.get('/api/v1/dashboard/account-history?limit=100');
         
         if (accountHistoryResponse.data && accountHistoryResponse.data.length > 0) {
-          const history = accountHistoryResponse.data;
+          let history = accountHistoryResponse.data;
+          
+          // ✅ 根据 timeRange 筛选数据
+          if (timeRange === '72h') {
+            const now = Date.now();
+            const hours72Ago = now - (72 * 60 * 60 * 1000); // 72小时前（毫秒）
+            history = history.filter((item: any) => {
+              const itemTime = new Date(item.timestamp).getTime();
+              return itemTime >= hours72Ago;
+            });
+          }
           
           // 检查数据是否有足够的变化（至少0.1%的波动）
           const firstValue = history[0].balance;

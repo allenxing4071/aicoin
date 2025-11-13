@@ -294,7 +294,7 @@ export default function Home() {
           <div className="flex-1 overflow-hidden bg-white p-2">
             {/* 图表内容 */}
             {chartMode === 'performance' ? (
-              <PerformanceComparisonChart symbol="BTCUSDT" />
+              <PerformanceComparisonChart symbol="BTCUSDT" timeRange={timeRange} />
             ) : chartMode === 'multi' ? (
               <MultiAssetChart 
                 assets={[
