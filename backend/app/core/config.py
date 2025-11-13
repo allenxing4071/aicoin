@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     
     # Application
     APP_NAME: str = "AIcoin Trading System"
-    APP_VERSION: str = "3.2.0"
+    APP_VERSION: str = "3.3.0"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"  # 🔒 默认关闭 DEBUG
     
     # Database
