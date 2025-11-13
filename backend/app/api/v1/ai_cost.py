@@ -321,6 +321,61 @@ async def reset_monthly_costs(db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/reset-costs")
+async def reset_platform_costs(
+    db: AsyncSession = Depends(get_db),
+    current_user: Dict = Depends(get_current_admin_user)
+):
+    """
+    重置所有平台成本为0
+    
+    ⚠️ 警告：这将清除所有历史成本数据！
+    使用场景：
+    1. 更新了价格表，想从头开始累积
+    2. 测试环境清理数据
+    3. 成本数据出现异常需要重置
+    """
+    try:
+        # 检查权限
+        if current_user.get("role") not in ["super_admin", "admin"]:
+            raise HTTPException(status_code=403, detail="需要管理员权限")
+        
+        logger.warning(f"⚠️  重置平台成本 (操作人: {current_user.get('username')})")
+        
+        # 获取所有平台
+        result = await db.execute(select(IntelligencePlatform))
+        platforms = result.scalars().all()
+        
+        reset_count = 0
+        old_total = 0.0
+        
+        for platform in platforms:
+            old_total += platform.total_cost
+            logger.info(f"   重置 {platform.name}: ¥{platform.total_cost:.4f} -> ¥0.00")
+            platform.total_cost = 0.0
+            platform.updated_at = datetime.utcnow()
+            reset_count += 1
+        
+        await db.commit()
+        
+        logger.info(f"✅ 已重置 {reset_count} 个平台，清除总成本: ¥{old_total:.4f}")
+        
+        return {
+            "success": True,
+            "message": f"已重置 {reset_count} 个平台的成本",
+            "data": {
+                "reset_count": reset_count,
+                "old_total_cost": old_total
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 重置成本失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/active-platforms")
 async def get_active_platforms(db: AsyncSession = Depends(get_db)):
     """
