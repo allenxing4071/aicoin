@@ -120,8 +120,8 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
     });
     accountLineSeriesRef.current = accountSeries;
 
-    // ❌ 移除这里的 loadChartData() 调用，改由第二个 useEffect 统一管理
-    // loadChartData(); 
+    // ❌ 移除这里的 loadChartData() 调用
+    // 数据加载由第二个 useEffect 统一管理（监听 timeRange 变化）
 
     // 十字光标移动事件 - 显示浮动价格标签
     chart.subscribeCrosshairMove((param) => {
@@ -179,16 +179,8 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
   
   // ✅ 单独的 useEffect 监听 timeRange 变化，重新加载数据
   useEffect(() => {
-    console.log('⚡ useEffect triggered, timeRange:', timeRange);
-    console.log('   chartRef.current:', !!chartRef.current);
-    console.log('   btcLineSeriesRef.current:', !!btcLineSeriesRef.current);
-    console.log('   accountLineSeriesRef.current:', !!accountLineSeriesRef.current);
-    
     if (chartRef.current && btcLineSeriesRef.current && accountLineSeriesRef.current) {
-      console.log('✅ All refs ready, calling loadChartData');
       loadChartData();
-    } else {
-      console.log('❌ Refs not ready, skipping loadChartData');
     }
   }, [timeRange, loadChartData]); // ✅ 添加 loadChartData 依赖
 
@@ -208,7 +200,6 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
   }, [selectedLine]);
 
   const loadChartData = useCallback(async () => {
-    console.log('🔄 loadChartData called with timeRange:', timeRange);
     try {
       setLoading(true);
 
@@ -403,11 +394,6 @@ export default function PerformanceComparisonChart({ symbol = 'BTCUSDT', timeRan
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* 🔍 调试信息 */}
-      <div className="mb-2 px-4 py-2 bg-red-100 border-2 border-red-500 rounded text-center">
-        <span className="text-red-900 font-bold">🔍 DEBUG: timeRange = {timeRange}</span>
-      </div>
-      
       {/* 图表控制栏 */}
       <div className="mb-4 px-4 py-3 bg-gradient-to-r from-orange-50 to-blue-50 rounded-lg border-2 border-gray-200">
         <div className="flex items-center justify-between">
