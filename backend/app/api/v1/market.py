@@ -58,7 +58,11 @@ async def get_klines_query(
         result = []
         for k in klines:
             # 计算close_time（假设是open_time + interval）
-            open_time = datetime.fromtimestamp(k.get('timestamp', 0))
+            # 注意：timestamp可能是秒或毫秒，需要判断
+            timestamp = k.get('timestamp', 0)
+            if timestamp > 10000000000:  # 如果大于这个值，说明是毫秒
+                timestamp = timestamp / 1000
+            open_time = datetime.fromtimestamp(timestamp)
             
             # 根据interval计算close_time
             interval_seconds = {
