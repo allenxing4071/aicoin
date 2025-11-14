@@ -125,30 +125,32 @@ export default function DebateMemoryPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          记忆管理
+    <div className="space-y-6">
+      {/* 标题区域 - 使用渐变背景 */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          🧠 记忆管理
         </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600">
           管理辩论系统的历史记忆和限流状态
         </p>
       </div>
 
+      {/* 消息提示 */}
       {message && (
         <div
-          className={`mb-4 p-4 rounded-lg ${
+          className={`p-4 rounded-xl font-semibold shadow-lg ${
             message.includes("失败")
-              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-              : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              ? "bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 text-red-800"
+              : "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-800"
           }`}
         >
           {message}
         </div>
       )}
 
-      {/* 记忆统计 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      {/* 记忆统计 - 使用彩色渐变卡片 */}
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
           记忆统计
         </h2>
@@ -198,16 +200,16 @@ export default function DebateMemoryPage() {
         <div className="mt-6 flex justify-end">
           <button
             onClick={handleClearMemory}
-            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
+            className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 active:scale-95"
           >
             清空所有记忆
           </button>
         </div>
       </div>
 
-      {/* 限流状态 */}
+      {/* 限流状态 - 使用白色卡片 */}
       {rateLimitStatus && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             限流状态
           </h2>
@@ -272,7 +274,7 @@ export default function DebateMemoryPage() {
           <div className="mt-6 flex justify-end">
             <button
               onClick={handleResetRateLimit}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 active:scale-95"
             >
               重置限流计数
             </button>
@@ -280,15 +282,15 @@ export default function DebateMemoryPage() {
         </div>
       )}
 
-      {/* 说明 */}
-      <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+      {/* 说明 - 使用渐变背景 */}
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">
           💡 关于记忆系统
         </h3>
-        <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+        <ul className="text-sm text-gray-700 space-y-2">
           <li>• 记忆系统使用 Qdrant 向量数据库存储历史辩论经验</li>
-          <li>• Bull/Bear/Manager 分析师各有独立的记忆空间</li>
-          <li>• 记忆会在辩论时自动检索相似情况，帮助改进决策</li>
+          <li>• Bull/Bear/Manager 分别拥有各自独立的记忆空间</li>
+          <li>• 记忆会在辩论时自动采集和回忆，帮助提升决策质量</li>
           <li>• 清空记忆将删除所有历史经验，谨慎操作</li>
         </ul>
       </div>

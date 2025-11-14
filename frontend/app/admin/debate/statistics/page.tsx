@@ -95,32 +95,35 @@ export default function DebateStatisticsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            辩论统计
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            查看多空辩论的统计数据和趋势分析
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* 标题区域 - 使用渐变背景 */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              📊 辩论统计
+            </h1>
+            <p className="text-gray-600">
+              查看多空辩论的统计数据和趋势分析
+            </p>
+          </div>
 
-        <select
-          value={days}
-          onChange={(e) => setDays(Number(e.target.value))}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-        >
-          <option value={7}>最近 7 天</option>
-          <option value={14}>最近 14 天</option>
-          <option value={30}>最近 30 天</option>
-          <option value={90}>最近 90 天</option>
-        </select>
+          <select
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+            className="px-4 py-2 border-2 border-green-300 rounded-xl bg-white text-gray-900 font-semibold focus:outline-none focus:border-green-500 transition-colors"
+          >
+            <option value={7}>最近 7 天</option>
+            <option value={14}>最近 14 天</option>
+            <option value={30}>最近 30 天</option>
+            <option value={90}>最近 90 天</option>
+          </select>
+        </div>
       </div>
 
-      {/* 汇总卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      {/* 汇总卡片 - 使用渐变背景 */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl shadow-lg p-6">
           <div className="text-sm text-gray-500 dark:text-gray-400">
             总辩论次数
           </div>
@@ -129,11 +132,11 @@ export default function DebateStatisticsPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-lg p-6">
+          <div className="text-sm text-gray-600 font-medium">
             多头胜率
           </div>
-          <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
+          <div className="text-3xl font-bold text-green-600 mt-2">
             {totalDebates > 0
               ? ((totalBullWins / totalDebates) * 100).toFixed(1)
               : 0}
@@ -141,11 +144,11 @@ export default function DebateStatisticsPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-xl shadow-lg p-6">
+          <div className="text-sm text-gray-600 font-medium">
             空头胜率
           </div>
-          <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">
+          <div className="text-3xl font-bold text-red-600 mt-2">
             {totalDebates > 0
               ? ((totalBearWins / totalDebates) * 100).toFixed(1)
               : 0}
@@ -153,11 +156,11 @@ export default function DebateStatisticsPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-200 rounded-xl shadow-lg p-6">
+          <div className="text-sm text-gray-600 font-medium">
             持有比例
           </div>
-          <div className="text-3xl font-bold text-gray-600 dark:text-gray-400 mt-2">
+          <div className="text-3xl font-bold text-gray-700 mt-2">
             {totalDebates > 0
               ? ((totalHolds / totalDebates) * 100).toFixed(1)
               : 0}
@@ -166,10 +169,10 @@ export default function DebateStatisticsPage() {
         </div>
       </div>
 
-      {/* 图表 */}
+      {/* 图表 - 使用白色卡片和阴影 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 推荐结果分布（饼图） */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             推荐结果分布
           </h2>
@@ -197,7 +200,7 @@ export default function DebateStatisticsPage() {
         </div>
 
         {/* 共识度和置信度趋势（折线图） */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             共识度与置信度趋势
           </h2>
@@ -225,7 +228,7 @@ export default function DebateStatisticsPage() {
         </div>
 
         {/* 辩论时长分布（柱状图） */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 lg:col-span-2">
+        <div className="bg-white rounded-xl shadow-lg p-6 lg:col-span-2">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             平均辩论时长（秒）
           </h2>

@@ -91,22 +91,24 @@ export default function DebateConfigPage() {
   const hourlyLimit = getConfigByKey("hourly_limit");
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          辩论配置
+    <div className="space-y-6">
+      {/* 标题区域 - 使用渐变背景 */}
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          ⚙️ 辩论配置
         </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600">
           管理多空辩论系统的配置参数
         </p>
       </div>
 
+      {/* 消息提示 */}
       {message && (
         <div
-          className={`mb-4 p-4 rounded-lg ${
+          className={`p-4 rounded-xl font-semibold shadow-lg ${
             message.includes("失败")
-              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-              : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              ? "bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 text-red-800"
+              : "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-800"
           }`}
         >
           {message}
@@ -115,7 +117,7 @@ export default function DebateConfigPage() {
 
       <div className="space-y-6">
         {/* 基础配置 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             基础配置
           </h2>
@@ -168,7 +170,7 @@ export default function DebateConfigPage() {
                   onBlur={(e) =>
                     handleUpdate("max_debate_rounds", e.target.value)
                   }
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-32"
+                  className="px-4 py-2 border-2 border-blue-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-blue-500 transition-colors w-32"
                 />
               </div>
             )}
@@ -193,7 +195,7 @@ export default function DebateConfigPage() {
                   onBlur={(e) =>
                     handleUpdate("debate_timeout_seconds", e.target.value)
                   }
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-32"
+                  className="px-4 py-2 border-2 border-blue-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-blue-500 transition-colors w-32"
                 />
               </div>
             )}
@@ -228,7 +230,7 @@ export default function DebateConfigPage() {
         </div>
 
         {/* 触发条件 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             触发条件
           </h2>
@@ -254,7 +256,7 @@ export default function DebateConfigPage() {
                   onBlur={(e) =>
                     handleUpdate("min_position_size", e.target.value)
                   }
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-48"
+                  className="px-4 py-2 border-2 border-blue-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-blue-500 transition-colors w-48"
                 />
               </div>
             )}
@@ -274,7 +276,7 @@ export default function DebateConfigPage() {
                     updateConfigValue("min_permission_level", e.target.value);
                     handleUpdate("min_permission_level", e.target.value);
                   }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-32"
+                  className="px-4 py-2 border-2 border-blue-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-blue-500 transition-colors w-32"
                 >
                   <option value="L0">L0</option>
                   <option value="L1">L1</option>
@@ -289,7 +291,7 @@ export default function DebateConfigPage() {
         </div>
 
         {/* 限流配置 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             限流配置
           </h2>
@@ -313,7 +315,7 @@ export default function DebateConfigPage() {
                     updateConfigValue("daily_limit", e.target.value)
                   }
                   onBlur={(e) => handleUpdate("daily_limit", e.target.value)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-32"
+                  className="px-4 py-2 border-2 border-blue-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-blue-500 transition-colors w-32"
                 />
               </div>
             )}
@@ -336,7 +338,7 @@ export default function DebateConfigPage() {
                     updateConfigValue("hourly_limit", e.target.value)
                   }
                   onBlur={(e) => handleUpdate("hourly_limit", e.target.value)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-32"
+                  className="px-4 py-2 border-2 border-blue-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-blue-500 transition-colors w-32"
                 />
               </div>
             )}

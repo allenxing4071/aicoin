@@ -67,62 +67,65 @@ export default function DebateHistoryPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          辩论历史
+    <div className="space-y-6">
+      {/* 标题区域 - 使用渐变背景 */}
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          ⚡ 辩论历史
         </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600">
           查看多空辩论的历史记录和分析结果
         </p>
       </div>
 
-      {/* 筛选器 */}
-      <div className="mb-6 flex gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            币种
-          </label>
-          <select
-            value={symbolFilter}
-            onChange={(e) => {
-              setSymbolFilter(e.target.value);
-              setPage(0);
-            }}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          >
-            <option value="">全部</option>
-            <option value="BTC">BTC</option>
-            <option value="ETH">ETH</option>
-            <option value="SOL">SOL</option>
-            <option value="XRP">XRP</option>
-            <option value="DOGE">DOGE</option>
-            <option value="BNB">BNB</option>
-          </select>
-        </div>
+      {/* 筛选器 - 使用白色卡片 */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              币种
+            </label>
+            <select
+              value={symbolFilter}
+              onChange={(e) => {
+                setSymbolFilter(e.target.value);
+                setPage(0);
+              }}
+              className="px-4 py-2 border-2 border-purple-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-purple-500 transition-colors"
+            >
+              <option value="">全部</option>
+              <option value="BTC">BTC</option>
+              <option value="ETH">ETH</option>
+              <option value="SOL">SOL</option>
+              <option value="XRP">XRP</option>
+              <option value="DOGE">DOGE</option>
+              <option value="BNB">BNB</option>
+            </select>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            推荐结果
-          </label>
-          <select
-            value={recommendationFilter}
-            onChange={(e) => {
-              setRecommendationFilter(e.target.value);
-              setPage(0);
-            }}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          >
-            <option value="">全部</option>
-            <option value="BUY">BUY</option>
-            <option value="SELL">SELL</option>
-            <option value="HOLD">HOLD</option>
-          </select>
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              推荐结果
+            </label>
+            <select
+              value={recommendationFilter}
+              onChange={(e) => {
+                setRecommendationFilter(e.target.value);
+                setPage(0);
+              }}
+              className="px-4 py-2 border-2 border-purple-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-purple-500 transition-colors"
+            >
+              <option value="">全部</option>
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+              <option value="HOLD">HOLD</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* 表格 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      {/* 表格 - 使用白色卡片和阴影 */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">
             加载中...
@@ -219,14 +222,14 @@ export default function DebateHistoryPage() {
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-6 py-2 border-2 border-purple-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50 text-gray-900 font-semibold transition-all"
               >
                 上一页
               </button>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={(page + 1) * limit >= total}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-6 py-2 border-2 border-purple-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50 text-gray-900 font-semibold transition-all"
               >
                 下一页
               </button>
