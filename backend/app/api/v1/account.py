@@ -1,13 +1,19 @@
 """Account API endpoints"""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Query
 import logging
 import json
-from typing import Optional
+from typing import Optional, List
+from datetime import datetime, timedelta
+from sqlalchemy import select, desc
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.account import AccountInfo, PositionInfo
+from app.schemas.admin import AccountSnapshotRecord
+from app.models.account import AccountSnapshot
 from app.services.market.hyperliquid_client import hyperliquid_client
 from app.core.redis_client import redis_client
+from app.core.database import get_db
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -134,5 +140,48 @@ async def get_account_value():
         
     except Exception as e:
         logger.error(f"Error fetching account value: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/snapshots", response_model=List[AccountSnapshotRecord])
+async def get_account_snapshots(
+    hours: int = Query(default=72, ge=1, le=720, description="查询多少小时的历史数据"),
+    limit: int = Query(default=500, ge=10, le=1000, description="返回的数据点数量"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取账户快照历史数据
+    
+    Args:
+        hours: 查询多少小时的历史数据（默认72小时）
+        limit: 返回的数据点数量（默认500）
+        db: 数据库会话
+        
+    Returns:
+        账户快照列表，按时间倒序排列
+    """
+    try:
+        # 计算起始时间
+        start_time = datetime.utcnow() - timedelta(hours=hours)
+        
+        # 查询数据库
+        query = (
+            select(AccountSnapshot)
+            .where(AccountSnapshot.timestamp >= start_time)
+            .order_by(desc(AccountSnapshot.timestamp))
+            .limit(limit)
+        )
+        
+        result = await db.execute(query)
+        snapshots = result.scalars().all()
+        
+        # 转换为响应模型
+        snapshot_records = [AccountSnapshotRecord.model_validate(s) for s in snapshots]
+        
+        logger.info(f"✅ 返回 {len(snapshot_records)} 条账户快照记录（最近 {hours} 小时）")
+        return snapshot_records
+        
+    except Exception as e:
+        logger.error(f"Error fetching account snapshots: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
