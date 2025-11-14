@@ -167,6 +167,12 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/account",
     tags=["Account"]
 )
+# 添加accounts路由别名（用于前端兼容性）
+app.include_router(
+    account.router,
+    prefix=f"{settings.API_V1_PREFIX}/accounts",
+    tags=["Account (Alias)"]
+)
 app.include_router(
     performance.router,
     prefix=f"{settings.API_V1_PREFIX}/performance",
