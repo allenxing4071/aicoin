@@ -12,7 +12,7 @@ import PermissionIndicator from './components/ai/PermissionIndicator';
 import TradingChart from './components/charts/TradingChart';
 import MultiAssetChart from './components/charts/MultiAssetChart';
 import PerformanceComparisonChart from './components/charts/PerformanceComparisonChart';
-import { formatBeijingTimeOnly } from './lib/datetime';
+import { formatBeijingTimeOnly } from '../lib/datetime';
 
 // ✨ 性能优化: 懒加载非关键组件,减少首屏加载时间
 const TradeListComplete = dynamic(() => import('./components/trades/TradeListComplete'), {
