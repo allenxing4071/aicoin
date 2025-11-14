@@ -186,7 +186,12 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     # 🔒 安全升级: CORS 配置从环境变量读取
     # 默认值，如果环境变量是字符串会自动解析
-    CORS_ORIGINS: list = ["http://192.168.31.185", "http://localhost:3000"]
+    CORS_ORIGINS: list = [
+        "http://192.168.31.185",
+        "http://localhost:3000",
+        "https://jifenpay.cc",
+        "http://jifenpay.cc"
+    ]
     
     # ===== 日志配置 =====
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")  # DEBUG, INFO, WARNING, ERROR, CRITICAL

@@ -5,7 +5,8 @@ import { Card, Table, Button, message, Spin, Tag, Modal, Form, Input, InputNumbe
 import { ReloadOutlined, EditOutlined, DollarOutlined, SyncOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// 使用相对路径，通过Nginx代理到后端
+const API_BASE_URL = '';
 
 interface PricingData {
   provider: string;
