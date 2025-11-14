@@ -39,7 +39,7 @@ export default function AIPricingPage() {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/v1/ai-pricing/pricing-table`);
       if (response.data.success) {
-        const data = response.data.data;
+        const data = response.data.data.pricing_table; // 注意这里需要访问 pricing_table
         
         // 转换数据格式
         const tableData: PricingData[] = [];
@@ -48,11 +48,11 @@ export default function AIPricingPage() {
             tableData.push({
               provider,
               model,
-              input_price: pricing.input_price,
-              output_price: pricing.output_price,
-              cache_price: pricing.cache_price,
-              last_updated: pricing.last_updated,
-              source: pricing.source
+              input_price: pricing.input || 0,
+              output_price: pricing.output || 0,
+              cache_price: pricing.input_cached,
+              last_updated: pricing.last_updated || new Date().toISOString(),
+              source: pricing.note ? 'official' : 'default'
             });
           });
         });
