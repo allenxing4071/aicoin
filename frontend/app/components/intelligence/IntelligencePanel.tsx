@@ -106,14 +106,29 @@ export default function IntelligencePanel() {
   const sentimentEmoji = {
     BULLISH: '🟢',
     BEARISH: '🔴',
-    NEUTRAL: '🟡'
+    NEUTRAL: '🟡',
+    '看涨': '🟢',
+    '看跌': '🔴',
+    '中性': '🟡'
   }[report.market_sentiment] || '⚪';
 
   const sentimentColor = {
     BULLISH: 'text-green-600',
     BEARISH: 'text-red-600',
-    NEUTRAL: 'text-yellow-600'
+    NEUTRAL: 'text-yellow-600',
+    '看涨': 'text-green-600',
+    '看跌': 'text-red-600',
+    '中性': 'text-yellow-600'
   }[report.market_sentiment] || 'text-gray-600';
+
+  const sentimentText = {
+    BULLISH: '看涨',
+    BEARISH: '看跌',
+    NEUTRAL: '中性',
+    '看涨': '看涨',
+    '看跌': '看跌',
+    '中性': '中性'
+  }[report.market_sentiment] || report.market_sentiment;
 
   return (
     <div className="space-y-4">
@@ -137,7 +152,7 @@ export default function IntelligencePanel() {
           <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm text-gray-600 mb-1">市场情绪</div>
             <div className={`text-2xl font-bold ${sentimentColor} flex items-center`}>
-              {sentimentEmoji} {report.market_sentiment}
+              {sentimentEmoji} {sentimentText}
             </div>
             <div className="text-sm text-gray-500 mt-1">
               分数: {report.sentiment_score > 0 ? '+' : ''}{report.sentiment_score.toFixed(2)}
