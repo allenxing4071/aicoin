@@ -12,6 +12,7 @@ from app.api.v1 import (
     intelligence,
     exchanges,  # v3.1 新增
     market_extended,  # v3.1 新增
+    debate,  # v3.4 新增 - 辩论系统
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     'intelligence',
     'exchanges',
     'market_extended',
+    'debate',
 ]

@@ -18,6 +18,11 @@ from app.services.memory.long_term_memory import LongTermMemory
 from app.services.memory.knowledge_base import KnowledgeBase
 from app.services.decision.prompt_templates import PromptTemplates
 from app.services.intelligence.storage import intelligence_storage
+from app.services.decision.debate_system import DebateCoordinator
+from app.services.decision.debate_memory import DebateMemoryManager
+from app.services.decision.debate_config import DebateConfigManager
+from app.services.decision.debate_rate_limiter import DebateRateLimiter
+from qdrant_client import QdrantClient
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +67,38 @@ class DecisionEngineV2:
             embedding_provider="auto"  # 自动选择: Qwen > DeepSeek > OpenAI
         )
         self.knowledge_base = KnowledgeBase(db_session)
+        
+        # 初始化辩论系统（新增）
+        try:
+            # 创建 Qdrant 客户端（复用现有配置）
+            qdrant_client = QdrantClient(
+                host=settings.QDRANT_HOST,
+                port=settings.QDRANT_PORT
+            )
+            
+            # 初始化辩论组件
+            self.debate_coordinator = DebateCoordinator(
+                llm_client=self.client,
+                max_debate_rounds=1,  # 默认1轮，后续从配置读取
+                timeout_seconds=60
+            )
+            
+            self.debate_memory = DebateMemoryManager(
+                qdrant_client=qdrant_client,
+                embedding_client=self.client,
+                embedding_model="text-embedding-3-small"
+            )
+            
+            self.debate_config = DebateConfigManager(db_session)
+            self.debate_limiter = DebateRateLimiter(redis_client, daily_limit=100, hourly_limit=10)
+            
+            logger.info("✅ 辩论系统初始化成功")
+        except Exception as e:
+            logger.error(f"⚠️  辩论系统初始化失败: {e}，将禁用辩论功能")
+            self.debate_coordinator = None
+            self.debate_memory = None
+            self.debate_config = None
+            self.debate_limiter = None
         
         # 当前权限等级 - 使用配置文件默认值（避免在__init__中进行异步数据库查询）
         self.current_permission_level = settings.INITIAL_PERMISSION_LEVEL
@@ -181,6 +218,59 @@ class DecisionEngineV2:
             else:
                 logger.warning("⚠️  未找到Qwen情报报告")
             
+            # === 第2.5步：多空辩论（条件触发）===
+            debate_result = None
+            if self.debate_coordinator and self.debate_config and self.debate_limiter:
+                try:
+                    # 检查是否应该触发辩论
+                    should_debate = await self._should_enable_debate(account_state)
+                    
+                    if should_debate:
+                        # 检查限流
+                        can_debate, limit_reason = await self.debate_limiter.check_rate_limit()
+                        
+                        if can_debate:
+                            logger.info("⚔️  启动多空辩论机制...")
+                            
+                            # 构建市场情况描述（用于记忆检索）
+                            situation_desc = self._build_situation_description(market_data, intelligence_report)
+                            
+                            # 获取历史记忆
+                            past_memories = []
+                            if await self.debate_config.should_use_memory():
+                                past_memories = self.debate_memory.get_manager_memories(situation_desc, n_matches=2)
+                            
+                            # 准备情报报告字典
+                            intelligence_dict = {}
+                            if intelligence_report:
+                                intelligence_dict = {
+                                    "market_sentiment": intelligence_report.market_sentiment.value,
+                                    "confidence": intelligence_report.confidence,
+                                    "summary": intelligence_report.summary[:500] if intelligence_report.summary else ""
+                                }
+                            
+                            # 执行辩论
+                            debate_result = await self.debate_coordinator.conduct_debate(
+                                market_data=market_data,
+                                intelligence_report=intelligence_dict,
+                                past_memories=past_memories
+                            )
+                            
+                            # 更新限流计数
+                            await self.debate_limiter.increment_count()
+                            
+                            logger.info(f"✅ 辩论完成 - 推荐: {debate_result['final_decision'].get('recommendation')}, "
+                                      f"共识度: {debate_result['consensus_level']:.2f}, "
+                                      f"耗时: {debate_result['duration_seconds']}秒")
+                        else:
+                            logger.warning(f"⏸️  辩论被限流跳过: {limit_reason}")
+                    else:
+                        logger.debug("⏸️  不满足辩论触发条件，跳过")
+                        
+                except Exception as e:
+                    logger.error(f"❌ 辩论执行失败: {e}", exc_info=True)
+                    debate_result = None
+            
             # === 第3步：构建Prompt ===
             logger.info("📝 构建决策Prompt...")
             
@@ -195,7 +285,8 @@ class DecisionEngineV2:
                 recent_decisions=recent_decisions,
                 similar_situations=similar_situations,
                 lessons_learned=lessons_learned,
-                intelligence_report=intelligence_report
+                intelligence_report=intelligence_report,
+                debate_result=debate_result  # 新增：辩论结果
             )
             
             # === 第4步：调用LLM ===
@@ -556,4 +647,48 @@ class DecisionEngineV2:
         except Exception as e:
             logger.error(f"权限评估失败: {e}")
             return self.current_permission_level, "评估失败"
+    
+    async def _should_enable_debate(self, account_state: Dict[str, Any]) -> bool:
+        """
+        判断是否应该启用辩论
+        
+        Args:
+            account_state: 账户状态
+        
+        Returns:
+            是否启用辩论
+        """
+        if not self.debate_config:
+            return False
+        
+        return await self.debate_config.should_trigger_debate(account_state)
+    
+    def _build_situation_description(self, market_data: Dict, intelligence_report: Any) -> str:
+        """
+        构建市场情况描述（用于记忆检索）
+        
+        Args:
+            market_data: 市场数据
+            intelligence_report: 情报报告
+        
+        Returns:
+            情况描述字符串
+        """
+        desc_parts = []
+        
+        # 添加价格信息
+        if "price" in market_data:
+            desc_parts.append(f"Current price: ${market_data['price']}")
+        
+        # 添加趋势信息
+        if "trend" in market_data:
+            desc_parts.append(f"Trend: {market_data['trend']}")
+        
+        # 添加情报信息
+        if intelligence_report:
+            desc_parts.append(f"Market sentiment: {intelligence_report.market_sentiment.value}")
+            if intelligence_report.summary:
+                desc_parts.append(f"Summary: {intelligence_report.summary[:200]}")
+        
+        return " | ".join(desc_parts)
 

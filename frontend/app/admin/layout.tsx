@@ -301,6 +301,33 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       });
     }
     
+    // 辩论系统 - 需要 ai:view 权限
+    if (checkPermission('ai:view')) {
+      items.push({
+        key: "debate-group",
+        icon: <ThunderboltOutlined />,
+        label: "辩论系统",
+        children: [
+          {
+            key: "/admin/debate",
+            label: <Link href="/admin/debate">辩论历史</Link>,
+          },
+          {
+            key: "/admin/debate/config",
+            label: <Link href="/admin/debate/config">辩论配置</Link>,
+          },
+          {
+            key: "/admin/debate/statistics",
+            label: <Link href="/admin/debate/statistics">辩论统计</Link>,
+          },
+          {
+            key: "/admin/debate/memory",
+            label: <Link href="/admin/debate/memory">记忆管理</Link>,
+          },
+        ],
+      });
+    }
+    
     // 数据湖 - 需要 system:view 权限
     if (checkPermission('system:view')) {
       items.push({

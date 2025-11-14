@@ -16,7 +16,8 @@ class PromptTemplates:
         recent_decisions: list,
         similar_situations: list,
         lessons_learned: list,
-        intelligence_report = None
+        intelligence_report = None,
+        debate_result: Dict[str, Any] = None
     ) -> str:
         """
         构建v2.0决策Prompt（平衡版）
@@ -247,6 +248,36 @@ INTELLIGENT DECISION MAKING GUIDE (智能化策略)
 - 考虑账户余额（$49.43）来选择币种和仓位大小
 """
 
+        # 7.5 辩论结果（新增）
+        debate_section = ""
+        if debate_result:
+            final_decision = debate_result.get('final_decision', {})
+            debate_history = debate_result.get('debate_history', {})
+            
+            debate_section = f"""
+═══════════════════════════════════════════════════════════
+MULTI-PERSPECTIVE DEBATE ANALYSIS (多空辩论分析)
+═══════════════════════════════════════════════════════════
+我们的多空分析师团队已经对当前市场进行了深入辩论：
+
+🐂 Bull Analyst (多头分析师) 论点：
+{debate_history.get('bull_history', '无')[:500]}...
+
+🐻 Bear Analyst (空头分析师) 论点：
+{debate_history.get('bear_history', '无')[:500]}...
+
+📊 Research Manager (研究经理) 综合判断：
+- 推荐操作: {final_decision.get('recommendation', 'HOLD')}
+- 置信度: {final_decision.get('confidence', 0.5):.2f}
+- 共识度: {debate_result.get('consensus_level', 0.5):.2f}
+- 决策理由: {final_decision.get('rationale', '无')[:300]}
+
+⚠️  重要提示：
+这是内部辩论的结果，提供了多角度的市场分析。
+你应该参考这些观点，但最终决策权在你手中。
+如果辩论共识度较低（< 0.5），说明市场分歧较大，应更加谨慎。
+"""
+        
         # 组合完整Prompt
         full_prompt = f"""{system_role}
 
@@ -262,6 +293,8 @@ INTELLIGENT DECISION MAKING GUIDE (智能化策略)
 
 {intelligence_section}
 
+{debate_section}
+
 {guidance_section}
 
 {output_format}
@@ -272,7 +305,8 @@ INTELLIGENT DECISION MAKING GUIDE (智能化策略)
 2. 风险评估（市场风险、仓位风险）
 3. 历史记忆（相似情况的经验）
 4. Qwen情报分析（市场情绪、新闻、巨鲸活动）
-5. 决策逻辑（为什么选择这个行动）
+5. 多空辩论分析（如果有）
+6. 决策逻辑（为什么选择这个行动）
 """
         
         return full_prompt

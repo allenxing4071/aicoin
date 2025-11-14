@@ -328,6 +328,14 @@ app.include_router(
     tags=["Admin - RBAC"]
 )
 
+# v3.4: 辩论系统
+from app.api.v1 import debate
+app.include_router(
+    debate.router,
+    prefix=f"{settings.API_V1_PREFIX}/debate",
+    tags=["Debate System - Multi-Agent Analysis"]
+)
+
 
 @app.on_event("startup")
 async def startup_event():
