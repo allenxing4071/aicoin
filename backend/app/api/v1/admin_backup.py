@@ -317,10 +317,61 @@ async def cleanup_old_data(
             "risk_events": RiskEvent
         }
         
+        # 支持清理所有表
+        if request.table == "all":
+            total_deleted = 0
+            total_kept = 0
+            results = {}
+            
+            for table_name, model in model_mapping.items():
+                # 统计要删除的记录数
+                count_query = select(func.count()).select_from(model).where(
+                    model.created_at < cutoff_date
+                )
+                result = await db.execute(count_query)
+                delete_count = result.scalar()
+                
+                # 统计保留的记录数
+                keep_query = select(func.count()).select_from(model).where(
+                    model.created_at >= cutoff_date
+                )
+                result = await db.execute(keep_query)
+                keep_count = result.scalar()
+                
+                # 执行删除
+                if delete_count > 0:
+                    delete_stmt = delete(model).where(model.created_at < cutoff_date)
+                    await db.execute(delete_stmt)
+                
+                total_deleted += delete_count
+                total_kept += keep_count
+                results[table_name] = {
+                    "deleted": delete_count,
+                    "kept": keep_count
+                }
+                
+                logger.info(f"清理 {table_name}: 删除 {delete_count} 条, 保留 {keep_count} 条")
+            
+            await db.commit()
+            
+            return {
+                "success": True,
+                "data": {
+                    "table": "all",
+                    "deleted_count": total_deleted,
+                    "kept_count": total_kept,
+                    "cutoff_date": cutoff_date.isoformat(),
+                    "days_kept": request.days_to_keep,
+                    "details": results
+                },
+                "message": f"成功清理所有表，共删除 {total_deleted} 条旧数据"
+            }
+        
+        # 清理单个表
         if request.table not in model_mapping:
             raise HTTPException(
                 status_code=400,
-                detail=f"不支持的表名: {request.table}"
+                detail=f"不支持的表名: {request.table}。支持的表: {', '.join(model_mapping.keys())}, all"
             )
         
         model = model_mapping[request.table]
