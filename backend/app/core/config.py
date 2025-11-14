@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "AIcoin Trading System"
     APP_VERSION: str = "3.3.0"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"  # 🔒 默认关闭 DEBUG
+    TIMEZONE: str = "Asia/Shanghai"  # 默认时区：北京时间
     
     # Database
     DATABASE_URL: str = "postgresql://aicoin:aicoin_secure_password_2024@localhost:5432/aicoin"

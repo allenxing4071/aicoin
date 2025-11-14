@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../../../lib/api';
+import { formatBeijingTimeShort, formatBeijingDate } from '../../../lib/datetime';
 
 interface NewsItem {
   title: string;
@@ -175,13 +176,10 @@ export default function IntelligencePanel() {
           <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm text-gray-600 mb-1">更新时间</div>
             <div className="text-lg font-semibold text-gray-800">
-              {new Date(report.timestamp).toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
+              {formatBeijingTimeShort(report.timestamp)}
             </div>
             <div className="text-sm text-gray-500 mt-1">
-              {new Date(report.timestamp).toLocaleDateString('zh-CN')}
+              {formatBeijingDate(report.timestamp)}
             </div>
           </div>
         </div>
@@ -217,7 +215,7 @@ export default function IntelligencePanel() {
                       <div className="flex items-center gap-3 mt-2 text-sm text-gray-600">
                         <span className="font-medium">{news.source}</span>
                         <span className="px-2 py-1 bg-gray-50 rounded">{news.impact}</span>
-                        <span>{new Date(news.published_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{formatBeijingTimeShort(news.published_at)}</span>
                       </div>
                     </div>
                   </div>
@@ -260,7 +258,7 @@ export default function IntelligencePanel() {
                       </div>
                     </div>
                     <div className="text-sm text-gray-500">
-                      {new Date(whale.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                      {formatBeijingTimeShort(whale.timestamp)}
                     </div>
                   </div>
                 </div>
