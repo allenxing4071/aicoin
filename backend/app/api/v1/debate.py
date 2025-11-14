@@ -23,7 +23,7 @@ from app.schemas.debate import (
 )
 from app.services.decision.debate_config import DebateConfigManager
 from app.services.decision.debate_rate_limiter import DebateRateLimiter
-from app.core.redis_client import get_redis_client
+from app.core.redis_client import get_redis
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +246,7 @@ async def clear_debate_memory():
 async def get_rate_limit_status():
     """获取限流状态"""
     try:
-        redis_client = await get_redis_client()
+        redis_client = await get_redis()
         limiter = DebateRateLimiter(redis_client, daily_limit=100, hourly_limit=10)
         
         counts = await limiter.get_current_counts()
@@ -269,7 +269,7 @@ async def reset_rate_limit():
     ⚠️  注意：这将重置今日和当前小时的辩论计数
     """
     try:
-        redis_client = await get_redis_client()
+        redis_client = await get_redis()
         limiter = DebateRateLimiter(redis_client, daily_limit=100, hourly_limit=10)
         
         await limiter.reset_counts()
