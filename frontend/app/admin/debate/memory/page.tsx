@@ -158,7 +158,7 @@ export default function DebateMemoryPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="text-4xl mb-2">🐂</div>
-            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <div className="text-sm font-bold text-gray-900 dark:text-gray-300" style={{ color: '#111827' }}>
               多头记忆
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -168,7 +168,7 @@ export default function DebateMemoryPage() {
 
           <div className="text-center">
             <div className="text-4xl mb-2">🐻</div>
-            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <div className="text-sm font-bold text-gray-900 dark:text-gray-300" style={{ color: '#111827' }}>
               空头记忆
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -178,7 +178,7 @@ export default function DebateMemoryPage() {
 
           <div className="text-center">
             <div className="text-4xl mb-2">📊</div>
-            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <div className="text-sm font-bold text-gray-900 dark:text-gray-300" style={{ color: '#111827' }}>
               经理记忆
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -188,7 +188,7 @@ export default function DebateMemoryPage() {
 
           <div className="text-center">
             <div className="text-4xl mb-2">💾</div>
-            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <div className="text-sm font-bold text-gray-900 dark:text-gray-300" style={{ color: '#111827' }}>
               总记忆数
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -218,7 +218,7 @@ export default function DebateMemoryPage() {
             {/* 每日限制 */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-bold dark:text-gray-300" style={{ color: '#111827' }}>
                   每日辩论次数
                 </span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">
@@ -237,7 +237,7 @@ export default function DebateMemoryPage() {
                   }}
                 ></div>
               </div>
-              <div className="mt-1 text-xs font-medium text-gray-600 dark:text-gray-400">
+              <div className="mt-1 text-xs font-bold dark:text-gray-400" style={{ color: '#374151' }}>
                 剩余: {rateLimitStatus.daily_remaining} 次
               </div>
             </div>
@@ -245,7 +245,7 @@ export default function DebateMemoryPage() {
             {/* 每小时限制 */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-bold dark:text-gray-300" style={{ color: '#111827' }}>
                   每小时辩论次数
                 </span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">
@@ -265,7 +265,7 @@ export default function DebateMemoryPage() {
                   }}
                 ></div>
               </div>
-              <div className="mt-1 text-xs font-medium text-gray-600 dark:text-gray-400">
+              <div className="mt-1 text-xs font-bold dark:text-gray-400" style={{ color: '#374151' }}>
                 剩余: {rateLimitStatus.hourly_remaining} 次
               </div>
             </div>
@@ -287,7 +287,7 @@ export default function DebateMemoryPage() {
         <h3 className="text-lg font-bold text-gray-900 mb-3">
           💡 关于记忆系统
         </h3>
-        <ul className="text-sm font-medium text-gray-800 space-y-2">
+        <ul className="text-sm font-bold space-y-2" style={{ color: '#1f2937' }}>
           <li>• 记忆系统使用 Qdrant 向量数据库存储历史辩论经验</li>
           <li>• Bull/Bear/Manager 分别拥有各自独立的记忆空间</li>
           <li>• 记忆会在辩论时自动采集和回忆，帮助提升决策质量</li>
