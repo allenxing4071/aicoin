@@ -94,10 +94,10 @@ export default function DebateConfigPage() {
     <div className="space-y-6">
       {/* 标题区域 - 使用渐变背景 */}
       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold mb-2" style={{ color: '#000000' }}>
           ⚙️ 辩论配置
         </h1>
-        <p className="text-gray-600">
+        <p style={{ color: '#000000' }}>
           管理多空辩论系统的配置参数
         </p>
       </div>
@@ -118,7 +118,7 @@ export default function DebateConfigPage() {
       <div className="space-y-6">
         {/* 基础配置 */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#000000' }}>
             基础配置
           </h2>
 
@@ -231,7 +231,7 @@ export default function DebateConfigPage() {
 
         {/* 触发条件 */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#000000' }}>
             触发条件
           </h2>
 
@@ -292,7 +292,7 @@ export default function DebateConfigPage() {
 
         {/* 限流配置 */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#000000' }}>
             限流配置
           </h2>
 

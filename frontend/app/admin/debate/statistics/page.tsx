@@ -127,7 +127,7 @@ export default function DebateStatisticsPage() {
           <div className="text-sm text-gray-500 dark:text-gray-400">
             总辩论次数
           </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+          <div className="text-3xl font-bold mt-2" style={{ color: '#000000' }}>
             {totalDebates}
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function DebateStatisticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 推荐结果分布（饼图） */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#000000' }}>
             推荐结果分布
           </h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -229,7 +229,7 @@ export default function DebateStatisticsPage() {
 
         {/* 辩论时长分布（柱状图） */}
         <div className="bg-white rounded-xl shadow-lg p-6 lg:col-span-2">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#000000' }}>
             平均辩论时长（秒）
           </h2>
           <ResponsiveContainer width="100%" height={300}>

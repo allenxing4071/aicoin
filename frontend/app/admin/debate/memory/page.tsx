@@ -151,47 +151,47 @@ export default function DebateMemoryPage() {
 
       {/* 记忆统计 - 使用彩色渐变卡片 */}
       <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+        <h2 className="text-xl font-bold mb-4" style={{ color: '#000000' }}>
           记忆统计
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="text-4xl mb-2">🐂</div>
-            <div className="text-sm font-bold text-gray-900 dark:text-gray-300" style={{ color: '#111827' }}>
+            <div className="text-sm font-bold" style={{ color: '#000000' }}>
               多头记忆
             </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+            <div className="text-2xl font-bold mt-2" style={{ color: '#000000' }}>
               {memoryStats.bull_memory_count}
             </div>
           </div>
 
           <div className="text-center">
             <div className="text-4xl mb-2">🐻</div>
-            <div className="text-sm font-bold text-gray-900 dark:text-gray-300" style={{ color: '#111827' }}>
+            <div className="text-sm font-bold" style={{ color: '#000000' }}>
               空头记忆
             </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+            <div className="text-2xl font-bold mt-2" style={{ color: '#000000' }}>
               {memoryStats.bear_memory_count}
             </div>
           </div>
 
           <div className="text-center">
             <div className="text-4xl mb-2">📊</div>
-            <div className="text-sm font-bold text-gray-900 dark:text-gray-300" style={{ color: '#111827' }}>
+            <div className="text-sm font-bold" style={{ color: '#000000' }}>
               经理记忆
             </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+            <div className="text-2xl font-bold mt-2" style={{ color: '#000000' }}>
               {memoryStats.manager_memory_count}
             </div>
           </div>
 
           <div className="text-center">
             <div className="text-4xl mb-2">💾</div>
-            <div className="text-sm font-bold text-gray-900 dark:text-gray-300" style={{ color: '#111827' }}>
+            <div className="text-sm font-bold" style={{ color: '#000000' }}>
               总记忆数
             </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+            <div className="text-2xl font-bold mt-2" style={{ color: '#000000' }}>
               {memoryStats.total_memory_count}
             </div>
           </div>
