@@ -56,8 +56,20 @@ export default function DebateHistoryPage() {
       BUY: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       SELL: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       HOLD: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
+      "买入": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      "卖出": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      "持有": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
     };
     return colors[recommendation as keyof typeof colors] || colors.HOLD;
+  };
+  
+  const getRecommendationText = (recommendation: string) => {
+    const textMap: Record<string, string> = {
+      BUY: "买入",
+      SELL: "卖出",
+      HOLD: "持有",
+    };
+    return textMap[recommendation] || recommendation;
   };
 
   const getConsensusColor = (level: number) => {
@@ -116,9 +128,9 @@ export default function DebateHistoryPage() {
               className="px-4 py-2 border-2 border-purple-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-purple-500 transition-colors"
             >
               <option value="">全部</option>
-              <option value="BUY">BUY</option>
-              <option value="SELL">SELL</option>
-              <option value="HOLD">HOLD</option>
+              <option value="BUY">买入</option>
+              <option value="SELL">卖出</option>
+              <option value="HOLD">持有</option>
             </select>
           </div>
         </div>
@@ -180,7 +192,7 @@ export default function DebateHistoryPage() {
                           debate.final_recommendation
                         )}`}
                       >
-                        {debate.final_recommendation}
+                        {getRecommendationText(debate.final_recommendation)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">

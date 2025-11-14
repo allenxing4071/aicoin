@@ -267,9 +267,9 @@ Market Data Context:
 Intelligence Report:
 {json.dumps(intelligence_report, indent=2)}
 
-Provide your final decision in JSON format:
+Provide your final decision in JSON format (use Chinese for recommendation):
 {{
-    "recommendation": "BUY/SELL/HOLD",
+    "recommendation": "买入/卖出/持有",
     "confidence": 0.0-1.0,
     "rationale": "...",
     "key_bull_points": ["...", "..."],

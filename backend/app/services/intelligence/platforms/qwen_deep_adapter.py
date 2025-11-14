@@ -201,7 +201,7 @@ class QwenDeepAdapter(BasePlatformAdapter):
             "   - 分析事件之间的关联性",
             "   - 评估市场整体状况",
             "",
-            "2. **市场情绪** (BULLISH/BEARISH/NEUTRAL)：",
+            "2. **市场情绪** (看涨/看跌/中性)：",
             "   - 给出明确的情绪判断",
             "   - 提供情绪强度分数 (-1.0 到 1.0)",
             "",
