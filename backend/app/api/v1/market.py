@@ -27,6 +27,37 @@ def get_market_data_service():
     return market_data_service
 
 
+@router.get("/klines", response_model=List[KlineData])
+async def get_klines_query(
+    symbol: str,
+    interval: str = "1h",
+    limit: int = 100
+):
+    """
+    获取K线数据（查询参数版本）
+    
+    Args:
+        symbol: 交易品种 (如: BTCUSDT, BTC, ETH)
+        interval: K线周期 (1m, 5m, 1h, 4h, 1d)
+        limit: 返回数量
+        
+    Returns:
+        K线数据列表
+    """
+    try:
+        # 处理symbol格式：BTCUSDT -> BTC
+        if symbol.endswith('USDT'):
+            symbol = symbol[:-4]
+        
+        service = get_market_data_service()
+        klines = await service.get_klines(symbol, interval, limit)
+        return [KlineData(**k) for k in klines]
+        
+    except Exception as e:
+        logger.error(f"Error fetching klines for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/kline/{symbol}", response_model=List[KlineData])
 async def get_kline(
     symbol: str,
@@ -34,7 +65,7 @@ async def get_kline(
     limit: int = 100
 ):
     """
-    获取K线数据
+    获取K线数据（路径参数版本）
     
     Args:
         symbol: 交易品种
