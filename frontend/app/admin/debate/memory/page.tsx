@@ -158,7 +158,7 @@ export default function DebateMemoryPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="text-4xl mb-2">🐂</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               多头记忆
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -168,7 +168,7 @@ export default function DebateMemoryPage() {
 
           <div className="text-center">
             <div className="text-4xl mb-2">🐻</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               空头记忆
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -178,7 +178,7 @@ export default function DebateMemoryPage() {
 
           <div className="text-center">
             <div className="text-4xl mb-2">📊</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               经理记忆
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -188,7 +188,7 @@ export default function DebateMemoryPage() {
 
           <div className="text-center">
             <div className="text-4xl mb-2">💾</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               总记忆数
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
@@ -209,7 +209,7 @@ export default function DebateMemoryPage() {
 
       {/* 限流状态 - 使用白色卡片 */}
       {rateLimitStatus && (
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             限流状态
           </h2>
@@ -218,10 +218,10 @@ export default function DebateMemoryPage() {
             {/* 每日限制 */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   每日辩论次数
                 </span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
                   {rateLimitStatus.daily_count} / {rateLimitStatus.daily_limit}
                 </span>
               </div>
@@ -237,7 +237,7 @@ export default function DebateMemoryPage() {
                   }}
                 ></div>
               </div>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <div className="mt-1 text-xs font-medium text-gray-600 dark:text-gray-400">
                 剩余: {rateLimitStatus.daily_remaining} 次
               </div>
             </div>
@@ -245,10 +245,10 @@ export default function DebateMemoryPage() {
             {/* 每小时限制 */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   每小时辩论次数
                 </span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
                   {rateLimitStatus.hourly_count} /{" "}
                   {rateLimitStatus.hourly_limit}
                 </span>
@@ -265,7 +265,7 @@ export default function DebateMemoryPage() {
                   }}
                 ></div>
               </div>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <div className="mt-1 text-xs font-medium text-gray-600 dark:text-gray-400">
                 剩余: {rateLimitStatus.hourly_remaining} 次
               </div>
             </div>
@@ -287,7 +287,7 @@ export default function DebateMemoryPage() {
         <h3 className="text-lg font-bold text-gray-900 mb-3">
           💡 关于记忆系统
         </h3>
-        <ul className="text-sm text-gray-700 space-y-2">
+        <ul className="text-sm font-medium text-gray-800 space-y-2">
           <li>• 记忆系统使用 Qdrant 向量数据库存储历史辩论经验</li>
           <li>• Bull/Bear/Manager 分别拥有各自独立的记忆空间</li>
           <li>• 记忆会在辩论时自动采集和回忆，帮助提升决策质量</li>
