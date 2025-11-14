@@ -201,7 +201,7 @@ export default function DebateStatisticsPage() {
 
         {/* 共识度和置信度趋势（折线图） */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#000000' }}>
             共识度与置信度趋势
           </h2>
           <ResponsiveContainer width="100%" height={300}>
