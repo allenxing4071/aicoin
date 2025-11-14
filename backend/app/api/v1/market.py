@@ -46,12 +46,44 @@ async def get_klines_query(
     """
     try:
         # 处理symbol格式：BTCUSDT -> BTC
+        original_symbol = symbol
         if symbol.endswith('USDT'):
             symbol = symbol[:-4]
         
         service = get_market_data_service()
         klines = await service.get_klines(symbol, interval, limit)
-        return [KlineData(**k) for k in klines]
+        
+        # 转换数据格式以匹配KlineData schema
+        from datetime import datetime, timedelta
+        result = []
+        for k in klines:
+            # 计算close_time（假设是open_time + interval）
+            open_time = datetime.fromtimestamp(k.get('timestamp', 0))
+            
+            # 根据interval计算close_time
+            interval_seconds = {
+                '1m': 60,
+                '5m': 300,
+                '15m': 900,
+                '1h': 3600,
+                '4h': 14400,
+                '1d': 86400
+            }.get(interval, 3600)
+            close_time = open_time + timedelta(seconds=interval_seconds)
+            
+            result.append(KlineData(
+                symbol=original_symbol,
+                interval=interval,
+                open_time=open_time,
+                close_time=close_time,
+                open=k.get('open', 0),
+                high=k.get('high', 0),
+                low=k.get('low', 0),
+                close=k.get('close', 0),
+                volume=k.get('volume', 0)
+            ))
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error fetching klines for {symbol}: {e}")
