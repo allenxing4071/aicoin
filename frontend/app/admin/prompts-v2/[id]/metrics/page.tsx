@@ -29,7 +29,7 @@ export default function PromptMetricsPage() {
 
   const fetchMetrics = async () => {
     try {
-      const response = await fetch(`/api/prompts/v2/${promptId}/risk-metrics`)
+      const response = await fetch(`/api/v1/prompts/v2/${promptId}/risk-metrics`)
       const data = await response.json()
       setMetrics(data)
     } catch (error) {

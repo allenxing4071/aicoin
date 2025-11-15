@@ -22,7 +22,7 @@ export default function PromptEditPage() {
 
   const fetchPrompt = async () => {
     try {
-      const response = await fetch(`/api/prompts/v2/${promptId}`)
+      const response = await fetch(`/api/v1/prompts/v2/${promptId}`)
       const data = await response.json()
       setOriginalContent(data.content)
       setCurrentContent(data.content)
@@ -34,7 +34,7 @@ export default function PromptEditPage() {
   const handleOptimize = async () => {
     try {
       setOptimizing(true)
-      const response = await fetch('/api/prompts/v2/optimize', {
+      const response = await fetch('/api/v1/prompts/v2/optimize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -55,7 +55,7 @@ export default function PromptEditPage() {
   const handleSave = async (content: string, summary: string) => {
     try {
       setLoading(true)
-      await fetch(`/api/prompts/v2/${promptId}`, {
+      await fetch(`/api/v1/prompts/v2/${promptId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
