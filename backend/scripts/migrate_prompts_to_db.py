@@ -44,8 +44,9 @@ async def migrate_prompts():
     logger.info("开始Prompt数据迁移")
     logger.info("=" * 50)
     
-    # 创建数据库引擎
-    engine = create_async_engine(settings.DATABASE_URL, echo=False)
+    # 创建数据库引擎（使用asyncpg驱动）
+    db_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+    engine = create_async_engine(db_url, echo=False)
     async_session = sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )

@@ -280,3 +280,140 @@ async def check_storage_health(db: AsyncSession = Depends(get_db)):
         logger.error(f"❌ 健康检查失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"健康检查失败: {str(e)}")
 
+
+@router.get("/system/health", response_model=Dict[str, Any])
+async def get_system_health(db: AsyncSession = Depends(get_db)):
+    """
+    获取情报系统完整健康状态
+    
+    包含：
+    - L1-L4各层健康状态
+    - 多平台协调器状态
+    - 总体健康评估
+    """
+    try:
+        from app.services.intelligence.monitoring import IntelligenceMonitor
+        
+        monitor = IntelligenceMonitor(redis_client, db)
+        health = await monitor.get_system_health()
+        
+        return {
+            "success": True,
+            "data": health,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 获取系统健康状态失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取系统健康状态失败: {str(e)}")
+
+
+@router.get("/system/metrics", response_model=Dict[str, Any])
+async def get_system_metrics(db: AsyncSession = Depends(get_db)):
+    """
+    获取情报系统性能指标
+    
+    包含：
+    - 情报收集指标
+    - 缓存性能指标
+    - 平台调用指标
+    - 存储层指标
+    """
+    try:
+        from app.services.intelligence.monitoring import IntelligenceMonitor
+        
+        monitor = IntelligenceMonitor(redis_client, db)
+        metrics = await monitor.get_performance_metrics()
+        
+        return {
+            "success": True,
+            "data": metrics,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 获取系统指标失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取系统指标失败: {str(e)}")
+
+
+@router.get("/system/summary", response_model=Dict[str, Any])
+async def get_system_summary(db: AsyncSession = Depends(get_db)):
+    """
+    获取情报系统摘要（健康+性能）
+    
+    一站式获取系统整体状态
+    """
+    try:
+        from app.services.intelligence.monitoring import IntelligenceMonitor
+        
+        monitor = IntelligenceMonitor(redis_client, db)
+        summary = await monitor.get_system_summary()
+        
+        return {
+            "success": True,
+            "data": summary,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 获取系统摘要失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取系统摘要失败: {str(e)}")
+
+
+@router.get("/reports/latest", response_model=Dict[str, Any])
+async def get_latest_report_with_verification(db: AsyncSession = Depends(get_db)):
+    """
+    获取最新情报报告（包含多平台验证信息）
+    
+    返回增强的情报报告，包含：
+    - 基础情报数据
+    - 多平台贡献信息
+    - 平台共识度
+    - 验证元数据
+    """
+    try:
+        from app.services.intelligence.intelligence_coordinator import IntelligenceCoordinator
+        
+        coordinator = IntelligenceCoordinator(redis_client, db)
+        report = await coordinator.get_latest_intelligence()
+        
+        if not report:
+            return {
+                "success": False,
+                "message": "暂无情报报告",
+                "data": None
+            }
+        
+        # 转换为字典格式
+        report_dict = {
+            "timestamp": report.timestamp.isoformat(),
+            "market_sentiment": report.market_sentiment.value,
+            "sentiment_score": report.sentiment_score,
+            "confidence": report.confidence,
+            "qwen_analysis": report.qwen_analysis,
+            "risk_factors": report.risk_factors,
+            "opportunities": report.opportunities,
+            "key_news_count": len(report.key_news) if report.key_news else 0,
+            "whale_signals_count": len(report.whale_signals) if report.whale_signals else 0,
+        }
+        
+        # 添加多平台验证信息
+        if hasattr(report, 'platform_contributions'):
+            report_dict['platform_contributions'] = report.platform_contributions
+        if hasattr(report, 'platform_consensus'):
+            report_dict['platform_consensus'] = report.platform_consensus
+        if hasattr(report, 'verification_metadata'):
+            report_dict['verification_metadata'] = report.verification_metadata
+        if hasattr(report, 'summary'):
+            report_dict['summary'] = report.summary
+        
+        return {
+            "success": True,
+            "data": report_dict,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 获取最新报告失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取最新报告失败: {str(e)}")
+
