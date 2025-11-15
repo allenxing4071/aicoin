@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '016'
-down_revision = '015'
+down_revision = '20251114_142906'  # 基于辩论系统迁移
 branch_labels = None
 depends_on = None
 
