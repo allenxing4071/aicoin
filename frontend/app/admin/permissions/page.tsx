@@ -102,6 +102,14 @@ export default function PermissionsAdmin() {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      console.log('📥 从后端获取的权限等级数据:', response.data);
+      
+      // 检查每个等级的 prompts 数据
+      response.data.forEach((level: any) => {
+        console.log(`📝 ${level.level} 的 Prompt 数据:`, level.prompts);
+      });
+      
       setLevels(response.data);
       setError(null);
     } catch (err: any) {
