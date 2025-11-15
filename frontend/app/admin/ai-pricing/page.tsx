@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, message, Spin, Tag, Modal, Form, Input, InputNumber, Space, Statistic, Row, Col } from 'antd';
 import { ReloadOutlined, EditOutlined, DollarOutlined, SyncOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { formatBeijingDateTime } from '../../../lib/datetime';
 
 // 使用相对路径，通过Nginx代理到后端
 const API_BASE_URL = '';
@@ -217,7 +218,7 @@ export default function AIPricingPage() {
       width: 180,
       render: (time: string) => (
         <span className="text-gray-500 text-xs">
-          {new Date(time).toLocaleString('zh-CN')}
+          {time}
         </span>
       )
     },
