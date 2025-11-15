@@ -1,6 +1,8 @@
 """
 Debate System - 多空辩论机制
 借鉴 TradingAgents 的辩论逻辑，适配 AIcoin
+
+v2.0 更新：集成PromptManager，支持文件化Prompt管理
 """
 
 import json
@@ -43,10 +45,13 @@ class BullAnalyst:
     """
     多头分析师
     完全复用 TradingAgents 的 Prompt 模板
+    
+    v2.0: 支持从文件加载Prompt（借鉴NOFX）
     """
     
-    def __init__(self, llm_client):
+    def __init__(self, llm_client, prompt_manager=None):
         self.client = llm_client
+        self.prompt_manager = prompt_manager
     
     async def analyze(
         self,
@@ -74,8 +79,15 @@ class BullAnalyst:
             for rec in past_memories:
                 past_memory_str += rec.get("recommendation", "") + "\n\n"
         
-        # 使用 TradingAgents 的原版 Prompt（已验证有效）
-        prompt = f"""You are a Bull Analyst advocating for investing in the cryptocurrency. Your task is to build a strong, evidence-based case emphasizing growth potential, competitive advantages, and positive market indicators. Leverage the provided research and data to address concerns and counter bearish arguments effectively.
+        # 尝试从PromptManager加载模板（借鉴NOFX）
+        if self.prompt_manager:
+            try:
+                template = self.prompt_manager.get_template("debate", "bull_analyst")
+                base_prompt = template.content
+                logger.debug("✅ 使用Bull Analyst文件模板")
+            except Exception as e:
+                logger.warning(f"⚠️  加载Bull Analyst模板失败: {e}，使用硬编码版本")
+                base_prompt = """You are a Bull Analyst advocating for investing in the cryptocurrency. Your task is to build a strong, evidence-based case emphasizing growth potential, competitive advantages, and positive market indicators. Leverage the provided research and data to address concerns and counter bearish arguments effectively.
 
 Key points to focus on:
 - Growth Potential: Highlight the asset's market opportunities, price projections, and adoption trends.
@@ -83,6 +95,25 @@ Key points to focus on:
 - Positive Indicators: Use technical analysis, on-chain data, and recent positive news as evidence.
 - Bear Counterpoints: Critically analyze the bear argument with specific data and sound reasoning, addressing concerns thoroughly and showing why the bull perspective holds stronger merit.
 - Engagement: Present your argument in a conversational style, engaging directly with the bear analyst's points and debating effectively rather than just listing data.
+
+Use this information to deliver a compelling bull argument, refute the bear's concerns, and engage in a dynamic debate that demonstrates the strengths of the bull position. You must also address reflections and learn from lessons and mistakes you made in the past.
+"""
+        else:
+            # 硬编码版本（fallback）
+            base_prompt = """You are a Bull Analyst advocating for investing in the cryptocurrency. Your task is to build a strong, evidence-based case emphasizing growth potential, competitive advantages, and positive market indicators. Leverage the provided research and data to address concerns and counter bearish arguments effectively.
+
+Key points to focus on:
+- Growth Potential: Highlight the asset's market opportunities, price projections, and adoption trends.
+- Competitive Advantages: Emphasize factors like unique technology, strong community, or dominant market positioning.
+- Positive Indicators: Use technical analysis, on-chain data, and recent positive news as evidence.
+- Bear Counterpoints: Critically analyze the bear argument with specific data and sound reasoning, addressing concerns thoroughly and showing why the bull perspective holds stronger merit.
+- Engagement: Present your argument in a conversational style, engaging directly with the bear analyst's points and debating effectively rather than just listing data.
+
+Use this information to deliver a compelling bull argument, refute the bear's concerns, and engage in a dynamic debate that demonstrates the strengths of the bull position. You must also address reflections and learn from lessons and mistakes you made in the past.
+"""
+        
+        # 拼接动态数据（借鉴NOFX的buildUserPrompt）
+        prompt = f"""{base_prompt}
 
 Resources available:
 Market Data: {json.dumps(market_data, indent=2)}
@@ -94,8 +125,6 @@ Conversation history of the debate: {debate_state.history}
 Last bear argument: {debate_state.current_response}
 
 Reflections from similar situations and lessons learned: {past_memory_str}
-
-Use this information to deliver a compelling bull argument, refute the bear's concerns, and engage in a dynamic debate that demonstrates the strengths of the bull position. You must also address reflections and learn from lessons and mistakes you made in the past.
 """
         
         try:
@@ -129,10 +158,13 @@ class BearAnalyst:
     """
     空头分析师
     完全复用 TradingAgents 的 Prompt 模板
+    
+    v2.0: 支持从文件加载Prompt（借鉴NOFX）
     """
     
-    def __init__(self, llm_client):
+    def __init__(self, llm_client, prompt_manager=None):
         self.client = llm_client
+        self.prompt_manager = prompt_manager
     
     async def analyze(
         self,
@@ -159,8 +191,15 @@ class BearAnalyst:
             for rec in past_memories:
                 past_memory_str += rec.get("recommendation", "") + "\n\n"
         
-        # 使用 TradingAgents 的原版 Prompt
-        prompt = f"""You are a Bear Analyst making the case against investing in the cryptocurrency. Your goal is to present a well-reasoned argument emphasizing risks, challenges, and negative indicators. Leverage the provided research and data to highlight potential downsides and counter bullish arguments effectively.
+        # 尝试从PromptManager加载模板（借鉴NOFX）
+        if self.prompt_manager:
+            try:
+                template = self.prompt_manager.get_template("debate", "bear_analyst")
+                base_prompt = template.content
+                logger.debug("✅ 使用Bear Analyst文件模板")
+            except Exception as e:
+                logger.warning(f"⚠️  加载Bear Analyst模板失败: {e}，使用硬编码版本")
+                base_prompt = """You are a Bear Analyst making the case against investing in the cryptocurrency. Your goal is to present a well-reasoned argument emphasizing risks, challenges, and negative indicators. Leverage the provided research and data to highlight potential downsides and counter bullish arguments effectively.
 
 Key points to focus on:
 - Risks and Challenges: Highlight factors like market saturation, regulatory threats, or macroeconomic headwinds that could hinder the asset's performance.
@@ -168,6 +207,24 @@ Key points to focus on:
 - Negative Indicators: Use evidence from technical analysis, on-chain data, or recent adverse news to support your position.
 - Bull Counterpoints: Critically analyze the bull argument with specific data and sound reasoning, exposing weaknesses or over-optimistic assumptions.
 - Engagement: Present your argument in a conversational style, directly engaging with the bull analyst's points and debating effectively rather than simply listing facts.
+
+Use this information to deliver a compelling bear argument, refute the bull's claims, and engage in a dynamic debate that demonstrates the risks and weaknesses of investing in the asset. You must also address reflections and learn from lessons and mistakes you made in the past.
+"""
+        else:
+            base_prompt = """You are a Bear Analyst making the case against investing in the cryptocurrency. Your goal is to present a well-reasoned argument emphasizing risks, challenges, and negative indicators. Leverage the provided research and data to highlight potential downsides and counter bullish arguments effectively.
+
+Key points to focus on:
+- Risks and Challenges: Highlight factors like market saturation, regulatory threats, or macroeconomic headwinds that could hinder the asset's performance.
+- Competitive Weaknesses: Emphasize vulnerabilities such as weaker technology, declining adoption, or threats from competitors.
+- Negative Indicators: Use evidence from technical analysis, on-chain data, or recent adverse news to support your position.
+- Bull Counterpoints: Critically analyze the bull argument with specific data and sound reasoning, exposing weaknesses or over-optimistic assumptions.
+- Engagement: Present your argument in a conversational style, directly engaging with the bull analyst's points and debating effectively rather than simply listing facts.
+
+Use this information to deliver a compelling bear argument, refute the bull's claims, and engage in a dynamic debate that demonstrates the risks and weaknesses of investing in the asset. You must also address reflections and learn from lessons and mistakes you made in the past.
+"""
+        
+        # 拼接动态数据
+        prompt = f"""{base_prompt}
 
 Resources available:
 Market Data: {json.dumps(market_data, indent=2)}
@@ -179,8 +236,6 @@ Conversation history of the debate: {debate_state.history}
 Last bull argument: {debate_state.current_response}
 
 Reflections from similar situations and lessons learned: {past_memory_str}
-
-Use this information to deliver a compelling bear argument, refute the bull's claims, and engage in a dynamic debate that demonstrates the risks and weaknesses of investing in the asset. You must also address reflections and learn from lessons and mistakes you made in the past.
 """
         
         try:
@@ -212,10 +267,13 @@ class ResearchManager:
     """
     研究经理
     完全复用 TradingAgents 的 Prompt 模板
+    
+    v2.0: 支持从文件加载Prompt（借鉴NOFX）
     """
     
-    def __init__(self, llm_client):
+    def __init__(self, llm_client, prompt_manager=None):
         self.client = llm_client
+        self.prompt_manager = prompt_manager
     
     async def summarize_debate(
         self,
@@ -242,8 +300,15 @@ class ResearchManager:
             for rec in past_memories:
                 past_memory_str += rec.get("recommendation", "") + "\n\n"
         
-        # 使用 TradingAgents 的原版 Prompt
-        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+        # 尝试从PromptManager加载模板（借鉴NOFX）
+        if self.prompt_manager:
+            try:
+                template = self.prompt_manager.get_template("debate", "research_manager")
+                base_prompt = template.content
+                logger.debug("✅ 使用Research Manager文件模板")
+            except Exception as e:
+                logger.warning(f"⚠️  加载Research Manager模板失败: {e}，使用硬编码版本")
+                base_prompt = """As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
 
 Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
 
@@ -253,6 +318,22 @@ Your Recommendation: A decisive stance supported by the most convincing argument
 Rationale: An explanation of why these arguments lead to your conclusion.
 Strategic Actions: Concrete steps for implementing the recommendation.
 Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting.
+"""
+        else:
+            base_prompt = """As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+
+Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
+
+Additionally, develop a detailed investment plan. This should include:
+
+Your Recommendation: A decisive stance supported by the most convincing arguments.
+Rationale: An explanation of why these arguments lead to your conclusion.
+Strategic Actions: Concrete steps for implementing the recommendation.
+Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting.
+"""
+        
+        # 拼接动态数据
+        prompt = f"""{base_prompt}
 
 Here are your past reflections on mistakes:
 "{past_memory_str}"
@@ -266,16 +347,6 @@ Market Data Context:
 
 Intelligence Report:
 {json.dumps(intelligence_report, indent=2)}
-
-Provide your final decision in JSON format (use Chinese for recommendation):
-{{
-    "recommendation": "买入/卖出/持有",
-    "confidence": 0.0-1.0,
-    "rationale": "...",
-    "key_bull_points": ["...", "..."],
-    "key_bear_points": ["...", "..."],
-    "strategic_actions": ["...", "..."]
-}}
 """
         
         try:
@@ -336,10 +407,10 @@ class DebateCoordinator:
     借鉴 TradingAgents 的 conditional_logic.py 中的轮次控制
     """
     
-    def __init__(self, llm_client, max_debate_rounds: int = 1, timeout_seconds: int = 60):
-        self.bull_analyst = BullAnalyst(llm_client)
-        self.bear_analyst = BearAnalyst(llm_client)
-        self.research_manager = ResearchManager(llm_client)
+    def __init__(self, llm_client, max_debate_rounds: int = 1, timeout_seconds: int = 60, prompt_manager=None):
+        self.bull_analyst = BullAnalyst(llm_client, prompt_manager)
+        self.bear_analyst = BearAnalyst(llm_client, prompt_manager)
+        self.research_manager = ResearchManager(llm_client, prompt_manager)
         self.max_debate_rounds = max_debate_rounds
         self.timeout_seconds = timeout_seconds
     

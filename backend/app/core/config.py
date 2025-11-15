@@ -208,6 +208,12 @@ class Settings(BaseSettings):
     ENABLE_AI_LOGGING: bool = True
     ENABLE_TRADING_LOGGING: bool = True
     
+    # Prompt Template System Configuration (借鉴NOFX)
+    PROMPTS_DIR: str = "prompts"
+    DEFAULT_DECISION_STRATEGY: str = "default"
+    DEFAULT_DEBATE_STRATEGY: str = "default"
+    ENABLE_PROMPT_HOT_RELOAD: bool = True
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

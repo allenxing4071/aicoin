@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from decimal import Decimal
@@ -17,6 +18,7 @@ from app.services.memory.short_term_memory import ShortTermMemory
 from app.services.memory.long_term_memory import LongTermMemory
 from app.services.memory.knowledge_base import KnowledgeBase
 from app.services.decision.prompt_templates import PromptTemplates
+from app.services.decision.prompt_manager import get_global_prompt_manager
 from app.services.intelligence.storage import intelligence_storage
 from app.services.decision.debate_system import DebateCoordinator
 from app.services.decision.debate_memory import DebateMemoryManager
@@ -68,6 +70,15 @@ class DecisionEngineV2:
         )
         self.knowledge_base = KnowledgeBase(db_session)
         
+        # 初始化Prompt管理器（借鉴NOFX）
+        try:
+            prompts_dir = os.path.join(os.path.dirname(__file__), "../../../prompts")
+            self.prompt_manager = get_global_prompt_manager(prompts_dir)
+            logger.info("✅ Prompt管理器初始化成功")
+        except Exception as e:
+            logger.warning(f"⚠️  Prompt管理器初始化失败: {e}，将使用硬编码Prompt")
+            self.prompt_manager = None
+        
         # 初始化辩论系统（新增）
         try:
             # 创建 Qdrant 客户端（复用现有配置）
@@ -76,11 +87,12 @@ class DecisionEngineV2:
                 port=settings.QDRANT_PORT
             )
             
-            # 初始化辩论组件
+            # 初始化辩论组件（传入prompt_manager）
             self.debate_coordinator = DebateCoordinator(
                 llm_client=self.client,
                 max_debate_rounds=1,  # 默认1轮，后续从配置读取
-                timeout_seconds=60
+                timeout_seconds=60,
+                prompt_manager=self.prompt_manager  # 新增：传入PromptManager
             )
             
             self.debate_memory = DebateMemoryManager(
@@ -276,7 +288,8 @@ class DecisionEngineV2:
             
             constraints = self.constraint_validator.get_constraint_summary()
             
-            prompt = PromptTemplates.build_decision_prompt_v2(
+            # 使用v3版本（支持PromptManager），借鉴NOFX的做法
+            prompt = PromptTemplates.build_decision_prompt_v3(
                 account_state=account_state,
                 market_data=market_data,
                 permission_level=self.current_permission_level,
@@ -286,7 +299,9 @@ class DecisionEngineV2:
                 similar_situations=similar_situations,
                 lessons_learned=lessons_learned,
                 intelligence_report=intelligence_report,
-                debate_result=debate_result  # 新增：辩论结果
+                debate_result=debate_result,
+                prompt_manager=self.prompt_manager,  # 新增：传入PromptManager
+                strategy="default"  # 可配置策略
             )
             
             # === 第4步：调用LLM ===

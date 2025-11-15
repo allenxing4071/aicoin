@@ -1,10 +1,222 @@
-"""Prompt模板 - v2.0平衡版"""
+"""Prompt模板 - v2.0平衡版
 
-from typing import Dict, Any
+注意：本文件保留作为fallback，新系统使用PromptManager + 文件模板
+"""
+
+from typing import Dict, Any, Optional
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PromptTemplates:
-    """Prompt模板管理"""
+    """Prompt模板管理（保留作为fallback）"""
+    
+    @staticmethod
+    def build_decision_prompt_v3(
+        account_state: Dict[str, Any],
+        market_data: Dict[str, Any],
+        permission_level: str,
+        permission_config: Dict[str, Any],
+        constraints: Dict[str, Any],
+        recent_decisions: list,
+        similar_situations: list,
+        lessons_learned: list,
+        intelligence_report = None,
+        debate_result: Dict[str, Any] = None,
+        prompt_manager = None,
+        strategy: str = "default"
+    ) -> str:
+        """
+        构建v3.0决策Prompt（使用PromptManager）
+        
+        借鉴NOFX的buildSystemPrompt方法：
+        1. 从文件加载基础模板
+        2. 拼接动态数据部分
+        3. 优雅降级到硬编码版本
+        
+        Args:
+            account_state: 账户状态
+            market_data: 市场数据
+            permission_level: 权限等级
+            permission_config: 权限配置
+            constraints: 约束条件
+            recent_decisions: 最近决策
+            similar_situations: 相似场景
+            lessons_learned: 经验教训
+            intelligence_report: 情报报告
+            debate_result: 辩论结果
+            prompt_manager: Prompt管理器（可选）
+            strategy: 策略名称（默认为"default"）
+        
+        Returns:
+            完整的Prompt字符串
+        """
+        
+        # 1. 尝试从PromptManager加载基础模板
+        base_template = ""
+        if prompt_manager:
+            try:
+                template = prompt_manager.get_template("decision", strategy)
+                base_template = template.content
+                logger.debug(f"✅ 使用Prompt模板: decision/{strategy}")
+            except Exception as e:
+                logger.warning(f"⚠️  加载Prompt模板失败: {e}，使用硬编码版本")
+                return PromptTemplates.build_decision_prompt_v2(
+                    account_state, market_data, permission_level, permission_config,
+                    constraints, recent_decisions, similar_situations, lessons_learned,
+                    intelligence_report, debate_result
+                )
+        else:
+            # 如果没有PromptManager，直接使用硬编码版本
+            logger.debug("使用硬编码Prompt版本")
+            return PromptTemplates.build_decision_prompt_v2(
+                account_state, market_data, permission_level, permission_config,
+                constraints, recent_decisions, similar_situations, lessons_learned,
+                intelligence_report, debate_result
+            )
+        
+        # 2. 构建动态数据部分（借鉴NOFX的buildUserPrompt）
+        # 账户状态
+        balance = account_state.get('balance', 0)
+        total_pnl = account_state.get('total_pnl', 0)
+        total_pnl_pct = (total_pnl / balance * 100) if balance > 0 else 0
+        positions = account_state.get('positions', [])
+        daily_loss_pct = account_state.get('daily_loss_pct', 0)
+        total_drawdown = account_state.get('total_drawdown', 0)
+        
+        account_section = f"""
+═══════════════════════════════════════════════════════════
+重要：你当前的权限等级是 {permission_level}
+═══════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════
+ACCOUNT STATUS
+═══════════════════════════════════════════════════════════
+Balance: ${balance:,.2f}
+Total PnL: ${total_pnl:,.2f} ({total_pnl_pct:+.2f}%)
+Daily Loss: {daily_loss_pct:.2f}% (Max: 5%)
+Total Drawdown: {total_drawdown:.2f}% (Max: 10%)
+Open Positions: {len(positions)}
+
+Position Details:
+{PromptTemplates._format_positions(positions)}
+"""
+
+        # 权限限制
+        permission_section = f"""
+═══════════════════════════════════════════════════════════
+YOUR CURRENT PERMISSIONS - LEVEL {permission_level}
+═══════════════════════════════════════════════════════════
+Name: {permission_config['name']}
+Max Position Size: {permission_config['max_position_pct']} of balance
+Max Leverage: {permission_config['max_leverage']}
+Confidence Required: ≥ {permission_config['confidence_threshold']}
+Daily Trade Limit: {permission_config['max_daily_trades']} trades
+
+🔒 THESE ARE HARD LIMITS - YOU CANNOT EXCEED THEM
+📈 Trade well to earn higher permissions
+📉 Poor performance will reduce your permissions
+"""
+
+        # 风控红线
+        hard_constraints = constraints.get('hard_constraints', {})
+        constraint_section = f"""
+═══════════════════════════════════════════════════════════
+RISK CONTROL RED LINES (ABSOLUTE LIMITS)
+═══════════════════════════════════════════════════════════
+🚫 Max Leverage: {hard_constraints.get('max_leverage', '5x')}
+🚫 Max Drawdown: {hard_constraints.get('max_drawdown', '10%')}
+🚫 Max Daily Loss: {hard_constraints.get('max_daily_loss', '5%')}
+🚫 Min Margin Ratio: {hard_constraints.get('min_margin_ratio', '20%')}
+🚫 Min Cash Reserve: {hard_constraints.get('min_cash_reserve', '10%')}
+🚫 Max Single Asset: {hard_constraints.get('max_single_asset', '30%')}
+
+⚠️  CRITICAL: If you trigger these limits:
+   - Your permissions will be downgraded to L0 (Protection Mode)
+   - All positions will be force-closed
+   - You will need manual review to trade again
+"""
+
+        # 市场数据
+        market_section = f"""
+═══════════════════════════════════════════════════════════
+MARKET DATA (Real-time from Hyperliquid)
+═══════════════════════════════════════════════════════════
+{PromptTemplates._format_market_data(market_data)}
+"""
+
+        # 历史记忆
+        memory_section = f"""
+═══════════════════════════════════════════════════════════
+YOUR MEMORY (Learn from History)
+═══════════════════════════════════════════════════════════
+
+Recent Decisions (Last 24h):
+{PromptTemplates._format_recent_decisions(recent_decisions)}
+
+Similar Situations (From Vector DB):
+{PromptTemplates._format_similar_situations(similar_situations)}
+
+Lessons Learned:
+{PromptTemplates._format_lessons(lessons_learned)}
+"""
+
+        # Qwen情报报告
+        intelligence_section = ""
+        if intelligence_report:
+            intelligence_section = PromptTemplates._format_intelligence_report(intelligence_report)
+        
+        # 辩论结果
+        debate_section = ""
+        if debate_result:
+            final_decision = debate_result.get('final_decision', {})
+            debate_history = debate_result.get('debate_history', {})
+            
+            debate_section = f"""
+═══════════════════════════════════════════════════════════
+MULTI-PERSPECTIVE DEBATE ANALYSIS (多空辩论分析)
+═══════════════════════════════════════════════════════════
+我们的多空分析师团队已经对当前市场进行了深入辩论：
+
+🐂 Bull Analyst (多头分析师) 论点：
+{debate_history.get('bull_history', '无')[:500]}...
+
+🐻 Bear Analyst (空头分析师) 论点：
+{debate_history.get('bear_history', '无')[:500]}...
+
+📊 Research Manager (研究经理) 综合判断：
+- 推荐操作: {final_decision.get('recommendation', 'HOLD')}
+- 置信度: {final_decision.get('confidence', 0.5):.2f}
+- 共识度: {debate_result.get('consensus_level', 0.5):.2f}
+- 决策理由: {final_decision.get('rationale', '无')[:300]}
+
+⚠️  重要提示：
+这是内部辩论的结果，提供了多角度的市场分析。
+你应该参考这些观点，但最终决策权在你手中。
+如果辩论共识度较低（< 0.5），说明市场分歧较大，应更加谨慎。
+"""
+        
+        # 3. 组合完整Prompt（借鉴NOFX的方式）
+        full_prompt = f"""{base_template}
+
+{account_section}
+
+{permission_section}
+
+{constraint_section}
+
+{market_section}
+
+{memory_section}
+
+{intelligence_section}
+
+{debate_section}
+"""
+        
+        return full_prompt
     
     @staticmethod
     def build_decision_prompt_v2(
