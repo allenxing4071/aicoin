@@ -101,12 +101,12 @@ async def get_all_permission_levels(
         )
 
 
-@router.get("/levels/{level}", response_model=PermissionLevelResponse)
-async def get_permission_level(
+@router.get("/levels/by-name/{level}", response_model=PermissionLevelResponse)
+async def get_permission_level_by_name(
     level: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """获取指定权限等级配置"""
+    """通过 level 名称获取权限等级配置"""
     try:
         stmt = select(PermissionLevelConfig).where(PermissionLevelConfig.level == level)
         result = await db.execute(stmt)
@@ -116,6 +116,32 @@ async def get_permission_level(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Permission level {level} not found"
+            )
+        
+        return config.to_dict()
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch permission level: {str(e)}"
+        )
+
+
+@router.get("/levels/{level_id}", response_model=PermissionLevelResponse)
+async def get_permission_level_by_id(
+    level_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """通过 ID 获取权限等级配置"""
+    try:
+        config = await db.get(PermissionLevelConfig, level_id)
+        
+        if not config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Permission level with ID {level_id} not found"
             )
         
         return config.to_dict()
@@ -333,12 +359,40 @@ async def update_permission_level_by_name(
         )
 
 
-@router.delete("/levels/{level}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_permission_level(
+@router.delete("/levels/{level_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_permission_level_by_id(
+    level_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """通过 ID 删除权限等级配置"""
+    try:
+        config = await db.get(PermissionLevelConfig, level_id)
+        
+        if not config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Permission level with ID {level_id} not found"
+            )
+        
+        await db.delete(config)
+        await db.commit()
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete permission level: {str(e)}"
+        )
+
+
+@router.delete("/levels/by-name/{level}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_permission_level_by_name(
     level: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """删除权限等级配置"""
+    """通过 level 名称删除权限等级配置"""
     try:
         stmt = select(PermissionLevelConfig).where(PermissionLevelConfig.level == level)
         result = await db.execute(stmt)
