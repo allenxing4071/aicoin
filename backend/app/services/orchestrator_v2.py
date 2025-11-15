@@ -409,14 +409,14 @@ class AITradingOrchestratorV2:
                         logger.warning(f"⚠️ 无法获取 {symbol} 的行情数据")
                         market_data[symbol] = {
                             "price": 0,
-                            "change_24h": 0.0,
+                    "change_24h": 0.0,
                             "volume_24h": 0
                         }
                 except Exception as e:
                     logger.error(f"❌ 获取 {symbol} 行情失败: {e}")
                     market_data[symbol] = {
                         "price": 0,
-                        "change_24h": 0.0,
+                    "change_24h": 0.0,
                         "volume_24h": 0
                     }
             

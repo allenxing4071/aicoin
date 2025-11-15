@@ -119,7 +119,7 @@ export default function PromptEditPage() {
             disabled={optimizing}
             className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {optimizing ? '🤖 优化中...' : '🤖 DeepSeek智能优化'}
+          {optimizing ? '🤖 优化中...' : '🤖 DeepSeek智能优化'}
           </button>
         </div>
       </div>
@@ -136,17 +136,17 @@ export default function PromptEditPage() {
           </div>
           
           <textarea
-            value={originalContent}
-            readOnly
+              value={originalContent}
+              readOnly
             className="w-full h-96 px-4 py-3 border-2 border-gray-300 rounded-xl font-mono text-sm text-gray-700 bg-white/50 focus:outline-none resize-none"
-          />
+            />
           
           <button
-            onClick={() => handleSave(originalContent, '保留原始版本')}
-            disabled={loading}
+              onClick={() => handleSave(originalContent, '保留原始版本')}
+              disabled={loading}
             className="mt-4 w-full px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            💾 保存原始版本
+            >
+              💾 保存原始版本
           </button>
         </div>
 
@@ -160,29 +160,29 @@ export default function PromptEditPage() {
           </div>
           
           <textarea
-            value={currentContent}
-            onChange={(e) => setCurrentContent(e.target.value)}
+              value={currentContent}
+              onChange={(e) => setCurrentContent(e.target.value)}
             placeholder="点击「DeepSeek智能优化」按钮生成优化版本，或手动编辑..."
             className="w-full h-96 px-4 py-3 border-2 border-indigo-300 rounded-xl font-mono text-sm text-gray-900 bg-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
-          />
+            />
           
           <div className="mt-4 grid grid-cols-2 gap-3">
             <button
-              onClick={() => handleSave(optimizedContent, 'DeepSeek自动优化')}
-              disabled={loading || !optimizedContent}
+                onClick={() => handleSave(optimizedContent, 'DeepSeek自动优化')}
+                disabled={loading || !optimizedContent}
               className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              💾 保存优化版本
+              >
+                💾 保存优化版本
             </button>
             <button
-              onClick={() => handleSave(currentContent, '手动编辑后保存')}
-              disabled={loading}
+                onClick={() => handleSave(currentContent, '手动编辑后保存')}
+                disabled={loading}
               className="px-6 py-3 bg-white border-2 border-indigo-300 text-indigo-700 rounded-xl font-semibold hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+              >
               ✏️ 保存手动编辑
             </button>
           </div>
-        </div>
+            </div>
       </div>
 
       {/* 底部操作栏 */}
@@ -190,7 +190,7 @@ export default function PromptEditPage() {
         <button
           onClick={() => router.push('/admin/permissions')}
           className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-all"
-        >
+      >
           ← 返回权限管理
         </button>
         

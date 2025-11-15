@@ -800,7 +800,7 @@ export default function PermissionsAdmin() {
                           📊 指标
                         </button>
                       </div>
-                    </div>
+      </div>
                     
                     <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg p-4">
                       <pre className="text-sm text-gray-700 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">

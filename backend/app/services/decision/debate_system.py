@@ -51,7 +51,7 @@ def format_intelligence_with_verification(intelligence_report: Dict) -> str:
         for news in key_news[:3]:
             # 兼容字典和对象两种格式
             if isinstance(news, dict):
-                output += f"    - {news.get('title', 'N/A')}\n"
+            output += f"    - {news.get('title', 'N/A')}\n"
             else:
                 # NewsItem 对象
                 output += f"    - {getattr(news, 'title', 'N/A')}\n"

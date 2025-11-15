@@ -191,14 +191,14 @@ export default function IntelligencePanel() {
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
-              🕵️‍♀️ Qwen情报中心
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
+            🕵️‍♀️ Qwen情报中心
               {debatedReport?.is_debated && (
                 <span className="ml-3 px-3 py-1 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
                   ⚔️ 辩论增强版
                 </span>
               )}
-            </h2>
+          </h2>
             {debatedReport?.is_debated && (
               <p className="text-sm text-gray-600 mt-1">经过多空辩论验证的高质量情报</p>
             )}
