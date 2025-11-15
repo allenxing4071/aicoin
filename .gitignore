@@ -21,7 +21,9 @@
 **/*连接*.txt
 **/*密钥*.txt
 **/*key*.pem
-docs/07-部署运维/私密配置/
+
+# Private Configs Directory (Root Level)
+private-configs/
 
 # SSH Configs Directory (Root Level)
 ssh-configs/local-servers/
