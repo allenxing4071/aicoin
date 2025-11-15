@@ -17,8 +17,7 @@ from app.services.constraints.constraint_validator import ConstraintValidator
 from app.services.memory.short_term_memory import ShortTermMemory
 from app.services.memory.long_term_memory import LongTermMemory
 from app.services.memory.knowledge_base import KnowledgeBase
-# 新版：使用数据库版本的PromptManager
-# from app.services.decision.prompt_manager_db import PromptManagerDB, get_global_prompt_manager_db
+from app.services.decision.prompt_manager_db import PromptManagerDB
 from app.services.intelligence.storage import intelligence_storage
 from app.services.decision.debate_system import DebateCoordinator
 from app.services.decision.debate_memory import DebateMemoryManager
@@ -71,10 +70,9 @@ class DecisionEngineV2:
         self.knowledge_base = KnowledgeBase(db_session)
         
         # 初始化Prompt管理器（新版：数据库版本）
-        # TODO: 在实际使用时，需要传入db_session并初始化PromptManagerDB
-        # self.prompt_manager = await get_global_prompt_manager_db(db_session)
-        self.prompt_manager = None  # 暂时禁用，等待集成新版
-        logger.info("⚠️  使用新版Prompt系统（数据库版），旧版已禁用")
+        self.prompt_manager = PromptManagerDB(db_session)
+        self._prompt_manager_initialized = False  # 标记是否已加载
+        logger.info("✅ Prompt管理器（数据库版）初始化成功")
         
         # 初始化辩论系统（新增）
         try:
@@ -114,6 +112,110 @@ class DecisionEngineV2:
         self._permission_loaded_from_db = False
         
         logger.info(f"✅ DecisionEngineV2 initialized at level {self.current_permission_level}")
+    
+    async def _get_latest_intelligence(self):
+        """
+        从L1缓存获取最新情报（优化性能）
+        
+        优先从L1缓存获取（<10ms），如果缓存未命中则从旧存储获取
+        
+        Returns:
+            Optional[IntelligenceReport]: 最新情报报告
+        """
+        try:
+            # 优先从L1缓存获取（<10ms）
+            from app.services.intelligence.storage_layers import ShortTermIntelligenceCache
+            from app.services.intelligence.models import IntelligenceReport, SentimentType
+            from datetime import datetime
+            
+            l1_cache = ShortTermIntelligenceCache(self.redis_client)
+            
+            cached_report = await l1_cache.get_latest_report()
+            if cached_report:
+                logger.debug("✅ 从L1缓存获取情报（快速路径）")
+                # 转换为IntelligenceReport对象
+                return self._dict_to_intelligence_report(cached_report)
+            
+            # Fallback: 从旧存储获取
+            logger.debug("⚠️  L1缓存未命中，从旧存储获取")
+            return await intelligence_storage.get_latest_report()
+            
+        except Exception as e:
+            logger.warning(f"⚠️  获取情报失败: {e}，使用fallback")
+            return await intelligence_storage.get_latest_report()
+    
+    def _dict_to_intelligence_report(self, data: Dict[str, Any]):
+        """
+        将字典转换为IntelligenceReport对象
+        
+        Args:
+            data: 情报数据字典
+            
+        Returns:
+            IntelligenceReport: 情报报告对象
+        """
+        from app.services.intelligence.models import IntelligenceReport, SentimentType, NewsItem, WhaleActivity, OnChainMetrics
+        from datetime import datetime
+        from app.utils.timezone import get_beijing_time
+        
+        # 解析时间戳
+        timestamp_str = data.get("timestamp")
+        if isinstance(timestamp_str, str):
+            try:
+                timestamp = datetime.fromisoformat(timestamp_str)
+            except:
+                timestamp = get_beijing_time()
+        else:
+            timestamp = get_beijing_time()
+        
+        # 解析市场情绪
+        sentiment_str = data.get("market_sentiment", "NEUTRAL")
+        try:
+            sentiment = SentimentType[sentiment_str]
+        except KeyError:
+            sentiment = SentimentType.NEUTRAL
+        
+        # 创建报告（简化版，只包含关键字段）
+        report = IntelligenceReport(
+            timestamp=timestamp,
+            market_sentiment=sentiment,
+            sentiment_score=data.get("sentiment_score", 0.0),
+            key_news=[],  # 简化处理
+            whale_signals=[],  # 简化处理
+            on_chain_metrics=OnChainMetrics(
+                exchange_net_flow=0,
+                active_addresses=0,
+                gas_price=0,
+                transaction_volume=0,
+                timestamp=timestamp
+            ),
+            risk_factors=data.get("risk_factors", []),
+            opportunities=data.get("opportunities", []),
+            qwen_analysis=data.get("qwen_analysis", ""),
+            confidence=data.get("confidence", 0.7)
+        )
+        
+        # 添加扩展属性（多平台验证信息）
+        if 'platform_contributions' in data:
+            report.platform_contributions = data['platform_contributions']
+        if 'platform_consensus' in data:
+            report.platform_consensus = data['platform_consensus']
+        if 'verification_metadata' in data:
+            report.verification_metadata = data['verification_metadata']
+        if 'summary' in data:
+            report.summary = data['summary']
+        
+        return report
+    
+    async def _ensure_prompt_manager_loaded(self):
+        """确保Prompt管理器已从数据库加载"""
+        if not self._prompt_manager_initialized:
+            try:
+                await self.prompt_manager.load_from_db()
+                self._prompt_manager_initialized = True
+                logger.info("✅ Prompt模板已从数据库加载")
+            except Exception as e:
+                logger.error(f"❌ Prompt模板加载失败: {e}")
     
     async def _load_default_permission_level(self) -> str:
         """从数据库加载默认权限等级（异步）"""
@@ -220,10 +322,15 @@ class DecisionEngineV2:
                 limit=5
             )
             
-            # 2.4 Qwen情报报告
-            intelligence_report = await intelligence_storage.get_latest_report()
+            # 2.4 Qwen情报报告（优先从L1缓存获取）
+            intelligence_report = await self._get_latest_intelligence()
             if intelligence_report:
                 logger.info(f"🕵️‍♀️ 获取Qwen情报: 情绪={intelligence_report.market_sentiment.value}, 置信度={intelligence_report.confidence:.2f}")
+                # 显示多平台验证信息（如果有）
+                if hasattr(intelligence_report, 'platform_contributions') and intelligence_report.platform_contributions:
+                    logger.info(f"   📊 多平台验证: {len(intelligence_report.platform_contributions)}个平台")
+                    if hasattr(intelligence_report, 'platform_consensus'):
+                        logger.info(f"   🎯 平台共识度: {intelligence_report.platform_consensus:.1%}")
             else:
                 logger.warning("⚠️  未找到Qwen情报报告")
             
@@ -249,13 +356,17 @@ class DecisionEngineV2:
                             if await self.debate_config.should_use_memory():
                                 past_memories = self.debate_memory.get_manager_memories(situation_desc, n_matches=2)
                             
-                            # 准备情报报告字典
+                            # 准备增强的情报报告字典（包含多平台验证信息）
                             intelligence_dict = {}
                             if intelligence_report:
                                 intelligence_dict = {
                                     "market_sentiment": intelligence_report.market_sentiment.value,
                                     "confidence": intelligence_report.confidence,
-                                    "summary": intelligence_report.summary[:500] if intelligence_report.summary else ""
+                                    "summary": intelligence_report.summary[:500] if hasattr(intelligence_report, 'summary') and intelligence_report.summary else "",
+                                    # 新增：多平台验证信息
+                                    "platform_contributions": getattr(intelligence_report, 'platform_contributions', {}),
+                                    "platform_consensus": getattr(intelligence_report, 'platform_consensus', 0.0),
+                                    "verification_metadata": getattr(intelligence_report, 'verification_metadata', {})
                                 }
                             
                             # 执行辩论
@@ -285,19 +396,70 @@ class DecisionEngineV2:
             
             constraints = self.constraint_validator.get_constraint_summary()
             
-            # TODO: 迁移到新版PromptManagerDB
-            # 旧版PromptTemplates已禁用，需要使用新版数据库Prompt系统
-            # 临时使用简化版本
-            prompt = f"""你是专业的加密货币交易AI（权限等级：{self.current_permission_level}）。
+            # 使用新版PromptManagerDB构建Prompt
+            await self._ensure_prompt_manager_loaded()
+            
+            # 获取对应权限等级的Prompt模板
+            template = self.prompt_manager.get_template(
+                category="decision",
+                name="default",
+                permission_level=self.current_permission_level
+            )
+            
+            if template:
+                # 使用模板渲染（模板中已包含基础结构）
+                prompt = template.content
+                
+                # 追加动态数据
+                prompt += f"""
+
+## 当前市场数据
+{json.dumps(market_data, indent=2, ensure_ascii=False)}
+
+## 账户状态
+- 余额: ${account_state.get('balance', 0):.2f}
+- 持仓: {account_state.get('position', 'NONE')}
+- 可用资金: ${account_state.get('available', 0):.2f}
+
+## 约束条件
+{json.dumps(constraints, indent=2, ensure_ascii=False)}
+
+## 最近决策
+{json.dumps(recent_decisions[:3], indent=2, ensure_ascii=False) if recent_decisions else "无"}
+
+## 相似场景
+{json.dumps(similar_situations[:2], indent=2, ensure_ascii=False) if similar_situations else "无"}
+"""
+                
+                # 如果有情报报告，追加
+                if intelligence_report:
+                    prompt += f"""
+
+## Qwen情报分析
+- 市场情绪: {intelligence_report.market_sentiment.value}
+- 置信度: {intelligence_report.confidence:.2f}
+- 摘要: {getattr(intelligence_report, 'summary', '')[:300]}
+"""
+                
+                # 如果有辩论结果，追加
+                if debate_result and debate_result.get('final_decision'):
+                    prompt += f"""
+
+## 多角度辩论结论
+{json.dumps(debate_result, indent=2, ensure_ascii=False)}
+"""
+                
+                logger.info(f"✅ 使用Prompt模板: {template.category}/{template.name} v{template.version} ({template.permission_level or '通用'})")
+            else:
+                # Fallback：使用简化版本
+                logger.warning(f"⚠️  未找到Prompt模板，使用fallback")
+                prompt = f"""你是专业的加密货币交易AI（权限等级：{self.current_permission_level}）。
 
 ## 当前市场数据
 {json.dumps(market_data, indent=2, ensure_ascii=False)}
 
 ## 账户状态
 {json.dumps(account_state, indent=2, ensure_ascii=False)}
-
-## 约束条件
-{json.dumps(constraints, indent=2, ensure_ascii=False)}
 
 请基于以上信息做出交易决策，返回JSON格式。"""
             

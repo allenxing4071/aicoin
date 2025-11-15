@@ -25,7 +25,7 @@ class PromptTemplate(Base):
     # 关系
     versions = relationship("PromptTemplateVersion", back_populates="template", cascade="all, delete-orphan")
     performance_records = relationship("PromptPerformance", back_populates="template", cascade="all, delete-orphan")
-    ab_tests = relationship("PromptABTest", foreign_keys="[PromptABTest.prompt_a_id, PromptABTest.prompt_b_id]")
+    # ab_tests关系在PromptABTest中定义，这里不需要双向关系
     
     # 索引
     __table_args__ = (

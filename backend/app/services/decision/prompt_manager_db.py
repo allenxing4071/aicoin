@@ -160,17 +160,20 @@ class PromptManagerDB:
         
         # 创建一个模拟的数据库模型
         class BuiltinModel:
-            id = -1
-            name = name
-            category = category
-            permission_level = permission_level
-            content = content
-            version = 0
-            is_active = True
-            created_at = None
-            updated_at = None
+            pass
         
-        return PromptTemplateDB(BuiltinModel())
+        builtin = BuiltinModel()
+        builtin.id = -1
+        builtin.name = name
+        builtin.category = category
+        builtin.permission_level = permission_level
+        builtin.content = content
+        builtin.version = 0
+        builtin.is_active = True
+        builtin.created_at = None
+        builtin.updated_at = None
+        
+        return PromptTemplateDB(builtin)
     
     def list_templates(
         self,

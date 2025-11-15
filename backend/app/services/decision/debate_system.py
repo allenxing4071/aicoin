@@ -53,6 +53,43 @@ class BullAnalyst:
         self.client = llm_client
         self.prompt_manager = prompt_manager
     
+    def _format_intelligence_with_verification(self, intelligence_report: Dict) -> str:
+        """
+        格式化情报报告，突出显示多平台验证信息
+        
+        Args:
+            intelligence_report: 情报报告字典
+            
+        Returns:
+            格式化的情报字符串
+        """
+        if not intelligence_report:
+            return "Intelligence Report: No data available"
+        
+        output = "Intelligence Report (Multi-Platform Verified):\n"
+        output += f"  Market Sentiment: {intelligence_report.get('market_sentiment', 'NEUTRAL')}\n"
+        output += f"  Confidence: {intelligence_report.get('confidence', 0):.2f}\n"
+        
+        # 显示多平台验证信息
+        platform_contributions = intelligence_report.get('platform_contributions', {})
+        if platform_contributions:
+            output += f"\n  📊 Multi-Platform Verification ({len(platform_contributions)} platforms):\n"
+            for platform, contribution in platform_contributions.items():
+                platform_conf = contribution.get('confidence', 0)
+                output += f"    - {platform}: confidence={platform_conf:.2f}\n"
+            
+            platform_consensus = intelligence_report.get('platform_consensus', 0)
+            if platform_consensus > 0:
+                output += f"\n  🎯 Platform Consensus: {platform_consensus:.1%}\n"
+                output += "  💡 Note: Higher consensus indicates stronger agreement across platforms.\n"
+        
+        # 显示摘要
+        summary = intelligence_report.get('summary', '')
+        if summary:
+            output += f"\n  Summary: {summary}\n"
+        
+        return output
+    
     async def analyze(
         self,
         market_data: Dict,
@@ -113,12 +150,15 @@ Use this information to deliver a compelling bull argument, refute the bear's co
 """
         
         # 拼接动态数据（借鉴NOFX的buildUserPrompt）
+        # 增强：展示多平台验证信息
+        intelligence_summary = self._format_intelligence_with_verification(intelligence_report)
+        
         prompt = f"""{base_prompt}
 
 Resources available:
 Market Data: {json.dumps(market_data, indent=2)}
 
-Intelligence Report: {json.dumps(intelligence_report, indent=2)}
+{intelligence_summary}
 
 Conversation history of the debate: {debate_state.history}
 
@@ -165,6 +205,43 @@ class BearAnalyst:
     def __init__(self, llm_client, prompt_manager=None):
         self.client = llm_client
         self.prompt_manager = prompt_manager
+    
+    def _format_intelligence_with_verification(self, intelligence_report: Dict) -> str:
+        """
+        格式化情报报告，突出显示多平台验证信息
+        
+        Args:
+            intelligence_report: 情报报告字典
+            
+        Returns:
+            格式化的情报字符串
+        """
+        if not intelligence_report:
+            return "Intelligence Report: No data available"
+        
+        output = "Intelligence Report (Multi-Platform Verified):\n"
+        output += f"  Market Sentiment: {intelligence_report.get('market_sentiment', 'NEUTRAL')}\n"
+        output += f"  Confidence: {intelligence_report.get('confidence', 0):.2f}\n"
+        
+        # 显示多平台验证信息
+        platform_contributions = intelligence_report.get('platform_contributions', {})
+        if platform_contributions:
+            output += f"\n  📊 Multi-Platform Verification ({len(platform_contributions)} platforms):\n"
+            for platform, contribution in platform_contributions.items():
+                platform_conf = contribution.get('confidence', 0)
+                output += f"    - {platform}: confidence={platform_conf:.2f}\n"
+            
+            platform_consensus = intelligence_report.get('platform_consensus', 0)
+            if platform_consensus > 0:
+                output += f"\n  🎯 Platform Consensus: {platform_consensus:.1%}\n"
+                output += "  💡 Note: Higher consensus indicates stronger agreement across platforms.\n"
+        
+        # 显示摘要
+        summary = intelligence_report.get('summary', '')
+        if summary:
+            output += f"\n  Summary: {summary}\n"
+        
+        return output
     
     async def analyze(
         self,
@@ -224,12 +301,15 @@ Use this information to deliver a compelling bear argument, refute the bull's cl
 """
         
         # 拼接动态数据
+        # 增强：展示多平台验证信息
+        intelligence_summary = self._format_intelligence_with_verification(intelligence_report)
+        
         prompt = f"""{base_prompt}
 
 Resources available:
 Market Data: {json.dumps(market_data, indent=2)}
 
-Intelligence Report: {json.dumps(intelligence_report, indent=2)}
+{intelligence_summary}
 
 Conversation history of the debate: {debate_state.history}
 
@@ -274,6 +354,43 @@ class ResearchManager:
     def __init__(self, llm_client, prompt_manager=None):
         self.client = llm_client
         self.prompt_manager = prompt_manager
+    
+    def _format_intelligence_with_verification(self, intelligence_report: Dict) -> str:
+        """
+        格式化情报报告，突出显示多平台验证信息
+        
+        Args:
+            intelligence_report: 情报报告字典
+            
+        Returns:
+            格式化的情报字符串
+        """
+        if not intelligence_report:
+            return "Intelligence Report: No data available"
+        
+        output = "Intelligence Report (Multi-Platform Verified):\n"
+        output += f"  Market Sentiment: {intelligence_report.get('market_sentiment', 'NEUTRAL')}\n"
+        output += f"  Confidence: {intelligence_report.get('confidence', 0):.2f}\n"
+        
+        # 显示多平台验证信息
+        platform_contributions = intelligence_report.get('platform_contributions', {})
+        if platform_contributions:
+            output += f"\n  📊 Multi-Platform Verification ({len(platform_contributions)} platforms):\n"
+            for platform, contribution in platform_contributions.items():
+                platform_conf = contribution.get('confidence', 0)
+                output += f"    - {platform}: confidence={platform_conf:.2f}\n"
+            
+            platform_consensus = intelligence_report.get('platform_consensus', 0)
+            if platform_consensus > 0:
+                output += f"\n  🎯 Platform Consensus: {platform_consensus:.1%}\n"
+                output += "  💡 Note: Higher consensus indicates stronger agreement across platforms.\n"
+        
+        # 显示摘要
+        summary = intelligence_report.get('summary', '')
+        if summary:
+            output += f"\n  Summary: {summary}\n"
+        
+        return output
     
     async def summarize_debate(
         self,
@@ -333,6 +450,9 @@ Take into account your past mistakes on similar situations. Use these insights t
 """
         
         # 拼接动态数据
+        # 增强：展示多平台验证信息
+        intelligence_summary = self._format_intelligence_with_verification(intelligence_report)
+        
         prompt = f"""{base_prompt}
 
 Here are your past reflections on mistakes:
@@ -345,8 +465,7 @@ Debate History:
 Market Data Context:
 {json.dumps(market_data, indent=2)}
 
-Intelligence Report:
-{json.dumps(intelligence_report, indent=2)}
+{intelligence_summary}
 """
         
         try:
