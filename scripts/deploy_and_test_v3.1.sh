@@ -66,8 +66,13 @@ else
     exit 1
 fi
 
+# 临时禁用错误退出，允许部分依赖安装失败
+set +e
 $PIP_CMD install -r requirements.txt --upgrade
-if [ $? -eq 0 ]; then
+PIP_EXIT_CODE=$?
+set -e
+
+if [ $PIP_EXIT_CODE -eq 0 ]; then
     echo -e "${GREEN}✅ 后端依赖更新成功${NC}"
 else
     echo -e "${YELLOW}⚠️  部分依赖更新失败，继续部署（可能已安装）${NC}"
