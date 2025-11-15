@@ -113,7 +113,9 @@ def update_prompts():
     print("开始更新 Prompt 模板为中文版本")
     print("="*60)
     
-    conn = psycopg2.connect(settings.DATABASE_URL)
+    # 转换 asyncpg URL 为 psycopg2 格式
+    db_url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+    conn = psycopg2.connect(db_url)
     cur = conn.cursor()
     
     try:
