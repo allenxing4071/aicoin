@@ -13,6 +13,7 @@ from app.api.v1 import (
     exchanges,  # v3.1 新增
     market_extended,  # v3.1 新增
     debate,  # v3.4 新增 - 辩论系统
+    prompts,  # v3.5 新增 - Prompt模板管理
 )
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     'exchanges',
     'market_extended',
     'debate',
+    'prompts',
 ]
