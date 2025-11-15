@@ -49,18 +49,41 @@ export default function PromptSelector({
   // 获取 Prompt 名称的中文备注
   const getPromptNameWithChinese = (name: string) => {
     const nameMap: Record<string, string> = {
+      // 辩论系统
       'bear_analyst': 'bear_analyst (空头分析师)',
       'bull_analyst': 'bull_analyst (多头分析师)',
       'research_manager': 'research_manager (研究经理)',
+      // 决策系统
       'default': 'default (默认策略)',
+      'decision_base': 'decision_base (决策基础模板)',
       'l0_conservative': 'l0_conservative (L0-极度保守)',
       'l1_moderate': 'l1_moderate (L1-保守稳健)',
       'l2_balanced': 'l2_balanced (L2-平衡型)',
       'l3_aggressive': 'l3_aggressive (L3-积极进取)',
       'l4_high_risk': 'l4_high_risk (L4-高风险)',
       'l5_extreme': 'l5_extreme (L5-极限激进)',
+      // 情报系统
+      'intelligence_analysis': 'intelligence_analysis (情报分析)',
+      'multi_platform_synthesis': 'multi_platform_synthesis (多平台综合)',
     };
-    return nameMap[name] || name;
+    
+    // 如果在映射表中找到，直接返回
+    if (nameMap[name]) {
+      return nameMap[name];
+    }
+    
+    // 否则，尝试智能生成中文备注
+    if (name.includes('conservative')) return `${name} (保守型)`;
+    if (name.includes('aggressive')) return `${name} (激进型)`;
+    if (name.includes('balanced')) return `${name} (平衡型)`;
+    if (name.includes('moderate')) return `${name} (稳健型)`;
+    if (name.includes('base')) return `${name} (基础模板)`;
+    if (name.includes('decision')) return `${name} (决策模板)`;
+    if (name.includes('debate')) return `${name} (辩论模板)`;
+    if (name.includes('intelligence')) return `${name} (情报模板)`;
+    
+    // 默认返回原名称
+    return name;
   };
 
   if (loading) {
