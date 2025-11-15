@@ -12,7 +12,7 @@ from datetime import datetime
 import logging
 
 from app.core.database import get_db
-from app.core.permissions import require_admin
+from app.api.v1.admin.auth import verify_admin_token
 from app.models.prompt_template import (
     PromptTemplate, PromptTemplateVersion,
     PromptPerformance, PromptABTest
@@ -75,7 +75,7 @@ async def list_prompts(
     category: Optional[str] = None,
     permission_level: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(require_admin)
+    _: Dict = Depends(verify_admin_token)
 ):
     """列出所有Prompt模板"""
     try:
@@ -100,7 +100,7 @@ async def list_prompts(
 async def get_prompt(
     template_id: int,
     db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(require_admin)
+    _: Dict = Depends(verify_admin_token)
 ):
     """获取单个Prompt模板"""
     template = await db.get(PromptTemplate, template_id)
@@ -114,7 +114,7 @@ async def get_prompt(
 async def create_prompt(
     data: PromptTemplateCreate,
     db: AsyncSession = Depends(get_db),
-    user: Dict = Depends(require_admin)
+    user: Dict = Depends(verify_admin_token)
 ):
     """创建新Prompt模板"""
     try:
@@ -163,7 +163,7 @@ async def update_prompt(
     template_id: int,
     data: PromptTemplateUpdate,
     db: AsyncSession = Depends(get_db),
-    user: Dict = Depends(require_admin)
+    user: Dict = Depends(verify_admin_token)
 ):
     """更新Prompt模板（创建新版本）"""
     try:
@@ -208,7 +208,7 @@ async def update_prompt(
 async def reload_prompts(
     category: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(require_admin)
+    _: Dict = Depends(verify_admin_token)
 ):
     """热重载Prompt"""
     try:
@@ -231,7 +231,7 @@ async def reload_prompts(
 async def list_versions(
     template_id: int,
     db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(require_admin)
+    _: Dict = Depends(verify_admin_token)
 ):
     """列出Prompt的所有版本"""
     query = select(PromptTemplateVersion).where(
@@ -258,7 +258,7 @@ async def rollback_version(
     template_id: int,
     version: int,
     db: AsyncSession = Depends(get_db),
-    user: Dict = Depends(require_admin)
+    user: Dict = Depends(verify_admin_token)
 ):
     """回滚到指定版本"""
     try:
@@ -312,7 +312,7 @@ async def rollback_version(
 async def optimize_with_deepseek(
     request: PromptOptimizeRequest,
     db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(require_admin)
+    _: Dict = Depends(verify_admin_token)
 ):
     """使用DeepSeek优化Prompt"""
     try:
@@ -347,7 +347,7 @@ async def optimize_with_deepseek(
 async def get_risk_metrics(
     template_id: int,
     db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(require_admin)
+    _: Dict = Depends(verify_admin_token)
 ):
     """获取Prompt的风险指标"""
     try:
@@ -385,7 +385,7 @@ async def get_risk_metrics(
 async def create_ab_test(
     data: ABTestCreate,
     db: AsyncSession = Depends(get_db),
-    user: Dict = Depends(require_admin)
+    user: Dict = Depends(verify_admin_token)
 ):
     """创建A/B测试"""
     try:
@@ -415,7 +415,7 @@ async def create_ab_test(
 async def get_ab_test(
     test_id: int,
     db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(require_admin)
+    _: Dict = Depends(verify_admin_token)
 ):
     """获取A/B测试结果"""
     test = await db.get(PromptABTest, test_id)
@@ -449,7 +449,7 @@ async def get_ab_test(
 async def stop_ab_test(
     test_id: int,
     db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(require_admin)
+    _: Dict = Depends(verify_admin_token)
 ):
     """停止A/B测试"""
     try:
