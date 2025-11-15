@@ -108,6 +108,9 @@ export default function IntelligencePanel() {
     BULLISH: '🟢',
     BEARISH: '🔴',
     NEUTRAL: '🟡',
+    bullish: '🟢',  // 向后兼容小写
+    bearish: '🔴',
+    neutral: '🟡',
     '看涨': '🟢',
     '看跌': '🔴',
     '中性': '🟡'
@@ -117,6 +120,9 @@ export default function IntelligencePanel() {
     BULLISH: 'text-green-600',
     BEARISH: 'text-red-600',
     NEUTRAL: 'text-yellow-600',
+    bullish: 'text-green-600',  // 向后兼容小写
+    bearish: 'text-red-600',
+    neutral: 'text-yellow-600',
     '看涨': 'text-green-600',
     '看跌': 'text-red-600',
     '中性': 'text-yellow-600'
@@ -126,6 +132,9 @@ export default function IntelligencePanel() {
     BULLISH: '看涨',
     BEARISH: '看跌',
     NEUTRAL: '中性',
+    bullish: '看涨',  // 向后兼容小写
+    bearish: '看跌',
+    neutral: '中性',
     '看涨': '看涨',
     '看跌': '看跌',
     '中性': '中性'

@@ -263,11 +263,14 @@ class QwenDeepAdapter(BasePlatformAdapter):
                 
                 elif current_section == "sentiment":
                     if "BULLISH" in line.upper() or "看涨" in line:
-                        result["sentiment"] = "bullish"
+                        result["sentiment"] = "看涨"
                         result["sentiment_score"] = 0.6
                     elif "BEARISH" in line.upper() or "看跌" in line:
-                        result["sentiment"] = "bearish"
+                        result["sentiment"] = "看跌"
                         result["sentiment_score"] = -0.6
+                    elif "NEUTRAL" in line.upper() or "中性" in line:
+                        result["sentiment"] = "中性"
+                        result["sentiment_score"] = 0.0
                     
                     # 尝试提取分数
                     import re
