@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +28,7 @@ interface ABTest {
 }
 
 export default function ABTestsPage() {
+  const router = useRouter()
   const [tests, setTests] = useState<ABTest[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -49,7 +51,7 @@ export default function ABTestsPage() {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">A/B 测试管理</h1>
-        <Button onClick={() => window.location.href = '/admin/prompts-v2/ab-tests/create'}>
+        <Button onClick={() => router.push('/admin/prompts-v2/ab-tests/create')}>
           ➕ 创建测试
         </Button>
       </div>

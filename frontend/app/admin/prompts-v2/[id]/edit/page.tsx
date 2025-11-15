@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
 export default function PromptEditPage() {
   const params = useParams()
+  const router = useRouter()
   const promptId = params.id
   
   const [originalContent, setOriginalContent] = useState('')
@@ -64,7 +65,7 @@ export default function PromptEditPage() {
         })
       })
       alert('✅ 保存成功')
-      window.location.href = '/admin/prompts-v2'
+      router.push('/admin/prompts-v2')
     } catch (error) {
       alert('❌ 保存失败')
     } finally {
@@ -139,7 +140,7 @@ export default function PromptEditPage() {
 
       <Button 
         variant="outline"
-        onClick={() => window.location.href = '/admin/prompts-v2'}
+        onClick={() => router.push('/admin/prompts-v2')}
       >
         ← 返回列表
       </Button>

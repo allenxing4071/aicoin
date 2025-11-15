@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface PromptTemplate {
   id: number
@@ -19,6 +19,7 @@ interface PromptTemplate {
 }
 
 export default function PromptsV2Page() {
+  const router = useRouter()
   const [prompts, setPrompts] = useState<PromptTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -65,7 +66,7 @@ export default function PromptsV2Page() {
         <h1 className="text-3xl font-bold">Prompt模板管理 v2</h1>
         <div className="flex gap-2">
           <Button onClick={handleReload}>🔄 热重载</Button>
-          <Button onClick={() => window.location.href = '/admin/prompts-v2/create'}>
+          <Button onClick={() => router.push('/admin/prompts-v2/create')}>
             ➕ 创建Prompt
           </Button>
         </div>
@@ -135,21 +136,21 @@ export default function PromptsV2Page() {
                   <div className="flex gap-2">
                     <Button 
                       size="sm"
-                      onClick={() => window.location.href = `/admin/prompts-v2/${prompt.id}/edit`}
+                      onClick={() => router.push(`/admin/prompts-v2/${prompt.id}/edit`)}
                     >
                       ✏️ 编辑
                     </Button>
                     <Button 
                       size="sm"
                       variant="outline"
-                      onClick={() => window.location.href = `/admin/prompts-v2/${prompt.id}/versions`}
+                      onClick={() => router.push(`/admin/prompts-v2/${prompt.id}/versions`)}
                     >
                       📚 版本
                     </Button>
                     <Button 
                       size="sm"
                       variant="outline"
-                      onClick={() => window.location.href = `/admin/prompts-v2/${prompt.id}/metrics`}
+                      onClick={() => router.push(`/admin/prompts-v2/${prompt.id}/metrics`)}
                     >
                       📊 指标
                     </Button>
