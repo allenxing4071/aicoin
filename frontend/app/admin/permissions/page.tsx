@@ -141,8 +141,7 @@ export default function PermissionsAdmin() {
     try {
       const token = localStorage.getItem('admin_token');
       
-      // 显示加载提示
-      const loadingAlert = alert('⏳ 正在生成 L0-L5 决策 Prompt 并重载...');
+      console.log('⏳ 开始生成 L0-L5 决策 Prompt...');
       
       // 调用后端生成 Prompt 的 API
       const generateResponse = await fetch('/api/v1/prompts/v2/generate-level-prompts', { 
@@ -154,18 +153,30 @@ export default function PermissionsAdmin() {
       });
       
       if (!generateResponse.ok) {
-        throw new Error('生成 Prompt 失败');
+        const errorText = await generateResponse.text();
+        console.error('生成 Prompt 失败:', errorText);
+        throw new Error(`生成 Prompt 失败: ${generateResponse.status} ${errorText}`);
       }
       
       const generateResult = await generateResponse.json();
+      console.log('✅ 生成结果:', generateResult);
       
       // 重载 Prompt
-      await fetch('/api/v1/prompts/v2/reload', { 
+      console.log('⏳ 重载 Prompt 到内存...');
+      const reloadResponse = await fetch('/api/v1/prompts/v2/reload', { 
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      if (!reloadResponse.ok) {
+        const errorText = await reloadResponse.text();
+        console.error('重载 Prompt 失败:', errorText);
+        throw new Error(`重载 Prompt 失败: ${reloadResponse.status} ${errorText}`);
+      }
+      
+      console.log('✅ Prompt 重载成功');
       
       // 清除缓存并重新获取
       await refetchPrompts();
@@ -185,7 +196,7 @@ export default function PermissionsAdmin() {
       );
     } catch (error: any) {
       console.error('❌ 热重载失败:', error);
-      alert(`❌ 热重载失败: ${error.message || '未知错误'}\n\n请检查后端日志或联系管理员。`);
+      alert(`❌ 热重载失败: ${error.message || '未知错误'}\n\n请检查浏览器控制台或后端日志。`);
     }
   };
 
