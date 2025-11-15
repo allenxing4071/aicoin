@@ -87,7 +87,16 @@ export default function AIPricingPage() {
   const syncOfficialPricing = async () => {
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/v1/ai-pricing/sync-official`);
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.post(
+        `${API_BASE_URL}/api/v1/ai-pricing/sync-official`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       if (response.data.success) {
         message.success('同步成功');
         fetchPricingData();
@@ -116,7 +125,16 @@ export default function AIPricingPage() {
   // 更新价格
   const handleUpdatePrice = async (values: any) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/v1/ai-pricing/update-price`, values);
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.post(
+        `${API_BASE_URL}/api/v1/ai-pricing/update-price`,
+        values,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       if (response.data.success) {
         message.success('更新成功');
         setEditModalVisible(false);
