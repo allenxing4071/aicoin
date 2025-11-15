@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '20251114_142906'
-down_revision = '013'  # 基于最新的 AI 成本管理迁移
+down_revision = '015'  # 基于 Prompt 系统迁移
 branch_labels = None
 depends_on = None
 
