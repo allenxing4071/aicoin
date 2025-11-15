@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import PageHeader from '../../components/common/PageHeader';
 import { API_BASE } from '../../../lib/api';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PromptSelector from '@/components/PromptSelector';
+import { useAllPrompts } from '@/hooks/usePrompts';
 
 interface TradingParams {
   max_position_pct: number;
@@ -70,23 +71,27 @@ export default function PermissionsAdmin() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentAILevel, setCurrentAILevel] = useState<string>('L1'); // AI当前使用的权限等级
   
-  // Prompt 模板相关状态
-  const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
-  const [promptsLoading, setPromptsLoading] = useState(true);
+  // Prompt 模板相关状态 - 使用优化的 Hook
+  const { prompts: allPrompts, loading: promptsLoading, refetch: refetchPrompts } = useAllPrompts();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
+
+  // 使用 useMemo 过滤 Prompts，避免重复计算
+  const filteredPrompts = useMemo(() => {
+    return allPrompts.filter(p => {
+      const matchCategory = selectedCategory === 'all' || p.category === selectedCategory;
+      const matchLevel = selectedLevel === 'all' || p.permission_level === selectedLevel;
+      return matchCategory && matchLevel;
+    });
+  }, [allPrompts, selectedCategory, selectedLevel]);
 
   useEffect(() => {
     fetchLevels();
     fetchCurrentAILevel();
-    fetchPrompts();
-    const interval = setInterval(fetchCurrentAILevel, 10000); // 每10秒更新AI当前等级
+    // 优化：延长轮询间隔到 30 秒，减少服务器压力
+    const interval = setInterval(fetchCurrentAILevel, 30000);
     return () => clearInterval(interval);
   }, []);
-  
-  useEffect(() => {
-    fetchPrompts();
-  }, [selectedCategory, selectedLevel]);
 
   const fetchLevels = async () => {
     try {
@@ -112,32 +117,12 @@ export default function PermissionsAdmin() {
     }
   };
   
-  const fetchPrompts = async () => {
-    try {
-      setPromptsLoading(true);
-      let url = '/api/v1/prompts/v2/';
-      const params = new URLSearchParams();
-      
-      if (selectedCategory !== 'all') params.append('category', selectedCategory);
-      if (selectedLevel !== 'all') params.append('permission_level', selectedLevel);
-      
-      if (params.toString()) url += `?${params.toString()}`;
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      setPrompts(data);
-    } catch (error) {
-      console.error('获取Prompt列表失败:', error);
-    } finally {
-      setPromptsLoading(false);
-    }
-  };
-  
   const handleReloadPrompts = async () => {
     try {
       await fetch('/api/v1/prompts/v2/reload', { method: 'POST' });
       alert('✅ Prompt已重载');
-      fetchPrompts();
+      // 清除缓存并重新获取
+      await refetchPrompts();
     } catch (error) {
       alert('❌ 重载失败');
     }
@@ -437,6 +422,8 @@ export default function PermissionsAdmin() {
                       console.log(`关联决策Prompt ${promptId} 到 ${level.level}`);
                     }}
                     permissionLevel={level.level}
+                    allPrompts={allPrompts}
+                    loading={promptsLoading}
                   />
                 </div>
                 <div>
@@ -449,6 +436,8 @@ export default function PermissionsAdmin() {
                       console.log(`关联辩论Prompt ${promptId} 到 ${level.level}`);
                     }}
                     permissionLevel={level.level}
+                    allPrompts={allPrompts}
+                    loading={promptsLoading}
                   />
                 </div>
                 <div>
@@ -461,6 +450,8 @@ export default function PermissionsAdmin() {
                       console.log(`关联情报Prompt ${promptId} 到 ${level.level}`);
                     }}
                     permissionLevel={level.level}
+                    allPrompts={allPrompts}
+                    loading={promptsLoading}
                   />
                 </div>
               </div>
@@ -536,7 +527,7 @@ export default function PermissionsAdmin() {
             
             <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                共找到 <span className="font-bold text-indigo-600">{prompts.length}</span> 个 Prompt 模板
+                共找到 <span className="font-bold text-indigo-600">{filteredPrompts.length}</span> 个 Prompt 模板
               </p>
             </div>
           </div>
@@ -546,7 +537,7 @@ export default function PermissionsAdmin() {
             <div className="flex items-center justify-center h-64">
               <div className="text-gray-500">加载中...</div>
             </div>
-          ) : prompts.length === 0 ? (
+          ) : filteredPrompts.length === 0 ? (
             <div className="bg-white border-2 border-gray-200 rounded-xl p-12 text-center">
               <div className="text-6xl mb-4">📭</div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">暂无 Prompt 模板</h3>
@@ -554,7 +545,7 @@ export default function PermissionsAdmin() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {prompts.map((prompt) => {
+              {filteredPrompts.map((prompt) => {
                 const categoryStyle = getCategoryStyle(prompt.category);
                 return (
                   <div 

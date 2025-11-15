@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 
 interface PromptTemplate {
   id: number;
@@ -15,38 +15,27 @@ interface PromptSelectorProps {
   selectedPromptId?: number;
   onSelect: (promptId: number | null) => void;
   permissionLevel?: string;
+  // 新增：接收预加载的 prompts 数据
+  allPrompts?: PromptTemplate[];
+  loading?: boolean;
 }
 
 export default function PromptSelector({ 
   category, 
   selectedPromptId, 
   onSelect,
-  permissionLevel 
+  permissionLevel,
+  allPrompts = [],
+  loading = false
 }: PromptSelectorProps) {
-  const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchPrompts();
-  }, [category, permissionLevel]);
-
-  const fetchPrompts = async () => {
-    try {
-      setLoading(true);
-      let url = `/api/v1/prompts/v2/?category=${category}`;
-      if (permissionLevel) {
-        url += `&permission_level=${permissionLevel}`;
-      }
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      setPrompts(data);
-    } catch (error) {
-      console.error('获取Prompt列表失败:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 使用 useMemo 过滤数据，避免重复计算
+  const filteredPrompts = useMemo(() => {
+    return allPrompts.filter(p => {
+      const matchCategory = p.category === category;
+      const matchLevel = !permissionLevel || p.permission_level === permissionLevel || !p.permission_level;
+      return matchCategory && matchLevel;
+    });
+  }, [allPrompts, category, permissionLevel]);
 
   const getCategoryIcon = (cat: string) => {
     const icons = {
@@ -72,7 +61,7 @@ export default function PromptSelector({
       className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-indigo-500 transition-colors"
     >
       <option value="">未选择</option>
-      {prompts.map((prompt) => (
+      {filteredPrompts.map((prompt) => (
         <option key={prompt.id} value={prompt.id}>
           {getCategoryIcon(prompt.category)} {prompt.name} (v{prompt.version})
         </option>
