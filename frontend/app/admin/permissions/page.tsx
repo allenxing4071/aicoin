@@ -350,8 +350,24 @@ export default function PermissionsAdmin() {
 
   const handleSetDefault = async (level: string) => {
     try {
-      await axios.post(`${API_BASE}/admin/permissions/levels/${level}/set-default`);
-      fetchLevels();
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.post(
+        `${API_BASE}/admin/permissions/levels/${level}/set-default`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      // 只更新本地状态的 is_default 字段，不重新获取所有数据
+      setLevels(levels.map(l => ({
+        ...l,
+        is_default: l.level === level
+      })));
+      
+      console.log(`✅ 已设置 ${level} 为默认权限等级`);
     } catch (err: any) {
       alert(`设置默认等级失败: ${err.message}`);
     }
