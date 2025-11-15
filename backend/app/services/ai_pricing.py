@@ -6,6 +6,7 @@ AI 模型定价管理
 from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
+from app.utils.timezone import get_beijing_time, format_beijing_time
 
 logger = logging.getLogger(__name__)
 
@@ -240,9 +241,22 @@ class AIPricingManager:
     
     def get_all_pricing(self) -> Dict[str, Any]:
         """获取完整价格表"""
+        # 为每个模型添加动态的北京时间戳
+        pricing_with_timestamps = {}
+        current_time = format_beijing_time(get_beijing_time(), "%Y-%m-%d %H:%M:%S")
+        
+        for provider, models in self.pricing_table.items():
+            pricing_with_timestamps[provider] = {}
+            for model, info in models.items():
+                model_info = info.copy()
+                # 如果原始数据中有 last_updated，保留它；否则使用当前时间
+                if "last_updated" not in model_info or not model_info["last_updated"]:
+                    model_info["last_updated"] = current_time
+                pricing_with_timestamps[provider][model] = model_info
+        
         return {
-            "pricing_table": self.pricing_table,
-            "last_updated": datetime.utcnow().isoformat(),
+            "pricing_table": pricing_with_timestamps,
+            "last_updated": current_time,
             "currency": "CNY",
             "unit": "元/1K tokens"
         }
@@ -281,7 +295,10 @@ class AIPricingManager:
             if output_price is not None:
                 self.pricing_table[provider][model]["output"] = output_price
             
-            self.pricing_table[provider][model]["last_updated"] = datetime.utcnow().isoformat()
+            # 使用北京时间
+            self.pricing_table[provider][model]["last_updated"] = format_beijing_time(
+                get_beijing_time(), "%Y-%m-%d %H:%M:%S"
+            )
             
             logger.info(f"✅ 价格已更新: {provider}/{model}")
             return True
