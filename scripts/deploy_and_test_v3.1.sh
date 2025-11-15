@@ -55,7 +55,18 @@ fi
 # 3. 更新后端依赖
 echo -e "\n${YELLOW}📦 步骤3: 更新后端依赖${NC}"
 cd backend
-pip install -r requirements.txt --upgrade
+
+# 检测可用的pip命令
+if command -v pip3 &> /dev/null; then
+    PIP_CMD="pip3"
+elif command -v pip &> /dev/null; then
+    PIP_CMD="pip"
+else
+    echo -e "${RED}❌ pip未找到，请先安装Python${NC}"
+    exit 1
+fi
+
+$PIP_CMD install -r requirements.txt --upgrade
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ 后端依赖更新成功${NC}"
 else
@@ -79,7 +90,18 @@ fi
 
 # 5. 运行自检脚本
 echo -e "\n${YELLOW}🧪 步骤5: 运行自检脚本${NC}"
-PYTHONPATH=$(pwd) python3 scripts/self_check.py
+
+# 检测可用的python命令
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo -e "${RED}❌ Python未找到${NC}"
+    exit 1
+fi
+
+PYTHONPATH=$(pwd) $PYTHON_CMD scripts/self_check.py
 SELF_CHECK_EXIT_CODE=$?
 
 if [ $SELF_CHECK_EXIT_CODE -eq 0 ]; then
