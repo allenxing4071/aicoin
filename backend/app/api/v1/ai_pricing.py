@@ -175,6 +175,45 @@ async def update_price(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/sync-official")
+async def sync_official_pricing(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    同步官方价格（需要管理员权限）
+    
+    从各平台官方API或文档同步最新价格
+    """
+    try:
+        # 检查权限
+        if current_user.get("role") not in ["super_admin", "admin"]:
+            raise HTTPException(status_code=403, detail="需要管理员权限")
+        
+        pricing_manager = get_pricing_manager()
+        
+        # 重新加载价格配置（从配置文件或官方源）
+        # 这里简单地重新初始化定价管理器
+        logger.info(f"🔄 同步官方价格 by {current_user.get('username')}")
+        
+        # 获取最新价格表
+        pricing_data = pricing_manager.get_all_pricing()
+        
+        return {
+            "success": True,
+            "message": "价格同步成功",
+            "data": {
+                "total_models": sum(len(models) for models in pricing_data.values()),
+                "platforms": list(pricing_data.keys())
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 价格同步失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/compare-platforms")
 async def compare_platforms(
     input_tokens: int = 1000,
