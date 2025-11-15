@@ -41,12 +41,12 @@ async def refresh_intelligence():
     """手动触发情报收集"""
     try:
         # 导入并调用情报收集服务
-        from app.services.intelligence.qwen_engine import qwen_intelligence_officer
+        from app.services.intelligence.qwen_engine import qwen_intelligence_engine
         
         logger.info("🔄 手动触发情报收集...")
         
         # 执行情报收集
-        report = await qwen_intelligence_officer.collect_intelligence()
+        report = await qwen_intelligence_engine.collect_intelligence()
         
         if not report:
             raise HTTPException(status_code=500, detail="情报收集失败，请检查日志")
