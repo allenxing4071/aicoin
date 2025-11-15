@@ -13,7 +13,6 @@ from app.services.decision.decision_engine_v2 import DecisionEngineV2
 from app.services.monitoring.kpi_calculator import KPICalculator
 from app.services.monitoring.alert_manager import AlertManager, AlertLevel
 from app.services.constraints.permission_manager import PerformanceData
-from app.services.intelligence.qwen_engine import qwen_intelligence_engine
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -29,6 +28,7 @@ class AITradingOrchestratorV2:
     3. 集成DecisionEngineV2
     4. 权限自动升降级
     5. 实时监控和告警
+    6. 集成统一情报协调器（四层存储+多平台协调）
     """
     
     def __init__(
@@ -50,8 +50,12 @@ class AITradingOrchestratorV2:
         self.kpi_calculator = KPICalculator()
         self.alert_manager = AlertManager()
         
-        # Qwen Intelligence Engine
-        self.intelligence_engine = qwen_intelligence_engine
+        # 初始化统一情报协调器（替代旧的qwen_intelligence_engine）
+        from app.services.intelligence.intelligence_coordinator import IntelligenceCoordinator
+        self.intelligence_coordinator = IntelligenceCoordinator(
+            redis_client=redis_client,
+            db_session=db_session
+        )
         self.intelligence_interval = settings.INTELLIGENCE_UPDATE_INTERVAL  # 30 minutes
         
         # 状态管理
@@ -333,11 +337,11 @@ class AITradingOrchestratorV2:
                 await asyncio.sleep(self.intelligence_interval)  # 30 minutes
                 
                 logger.info("\n" + "="*60)
-                logger.info("🕵️‍♀️ Qwen情报官开始收集情报...")
+                logger.info("🕵️‍♀️ 统一情报协调器开始收集情报...")
                 logger.info("="*60)
                 
-                # 收集和分析情报
-                report = await self.intelligence_engine.collect_intelligence()
+                # 使用新的统一情报协调器收集和分析情报
+                report = await self.intelligence_coordinator.collect_intelligence()
                 
                 logger.info(f"✅ 情报收集完成:")
                 logger.info(f"  - 市场情绪: {report.market_sentiment.value}")
@@ -345,6 +349,12 @@ class AITradingOrchestratorV2:
                 logger.info(f"  - 新闻数量: {len(report.key_news)}")
                 logger.info(f"  - 巨鲸活动: {len(report.whale_signals)}")
                 logger.info(f"  - 置信度: {report.confidence:.2f}")
+                
+                # 显示多平台验证信息（如果有）
+                if hasattr(report, 'platform_contributions'):
+                    logger.info(f"  - 多平台验证: {len(report.platform_contributions)}个平台")
+                    if hasattr(report, 'platform_consensus'):
+                        logger.info(f"  - 平台共识度: {report.platform_consensus:.1%}")
                 
                 # 如果有重要情报，发送告警
                 if report.confidence > 0.7:

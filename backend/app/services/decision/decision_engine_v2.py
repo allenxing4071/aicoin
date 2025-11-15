@@ -17,8 +17,8 @@ from app.services.constraints.constraint_validator import ConstraintValidator
 from app.services.memory.short_term_memory import ShortTermMemory
 from app.services.memory.long_term_memory import LongTermMemory
 from app.services.memory.knowledge_base import KnowledgeBase
-from app.services.decision.prompt_templates import PromptTemplates
-from app.services.decision.prompt_manager import get_global_prompt_manager
+# 新版：使用数据库版本的PromptManager
+# from app.services.decision.prompt_manager_db import PromptManagerDB, get_global_prompt_manager_db
 from app.services.intelligence.storage import intelligence_storage
 from app.services.decision.debate_system import DebateCoordinator
 from app.services.decision.debate_memory import DebateMemoryManager
@@ -70,14 +70,11 @@ class DecisionEngineV2:
         )
         self.knowledge_base = KnowledgeBase(db_session)
         
-        # 初始化Prompt管理器（借鉴NOFX）
-        try:
-            prompts_dir = os.path.join(os.path.dirname(__file__), "../../../prompts")
-            self.prompt_manager = get_global_prompt_manager(prompts_dir)
-            logger.info("✅ Prompt管理器初始化成功")
-        except Exception as e:
-            logger.warning(f"⚠️  Prompt管理器初始化失败: {e}，将使用硬编码Prompt")
-            self.prompt_manager = None
+        # 初始化Prompt管理器（新版：数据库版本）
+        # TODO: 在实际使用时，需要传入db_session并初始化PromptManagerDB
+        # self.prompt_manager = await get_global_prompt_manager_db(db_session)
+        self.prompt_manager = None  # 暂时禁用，等待集成新版
+        logger.info("⚠️  使用新版Prompt系统（数据库版），旧版已禁用")
         
         # 初始化辩论系统（新增）
         try:
@@ -288,21 +285,21 @@ class DecisionEngineV2:
             
             constraints = self.constraint_validator.get_constraint_summary()
             
-            # 使用v3版本（支持PromptManager），借鉴NOFX的做法
-            prompt = PromptTemplates.build_decision_prompt_v3(
-                account_state=account_state,
-                market_data=market_data,
-                permission_level=self.current_permission_level,
-                permission_config=permission_config,
-                constraints=constraints,
-                recent_decisions=recent_decisions,
-                similar_situations=similar_situations,
-                lessons_learned=lessons_learned,
-                intelligence_report=intelligence_report,
-                debate_result=debate_result,
-                prompt_manager=self.prompt_manager,  # 新增：传入PromptManager
-                strategy="default"  # 可配置策略
-            )
+            # TODO: 迁移到新版PromptManagerDB
+            # 旧版PromptTemplates已禁用，需要使用新版数据库Prompt系统
+            # 临时使用简化版本
+            prompt = f"""你是专业的加密货币交易AI（权限等级：{self.current_permission_level}）。
+
+## 当前市场数据
+{json.dumps(market_data, indent=2, ensure_ascii=False)}
+
+## 账户状态
+{json.dumps(account_state, indent=2, ensure_ascii=False)}
+
+## 约束条件
+{json.dumps(constraints, indent=2, ensure_ascii=False)}
+
+请基于以上信息做出交易决策，返回JSON格式。"""
             
             # === 第4步：调用LLM ===
             logger.info("🤖 调用AI模型进行决策...")

@@ -129,10 +129,25 @@ class Settings(BaseSettings):
     QWEN_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     INTELLIGENCE_UPDATE_INTERVAL: int = 1800  # 30 minutes
     
+    # ===== Intelligence System Configuration (情报系统配置) =====
+    
+    # 多平台协调配置
+    INTELLIGENCE_USE_MULTI_PLATFORM: bool = True  # 启用多平台协调
+    INTELLIGENCE_USE_STORAGE_LAYERS: bool = True  # 启用四层存储
+    
     # Multi-Platform Intelligence Configuration (Qwen情报员多平台协同)
     ENABLE_FREE_PLATFORM: bool = True  # 免费平台（基础筛选）
     ENABLE_QWEN_SEARCH: bool = False  # Qwen联网搜索（需API Key，按需启用）
     ENABLE_QWEN_DEEP_ANALYSIS: bool = True  # Qwen深度分析（默认启用）
+    
+    # 云平台并行验证配置
+    CLOUD_PLATFORM_PARALLEL_ENABLED: bool = True  # 启用云平台并行验证
+    CLOUD_PLATFORM_MIN_CONSENSUS: float = 0.6  # 最小共识度阈值（60%）
+    
+    # 存储层配置
+    L1_CACHE_TTL_HOURS: int = 24  # L1缓存过期时间（小时）
+    L2_ANALYSIS_INTERVAL_HOURS: int = 1  # L2分析间隔（小时）
+    L4_VECTOR_DIMENSION: int = 1536  # L4向量维度（OpenAI/Qwen标准）
     
     # RSS News Source Configuration
     ENABLE_RSS_REAL_DATA: bool = True  # 启用真实RSS数据（默认开启）
