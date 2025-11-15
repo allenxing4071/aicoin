@@ -123,19 +123,69 @@ export default function PermissionsAdmin() {
   };
   
   const handleReloadPrompts = async () => {
+    // 明显的确认提示
+    const confirmed = confirm(
+      '🔄 热重载 Prompt 模板\n\n' +
+      '此操作将：\n' +
+      '1. 为 L0-L5 权限等级自动生成中文决策 Prompt\n' +
+      '2. 重新加载所有 Prompt 模板到内存\n' +
+      '3. 更新所有关联的权限配置\n\n' +
+      '⚠️ 注意：此操作会覆盖现有的决策 Prompt！\n\n' +
+      '是否继续？'
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('admin_token');
+      
+      // 显示加载提示
+      const loadingAlert = alert('⏳ 正在生成 L0-L5 决策 Prompt 并重载...');
+      
+      // 调用后端生成 Prompt 的 API
+      const generateResponse = await fetch('/api/v1/prompts/v2/generate-level-prompts', { 
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!generateResponse.ok) {
+        throw new Error('生成 Prompt 失败');
+      }
+      
+      const generateResult = await generateResponse.json();
+      
+      // 重载 Prompt
       await fetch('/api/v1/prompts/v2/reload', { 
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      alert('✅ Prompt已重载');
+      
       // 清除缓存并重新获取
       await refetchPrompts();
-    } catch (error) {
-      alert('❌ 重载失败');
+      await fetchLevels();
+      
+      // 显示成功结果
+      alert(
+        '✅ 热重载成功！\n\n' +
+        `已生成 ${generateResult.generated_count || 6} 个决策 Prompt：\n` +
+        '• L0 - 极度保守型决策 Prompt\n' +
+        '• L1 - 保守稳健型决策 Prompt\n' +
+        '• L2 - 平衡型决策 Prompt\n' +
+        '• L3 - 积极进取型决策 Prompt\n' +
+        '• L4 - 高风险型决策 Prompt\n' +
+        '• L5 - 极限激进型决策 Prompt\n\n' +
+        '所有 Prompt 已重新加载到内存！'
+      );
+    } catch (error: any) {
+      console.error('❌ 热重载失败:', error);
+      alert(`❌ 热重载失败: ${error.message || '未知错误'}\n\n请检查后端日志或联系管理员。`);
     }
   };
 
