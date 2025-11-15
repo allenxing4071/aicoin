@@ -12,14 +12,14 @@ import asyncio
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from sqlalchemy import select, text
-from app.core.database import get_db_session
+from app.core.database import AsyncSessionLocal
 from app.models.permission_config import PermissionLevelConfig
 
 
 async def check_and_init_prompt_fields():
     """检查并初始化 Prompt 关联字段"""
     
-    async with get_db_session() as db:
+    async with AsyncSessionLocal() as db:
         try:
             # 1. 检查表结构
             print("=" * 60)
