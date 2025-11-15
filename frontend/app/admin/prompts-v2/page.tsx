@@ -31,7 +31,7 @@ export default function PromptsV2Page() {
   const fetchPrompts = async () => {
     try {
       setLoading(true)
-      let url = '/api/prompts/v2/'
+      let url = '/api/v1/prompts/v2/'
       const params = new URLSearchParams()
       
       if (selectedCategory !== 'all') params.append('category', selectedCategory)
@@ -51,7 +51,7 @@ export default function PromptsV2Page() {
 
   const handleReload = async () => {
     try {
-      await fetch('/api/prompts/v2/reload', { method: 'POST' })
+      await fetch('/api/v1/prompts/v2/reload', { method: 'POST' })
       alert('✅ Prompt已重载')
       fetchPrompts()
     } catch (error) {
