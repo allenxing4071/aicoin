@@ -101,6 +101,12 @@ class RedisClient:
             return []
         return await self.redis.zrevrange(key, start, end, withscores=withscores)
     
+    async def zremrangebyrank(self, key: str, start: int, end: int):
+        """Remove members from sorted set by rank range"""
+        if not self.redis:
+            return 0
+        return await self.redis.zremrangebyrank(key, start, end)
+    
     async def setex(self, key: str, time: int, value: Any):
         """Set key with expiration time"""
         if not self.redis:

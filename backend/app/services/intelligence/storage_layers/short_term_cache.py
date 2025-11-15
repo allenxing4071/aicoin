@@ -97,8 +97,9 @@ class ShortTermIntelligenceCache:
             key = f"{self.namespace}:report:{report_id}"
             data = await self.redis.get(key)
             
+            # RedisClient.get() already parses JSON, no need to json.loads again
             if data:
-                return json.loads(data)
+                return data if isinstance(data, dict) else json.loads(data)
             return None
             
         except Exception as e:
