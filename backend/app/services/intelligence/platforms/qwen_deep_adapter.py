@@ -5,6 +5,7 @@ from datetime import datetime
 import logging
 import openai
 from .base_adapter import BasePlatformAdapter, PlatformRole
+from app.utils.timezone import get_beijing_time
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +123,7 @@ class QwenDeepAdapter(BasePlatformAdapter):
                 "opportunities": parsed_analysis.get("opportunities", []),
                 "market_sentiment": parsed_analysis.get("sentiment", "neutral"),
                 "sentiment_score": parsed_analysis.get("sentiment_score", 0.0),
-                "timestamp": datetime.now(),
+                "timestamp": get_beijing_time(),
                 "cost": cost,
                 "tokens_used": {
                     "prompt": usage.prompt_tokens if usage else 0,
@@ -147,7 +148,7 @@ class QwenDeepAdapter(BasePlatformAdapter):
                 "key_findings": [],
                 "risk_factors": [],
                 "opportunities": [],
-                "timestamp": datetime.now(),
+                "timestamp": get_beijing_time(),
                 "cost": 0.0,
                 "error": str(e)
             }

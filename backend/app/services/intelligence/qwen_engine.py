@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 import openai
 from app.core.config import settings
+from app.utils.timezone import get_beijing_time
 from .models import IntelligenceReport, SentimentType
 from .data_sources import crypto_news_api, on_chain_data_api
 from .storage import intelligence_storage
@@ -132,7 +133,7 @@ class QwenIntelligenceEngine:
             
             # 构建完整报告
             report = IntelligenceReport(
-                timestamp=datetime.now(),
+                timestamp=get_beijing_time(),
                 market_sentiment=sentiment,
                 sentiment_score=sentiment_score,
                 key_news=news_items[:5],  # Top 5 news
@@ -262,7 +263,7 @@ class QwenIntelligenceEngine:
         """创建fallback报告（当Qwen失败时）"""
         from .models import OnChainMetrics
         return IntelligenceReport(
-            timestamp=datetime.now(),
+            timestamp=get_beijing_time(),
             market_sentiment=SentimentType.NEUTRAL,
             sentiment_score=0.0,
             key_news=[],
@@ -272,7 +273,7 @@ class QwenIntelligenceEngine:
                 active_addresses=0,
                 gas_price=0,
                 transaction_volume=0,
-                timestamp=datetime.now()
+                timestamp=get_beijing_time()
             ),
             risk_factors=["情报系统暂时不可用"],
             opportunities=[],
