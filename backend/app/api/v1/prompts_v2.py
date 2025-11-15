@@ -60,6 +60,13 @@ class PromptOptimizeRequest(BaseModel):
     optimization_goal: str = "提高决策准确率，降低误判风险"
 
 
+class PromptGenerateRequest(BaseModel):
+    name: str
+    category: str
+    permission_level: Optional[str] = None
+    requirement: str
+
+
 class ABTestCreate(BaseModel):
     test_name: str
     prompt_a_id: int
@@ -307,6 +314,104 @@ async def rollback_version(
 
 
 # ===== DeepSeek优化 API =====
+
+@router.post("/generate")
+async def generate_with_deepseek(
+    request: PromptGenerateRequest,
+    _: Dict = Depends(verify_admin_token)
+):
+    """使用DeepSeek根据需求生成Prompt"""
+    try:
+        # TODO: 集成DeepSeek API
+        # 这里简化为示例，根据类别和需求生成模板
+        
+        category_templates = {
+            "decision": """你是一个专业的加密货币交易决策助手。
+
+## 核心目标
+{requirement}
+
+## 决策流程
+1. 分析市场数据：{{ market_data }}
+2. 评估技术指标
+3. 考虑风险因素
+4. 给出明确的交易建议（买入/卖出/持有）
+
+## 风险控制
+- 严格遵守止损策略
+- 控制仓位大小
+- 避免过度交易
+
+## 输出格式
+请以 JSON 格式输出决策结果：
+{{
+    "action": "买入/卖出/持有",
+    "confidence": 0.0-1.0,
+    "reasoning": "决策理由",
+    "risk_level": "低/中/高"
+}}""",
+            
+            "debate": """你是一个{name}，参与加密货币投资决策的辩论。
+
+## 角色定位
+{requirement}
+
+## 辩论要点
+1. 提出明确的观点和论据
+2. 使用市场数据和技术分析支持你的论点
+3. 反驳对方的观点
+4. 保持专业和客观
+
+## 数据来源
+- 市场数据：{{ market_data }}
+- 情报报告：{{ intelligence_report }}
+
+## 输出要求
+以对话式风格提出你的论点，直接回应对方的观点，并有效地进行辩论。""",
+            
+            "intelligence": """你是一个加密货币情报分析专家。
+
+## 分析目标
+{requirement}
+
+## 情报来源
+- 链上数据
+- 社交媒体情绪
+- 新闻事件
+- 大户动向
+
+## 分析维度
+1. 市场情绪分析
+2. 资金流向追踪
+3. 重大事件影响
+4. 风险预警
+
+## 输出格式
+提供结构化的情报报告，包括：
+- 关键发现
+- 风险提示
+- 投资建议"""
+        }
+        
+        # 根据类别选择模板
+        template = category_templates.get(request.category, category_templates["decision"])
+        
+        # 替换变量
+        generated_content = template.format(
+            requirement=request.requirement,
+            name=request.name
+        )
+        
+        return {
+            "generated_content": generated_content,
+            "category": request.category,
+            "permission_level": request.permission_level
+        }
+    
+    except Exception as e:
+        logger.error(f"DeepSeek生成失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/optimize")
 async def optimize_with_deepseek(
