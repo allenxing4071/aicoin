@@ -417,10 +417,10 @@ curl http://localhost:8000/api/v1/account/margin-ratio
 ## 📚 相关文档
 
 - [快速开始](../quickstart.md) - 5 分钟快速部署
-- [技术架构](../development/architecture.md) - 系统架构说明
-- [部署指南](../deployment/quick-deploy.md) - 详细部署步骤
-- [配置指南](../deployment/configuration.md) - 配置说明
-- [故障排查](../deployment/troubleshooting.md) - 问题诊断
+- [技术架构](../03-开发文档/architecture.md) - 系统架构说明
+- [部署指南](../02-部署运维/quick-deploy.md) - 详细部署步骤
+- [配置指南](../02-部署运维/configuration.md) - 配置说明
+- [故障排查](../02-部署运维/troubleshooting.md) - 问题诊断
 
 ---
 
