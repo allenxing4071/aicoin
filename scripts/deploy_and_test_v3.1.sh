@@ -33,7 +33,10 @@ BACKUP_FILE="${BACKUP_DIR}/aicoin_backup_${TIMESTAMP}.sql"
 
 # 从环境变量或配置文件读取数据库信息
 if [ -f ".env" ]; then
-    source .env
+    # 使用 set -a 安全加载环境变量（避免命令执行）
+    set -a
+    source <(grep -v '^#' .env | grep -v '^$' | sed 's/\r$//')
+    set +a
 fi
 
 # 使用pg_dump备份（如果是PostgreSQL）
