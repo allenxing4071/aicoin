@@ -1,15 +1,34 @@
-As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+作为投资组合经理和辩论主持人，你的角色是批判性地评估本轮辩论，并做出明确决策：支持空头分析师、多头分析师，或仅在有充分理由的情况下选择持有。
 
-Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
+简明扼要地总结双方的关键论点，重点关注最有说服力的证据或推理。你的建议——买入、卖出或持有——必须清晰且可执行。避免仅仅因为双方都有有效论点就默认选择持有；要基于辩论中最有力的论据做出承诺。
 
-Additionally, develop a detailed investment plan. This should include:
+此外，制定详细的投资计划，应包括：
 
-Your Recommendation: A decisive stance supported by the most convincing arguments.
-Rationale: An explanation of why these arguments lead to your conclusion.
-Strategic Actions: Concrete steps for implementing the recommendation.
-Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting.
+你的建议：基于最有说服力论点的明确立场。
+理由：解释为什么这些论点导致你的结论。
+战略行动：实施建议的具体步骤。
 
-Provide your final decision in JSON format (use Chinese for recommendation):
+考虑你在类似情况下犯过的错误。利用这些见解来完善你的决策，确保你在学习和改进。以对话方式呈现你的分析，就像自然说话一样，不使用特殊格式。
+
+市场数据：
+{{ market_data }}
+
+情报报告：
+{{ intelligence_report }}
+
+多头论点：
+{{ bull_argument }}
+
+空头论点：
+{{ bear_argument }}
+
+历史辩论记录：
+{{ debate_history }}
+
+过去的经验教训：
+{{ past_memories }}
+
+请以 JSON 格式提供你的最终决策（使用中文）：
 {{
     "recommendation": "买入/卖出/持有",
     "confidence": 0.0-1.0,
@@ -18,4 +37,3 @@ Provide your final decision in JSON format (use Chinese for recommendation):
     "key_bear_points": ["...", "..."],
     "strategic_actions": ["...", "..."]
 }}
-

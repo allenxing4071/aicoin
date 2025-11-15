@@ -23,9 +23,20 @@ export default function CreatePromptPage() {
 
     try {
       setLoading(true);
+      
+      console.log('📤 提交数据:', {
+        name: formData.name,
+        category: formData.category,
+        permission_level: formData.permission_level || null,
+        content: formData.content
+      });
+      
       const response = await fetch('/api/v1/prompts/v2/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // 添加认证
+        },
         body: JSON.stringify({
           name: formData.name,
           category: formData.category,
@@ -34,15 +45,29 @@ export default function CreatePromptPage() {
         })
       });
 
+      console.log('📥 响应状态:', response.status);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || '创建失败');
+        let errorMsg = '创建失败';
+        try {
+          const error = await response.json();
+          console.error('❌ 错误详情:', error);
+          errorMsg = error.detail || JSON.stringify(error);
+        } catch (e) {
+          const text = await response.text();
+          console.error('❌ 错误文本:', text);
+          errorMsg = text || `HTTP ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
 
-      alert('✅ 创建成功');
-      router.push('/admin/permissions'); // 返回权限管理页面
+      const result = await response.json();
+      console.log('✅ 创建成功:', result);
+      alert('✅ Prompt 创建成功！');
+      router.push('/admin/permissions');
     } catch (error: any) {
-      alert(`❌ ${error.message}`);
+      console.error('❌ 创建失败:', error);
+      alert(`❌ 创建失败: ${error.message}`);
     } finally {
       setLoading(false);
     }
