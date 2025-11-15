@@ -11,6 +11,7 @@ from app.models.admin_user import AdminUser
 from app.models.exchange_config import ExchangeConfig
 from app.models.permission import Permission, Role, RolePermission, PermissionAuditLog
 from app.models.debate import DebateHistory, DebateConfig, DebateStatistics
+from app.models.prompt_template import PromptTemplate, PromptTemplateVersion, PromptPerformance, PromptABTest
 
 __all__ = [
     'Trade',
@@ -29,5 +30,9 @@ __all__ = [
     'DebateHistory',
     'DebateConfig',
     'DebateStatistics',
+    'PromptTemplate',
+    'PromptTemplateVersion',
+    'PromptPerformance',
+    'PromptABTest',
 ]
 
