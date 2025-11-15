@@ -124,7 +124,13 @@ export default function PermissionsAdmin() {
   
   const handleReloadPrompts = async () => {
     try {
-      await fetch('/api/v1/prompts/v2/reload', { method: 'POST' });
+      const token = localStorage.getItem('admin_token');
+      await fetch('/api/v1/prompts/v2/reload', { 
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       alert('✅ Prompt已重载');
       // 清除缓存并重新获取
       await refetchPrompts();
