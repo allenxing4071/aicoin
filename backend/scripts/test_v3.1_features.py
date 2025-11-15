@@ -84,7 +84,7 @@ async def test_storage_layers():
         logger.info("✅ L1缓存写入成功")
         
         # L4测试（检查是否已初始化）
-        l4 = IntelligenceVectorKB(redis_client, None)
+        l4 = IntelligenceVectorKB()
         logger.info("✅ L4向量库初始化成功")
         
         TEST_RESULTS.append(TestResult("四层存储", True))
