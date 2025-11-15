@@ -132,6 +132,7 @@ export default function IntelligenceMonitoringPage() {
       <PageHeader
         title="情报系统监控"
         description="实时监控情报系统健康状态和性能指标"
+        icon="📊"
       />
 
       {/* 页头控制栏 */}
