@@ -127,6 +127,43 @@ export default function PermissionsAdmin() {
       alert('❌ 重载失败');
     }
   };
+
+  // 保存 Prompt 关联
+  const handlePromptAssociation = async (levelId: number, levelName: string, promptType: 'decision' | 'debate' | 'intelligence', promptId: number | null) => {
+    try {
+      const fieldMap = {
+        decision: 'decision_prompt_id',
+        debate: 'debate_prompt_id',
+        intelligence: 'intelligence_prompt_id'
+      };
+      
+      const response = await axios.put(`${API_BASE}/admin/permissions/levels/${levelId}`, {
+        [fieldMap[promptType]]: promptId
+      });
+      
+      if (response.status === 200) {
+        // 更新本地状态
+        setLevels(levels.map(l => {
+          if (l.id === levelId) {
+            return {
+              ...l,
+              prompts: {
+                ...l.prompts,
+                [fieldMap[promptType]]: promptId
+              }
+            };
+          }
+          return l;
+        }));
+        
+        const promptName = promptId ? allPrompts.find(p => p.id === promptId)?.name : '无';
+        console.log(`✅ 已关联 ${promptType} Prompt "${promptName}" 到 ${levelName}`);
+      }
+    } catch (error: any) {
+      console.error(`❌ 关联失败:`, error);
+      alert(`❌ 关联失败: ${error.response?.data?.detail || error.message}`);
+    }
+  };
   
   // 获取类别图标和颜色
   const getCategoryStyle = (category: string) => {
@@ -434,10 +471,7 @@ export default function PermissionsAdmin() {
                   <PromptSelector
                     category="decision"
                     selectedPromptId={level.prompts?.decision_prompt_id}
-                    onSelect={(promptId) => {
-                      // TODO: 保存关联
-                      console.log(`关联决策Prompt ${promptId} 到 ${level.level}`);
-                    }}
+                    onSelect={(promptId) => handlePromptAssociation(level.id, level.level, 'decision', promptId)}
                     permissionLevel={level.level}
                     allPrompts={allPrompts}
                     loading={promptsLoading}
@@ -448,10 +482,7 @@ export default function PermissionsAdmin() {
                   <PromptSelector
                     category="debate"
                     selectedPromptId={level.prompts?.debate_prompt_id}
-                    onSelect={(promptId) => {
-                      // TODO: 保存关联
-                      console.log(`关联辩论Prompt ${promptId} 到 ${level.level}`);
-                    }}
+                    onSelect={(promptId) => handlePromptAssociation(level.id, level.level, 'debate', promptId)}
                     permissionLevel={level.level}
                     allPrompts={allPrompts}
                     loading={promptsLoading}
@@ -462,10 +493,7 @@ export default function PermissionsAdmin() {
                   <PromptSelector
                     category="intelligence"
                     selectedPromptId={level.prompts?.intelligence_prompt_id}
-                    onSelect={(promptId) => {
-                      // TODO: 保存关联
-                      console.log(`关联情报Prompt ${promptId} 到 ${level.level}`);
-                    }}
+                    onSelect={(promptId) => handlePromptAssociation(level.id, level.level, 'intelligence', promptId)}
                     permissionLevel={level.level}
                     allPrompts={allPrompts}
                     loading={promptsLoading}
