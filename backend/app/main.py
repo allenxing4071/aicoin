@@ -13,7 +13,7 @@ from app.api.v1 import exchanges, market_extended  # v3.1 新增
 from app.api.v1 import ai_cost  # AI成本管理
 from app.api.v1 import ai_pricing  # AI定价管理
 from app.api.v1 import kol_tracking, smart_money  # KOL追踪和聪明钱跟单
-from app.api.v1 import prompts  # Prompt模板管理
+# from app.api.v1 import prompts  # Prompt模板管理 - TODO: 待实现
 from app.api.v1.endpoints import intelligence_storage, intelligence_platforms, model_performance, ai_journal, platform_budget, platform_stats
 from app.api.v1.admin import permissions as admin_permissions
 from app.api.v1.admin import database as admin_database
@@ -337,12 +337,12 @@ app.include_router(
     tags=["Debate System - Multi-Agent Analysis"]
 )
 
-# v3.5: Prompt模板管理（借鉴NOFX）
-app.include_router(
-    prompts.router,
-    prefix=f"{settings.API_V1_PREFIX}",
-    tags=["Prompt Template Management"]
-)
+# v3.5: Prompt模板管理（借鉴NOFX） - TODO: 待实现
+# app.include_router(
+#     prompts.router,
+#     prefix=f"{settings.API_V1_PREFIX}",
+#     tags=["Prompt Template Management"]
+# )
 
 
 @app.on_event("startup")
