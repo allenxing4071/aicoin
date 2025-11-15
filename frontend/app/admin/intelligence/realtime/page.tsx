@@ -30,6 +30,20 @@ interface IntelligenceReport {
   opportunities: string[];
   qwen_analysis: string;
   created_at: string;
+  // 新增：多平台验证字段
+  platform_contributions?: {
+    [platform: string]: {
+      confidence: number;
+      sentiment: string;
+    };
+  };
+  platform_consensus?: number;
+  verification_metadata?: {
+    platforms_used: number;
+    cross_validation: boolean;
+    consensus_threshold: number;
+  };
+  summary?: string;
 }
 
 export default function RealtimeIntelligencePage() {
@@ -147,7 +161,7 @@ export default function RealtimeIntelligencePage() {
               <h3 className="text-xl font-bold text-gray-900 mb-2">
                 {getSentimentIcon(latestReport.market_sentiment)} 最新市场情绪
               </h3>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <span className={`px-4 py-2 rounded-lg font-semibold ${getSentimentColor(latestReport.market_sentiment)}`}>
                   {latestReport.market_sentiment}
                 </span>
@@ -161,6 +175,24 @@ export default function RealtimeIntelligencePage() {
                     {(latestReport.confidence * 100).toFixed(0)}%
                   </span>
                 </span>
+                
+                {/* 新增：多平台验证徽章 */}
+                {latestReport.platform_contributions && (
+                  <>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+                      🔄 {Object.keys(latestReport.platform_contributions).length}平台验证
+                    </span>
+                    {latestReport.platform_consensus !== undefined && (
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        latestReport.platform_consensus >= 0.8 ? 'bg-green-100 text-green-800' :
+                        latestReport.platform_consensus >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        🎯 {(latestReport.platform_consensus * 100).toFixed(0)}%共识
+                      </span>
+                    )}
+                  </>
+                )}
               </div>
             </div>
             <span className="text-sm text-gray-500">
@@ -199,6 +231,54 @@ export default function RealtimeIntelligencePage() {
               </div>
             )}
           </div>
+
+          {/* 新增：平台验证详情（可折叠） */}
+          {latestReport.platform_contributions && (
+            <details className="mt-4 bg-blue-50 rounded-lg p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-gray-900 hover:text-blue-600">
+                查看平台验证详情 ▼
+              </summary>
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                {Object.entries(latestReport.platform_contributions).map(([platform, data]) => (
+                  <div key={platform} className="bg-white rounded-lg p-3 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900 capitalize">{platform}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        data.sentiment === 'BULLISH' ? 'bg-green-100 text-green-800' :
+                        data.sentiment === 'BEARISH' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {data.sentiment}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">置信度:</span>
+                      <div className="flex-1">
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500"
+                            style={{ width: `${data.confidence * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-xs font-medium text-blue-600">
+                        {(data.confidence * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {latestReport.verification_metadata && (
+                <div className="mt-3 flex items-center gap-4 text-xs text-gray-600">
+                  <span>✓ 使用 {latestReport.verification_metadata.platforms_used} 个平台</span>
+                  {latestReport.verification_metadata.cross_validation && (
+                    <span>✓ 交叉验证已启用</span>
+                  )}
+                  <span>✓ 共识阈值: {(latestReport.verification_metadata.consensus_threshold * 100).toFixed(0)}%</span>
+                </div>
+              )}
+            </details>
+          )}
 
           {/* 数据来源统计 */}
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">

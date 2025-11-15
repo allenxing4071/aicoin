@@ -234,6 +234,10 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
                 key: "/admin/intelligence/reports",
                 label: <Link href="/admin/intelligence/reports">历史报告</Link>,
               },
+              {
+                key: "/admin/intelligence/monitoring",
+                label: <Link href="/admin/intelligence/monitoring">系统监控</Link>,
+              },
             ],
           },
         ],

@@ -46,12 +46,33 @@ interface QwenStorageStats {
   };
 }
 
+interface LatestIntelligenceReport {
+  timestamp: string;
+  market_sentiment: string;
+  sentiment_score: number;
+  confidence: number;
+  platform_contributions?: {
+    [platform: string]: {
+      confidence: number;
+      sentiment: string;
+    };
+  };
+  platform_consensus?: number;
+  verification_metadata?: {
+    platforms_used: number;
+    cross_validation: boolean;
+    consensus_threshold: number;
+  };
+  summary?: string;
+}
+
 type ViewMode = "deepseek" | "qwen";
 
 export default function MemorySystemPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("deepseek");
   const [overview, setOverview] = useState<MemoryOverview | null>(null);
   const [qwenStats, setQwenStats] = useState<QwenStorageStats | null>(null);
+  const [latestReport, setLatestReport] = useState<LatestIntelligenceReport | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +80,7 @@ export default function MemorySystemPage() {
       fetchOverview();
     } else {
       fetchQwenStats();
+      fetchLatestReport();
     }
   }, [viewMode]);
 
@@ -93,6 +115,20 @@ export default function MemorySystemPage() {
       console.error("Failed to fetch Qwen storage stats:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLatestReport = async () => {
+    try {
+      const response = await fetch(
+        "/api/v1/intelligence/storage/reports/latest"
+      );
+      const result = await response.json();
+      if (result.success && result.data) {
+        setLatestReport(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch latest intelligence report:", error);
     }
   };
 
@@ -497,6 +533,96 @@ export default function MemorySystemPage() {
               </div>
             </div>
           </div>
+
+          {/* 多平台验证信息 */}
+          {latestReport?.platform_contributions && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  🔄 多平台验证信息
+                </h2>
+                {latestReport.platform_consensus !== undefined && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">平台共识度:</span>
+                    <span className={`text-2xl font-bold ${
+                      latestReport.platform_consensus >= 0.8 ? 'text-green-600' :
+                      latestReport.platform_consensus >= 0.6 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {(latestReport.platform_consensus * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* 共识度进度条 */}
+              {latestReport.platform_consensus !== undefined && (
+                <div className="mb-4">
+                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all ${
+                        latestReport.platform_consensus >= 0.8 ? 'bg-green-500' :
+                        latestReport.platform_consensus >= 0.6 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${latestReport.platform_consensus * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {latestReport.platform_consensus >= 0.8 ? '✓ 高度共识 - 多平台分析结果高度一致' :
+                     latestReport.platform_consensus >= 0.6 ? '⚠ 中度共识 - 多平台分析存在一定差异' :
+                     '⚠ 低度共识 - 多平台分析结果分歧较大'}
+                  </p>
+                </div>
+              )}
+
+              {/* 平台贡献详情 */}
+              <div className="bg-white rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">平台贡献详情</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {Object.entries(latestReport.platform_contributions).map(([platform, data]) => (
+                    <div key={platform} className="border rounded-lg p-3 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-gray-900 capitalize">{platform}</span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          data.sentiment === 'BULLISH' ? 'bg-green-100 text-green-800' :
+                          data.sentiment === 'BEARISH' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {data.sentiment}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">置信度:</span>
+                        <div className="flex-1">
+                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500"
+                              style={{ width: `${data.confidence * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-xs font-medium text-blue-600">
+                          {(data.confidence * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 验证元数据 */}
+              {latestReport.verification_metadata && (
+                <div className="mt-3 flex items-center gap-4 text-xs text-gray-600">
+                  <span>✓ 使用 {latestReport.verification_metadata.platforms_used} 个平台</span>
+                  {latestReport.verification_metadata.cross_validation && (
+                    <span>✓ 交叉验证已启用</span>
+                  )}
+                  <span>✓ 共识阈值: {(latestReport.verification_metadata.consensus_threshold * 100).toFixed(0)}%</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 说明文档 */}
           <div className="bg-purple-50 border border-purple-200 rounded-xl p-6">
