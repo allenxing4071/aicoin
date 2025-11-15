@@ -334,12 +334,13 @@ class DecisionEngineV2:
             else:
                 logger.warning("⚠️  未找到Qwen情报报告")
             
-            # === 第2.5步：多空辩论（条件触发）===
+            # === 第2.5步：多空辩论（强制启用 - 调试模式）===
             debate_result = None
             if self.debate_coordinator and self.debate_config and self.debate_limiter:
                 try:
-                    # 检查是否应该触发辩论
-                    should_debate = await self._should_enable_debate(account_state)
+                    # 🔥 临时：强制启用辩论以提升决策质量
+                    should_debate = True  # await self._should_enable_debate(account_state)
+                    logger.info("🔥 辩论系统已强制启用（调试模式）")
                     
                     if should_debate:
                         # 检查限流
@@ -567,7 +568,30 @@ class DecisionEngineV2:
             if ai_decision.get("action") in ["open_long", "open_short"]:
                 await self.short_memory.increment_today_trade_count()
             
-            logger.info(f"✅ 决策完成: {ai_decision.get('action')} {ai_decision.get('symbol')}")
+            # === 详细决策日志输出 ===
+            logger.info("="*60)
+            logger.info("🎯 决策详情：")
+            logger.info(f"  - 决策ID: {ai_decision.get('decision_id')}")
+            logger.info(f"  - 动作: {ai_decision.get('action')}")
+            logger.info(f"  - 币种: {ai_decision.get('symbol')}")
+            logger.info(f"  - 金额: {ai_decision.get('size_usd')} USD")
+            logger.info(f"  - 置信度: {ai_decision.get('confidence'):.2f} (阈值: {permission.confidence_threshold})")
+            logger.info(f"  - 状态: {ai_decision.get('status')}")
+            logger.info(f"  - 推理: {ai_decision.get('reasoning')[:200] if ai_decision.get('reasoning') else 'N/A'}")
+            if ai_decision.get('notes'):
+                logger.info(f"  - 备注: {ai_decision.get('notes')}")
+            
+            # 如果被拒绝，详细说明原因
+            if ai_decision.get("status") == "REJECTED":
+                logger.warning("❌ 决策被拒绝！")
+                logger.warning(f"   拒绝原因: {ai_decision.get('notes')}")
+                logger.warning(f"   当前权限: {self.current_permission_level}")
+                logger.warning(f"   置信度阈值: {permission.confidence_threshold}")
+                logger.warning(f"   实际置信度: {ai_decision.get('confidence')}")
+            else:
+                logger.info(f"✅ 决策通过: {ai_decision.get('action')} {ai_decision.get('symbol')}")
+            
+            logger.info("="*60)
             
             return ai_decision
         

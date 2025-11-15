@@ -127,7 +127,7 @@ class Settings(BaseSettings):
     # Qwen Intelligence Officer Settings
     QWEN_MODEL: str = "qwen-plus"
     QWEN_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    INTELLIGENCE_UPDATE_INTERVAL: int = 1800  # 30 minutes
+    INTELLIGENCE_UPDATE_INTERVAL: int = 900  # 15 minutes (优化：更频繁的情报更新)
     
     # ===== Intelligence System Configuration (情报系统配置) =====
     

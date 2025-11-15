@@ -2,10 +2,15 @@
 AI决策历史API端点
 提供决策列表、详情和10步流程展示
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
 import logging
+
+from app.core.database import get_db
+from app.models.ai_decision import AIDecision
 
 router = APIRouter(tags=["AI Decisions"])
 logger = logging.getLogger(__name__)
@@ -52,6 +57,59 @@ async def get_decisions(
             status_code=500,
             detail=f"获取决策列表失败: {str(e)}"
         )
+
+
+@router.get("/latest")
+async def get_latest_decisions(
+    limit: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    获取最新决策记录（真实数据）
+    
+    Args:
+        limit: 返回数量 (1-50)
+        db: 数据库会话
+        
+    Returns:
+        Dict: 最新决策列表
+    """
+    try:
+        # 从数据库查询最新决策
+        stmt = select(AIDecision).order_by(desc(AIDecision.timestamp)).limit(limit)
+        result = await db.execute(stmt)
+        decisions = result.scalars().all()
+        
+        # 转换为字典
+        decisions_list = []
+        for d in decisions:
+            decisions_list.append({
+                "id": d.id,
+                "timestamp": d.timestamp.isoformat() if d.timestamp else None,
+                "symbol": d.symbol,
+                "action": d.decision.get("action") if isinstance(d.decision, dict) else "unknown",
+                "confidence": d.decision.get("confidence", 0) if isinstance(d.decision, dict) else 0,
+                "status": "executed" if d.executed else "pending",
+                "model_name": d.model_name,
+                "latency_ms": d.latency_ms,
+                "reasoning": d.decision.get("reasoning", "")[:200] if isinstance(d.decision, dict) else ""
+            })
+        
+        logger.info(f"✅ 获取最新 {len(decisions_list)} 条决策记录")
+        
+        return {
+            "success": True,
+            "data": decisions_list,
+            "count": len(decisions_list)
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 获取最新决策失败: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+            "data": []
+        }
 
 
 @router.get("/{decision_id}")

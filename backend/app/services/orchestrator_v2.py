@@ -196,6 +196,24 @@ class AITradingOrchestratorV2:
                 if loop_count % 1 == 0:  # 每次决策都保存快照
                     await self._save_account_snapshot(account_state)
                 
+                # 🔥 决策前置检查
+                logger.info("🔍 决策前置检查：")
+                logger.info(f"  - 市场数据: {len(market_data)} 个币种")
+                logger.info(f"  - 账户余额: {account_state.get('balance', 0):.2f} USDT")
+                logger.info(f"  - 当前持仓: {len(account_state.get('positions', []))} 个")
+                logger.info(f"  - 权限等级: {self.decision_engine.current_permission_level}")
+                
+                # 检查是否有足够的数据
+                if not market_data:
+                    logger.error("❌ 市场数据为空，跳过本次决策")
+                    await asyncio.sleep(self.decision_interval)
+                    continue
+                
+                if account_state.get('balance', 0) < 10:
+                    logger.warning("⚠️ 账户余额不足 10 USDT，跳过本次决策")
+                    await asyncio.sleep(self.decision_interval)
+                    continue
+                
                 # === 第3步：AI决策 ===
                 logger.info("🤖 调用DecisionEngineV2...")
                 decision = await self.decision_engine.make_decision(
@@ -379,7 +397,7 @@ class AITradingOrchestratorV2:
                 # 错误后继续运行，不中断情报循环
     
     async def _get_market_data(self) -> Dict[str, Any]:
-        """获取市场数据 - 6个币种（从激活的交易所获取真实数据）"""
+        """获取市场数据 - 12个币种（从激活的交易所获取真实数据）"""
         try:
             # 从交易所工厂获取当前活跃的适配器
             from app.services.exchange.exchange_factory import ExchangeFactory
@@ -389,8 +407,11 @@ class AITradingOrchestratorV2:
                 logger.error("❌ 没有激活的交易所")
                 return {}
             
-            # 获取6个主流币种的实时数据
-            symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB"]
+            # 🔥 扩展到12个主流币种，增加更多交易机会
+            symbols = [
+                "BTC", "ETH", "SOL", "XRP", "DOGE", "BNB",
+                "ADA", "AVAX", "MATIC", "DOT", "LINK", "UNI"
+            ]
             market_data = {}
             
             for symbol in symbols:
@@ -409,18 +430,33 @@ class AITradingOrchestratorV2:
                         logger.warning(f"⚠️ 无法获取 {symbol} 的行情数据")
                         market_data[symbol] = {
                             "price": 0,
-                    "change_24h": 0.0,
+                            "change_24h": 0.0,
                             "volume_24h": 0
                         }
                 except Exception as e:
                     logger.error(f"❌ 获取 {symbol} 行情失败: {e}")
                     market_data[symbol] = {
                         "price": 0,
-                    "change_24h": 0.0,
+                        "change_24h": 0.0,
                         "volume_24h": 0
                     }
             
-            logger.info(f"📊 成功获取 {len(market_data)} 个币种的市场数据")
+            # 🔥 数据质量检查
+            logger.info("📊 市场数据质量检查：")
+            valid_count = 0
+            for symbol, data in market_data.items():
+                if data['price'] == 0 or data['change_24h'] == 0:
+                    logger.error(f"❌ {symbol} 数据异常: price={data['price']}, change_24h={data['change_24h']}")
+                else:
+                    logger.info(f"✅ {symbol}: ${data['price']:.2f}, 24h: {data['change_24h']:.2f}%")
+                    valid_count += 1
+            
+            # 如果所有数据都无效，返回空字典触发 fallback
+            if valid_count == 0:
+                logger.error("❌ 所有市场数据都无效！")
+                return {}
+            
+            logger.info(f"📊 成功获取 {valid_count}/{len(market_data)} 个币种的有效市场数据")
             return market_data
             
         except Exception as e:
