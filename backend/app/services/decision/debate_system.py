@@ -49,7 +49,12 @@ def format_intelligence_with_verification(intelligence_report: Dict) -> str:
     if key_news:
         output += f"\n  📰 Key News ({len(key_news)}):\n"
         for news in key_news[:3]:
-            output += f"    - {news.get('title', 'N/A')}\n"
+            # 兼容字典和对象两种格式
+            if isinstance(news, dict):
+                output += f"    - {news.get('title', 'N/A')}\n"
+            else:
+                # NewsItem 对象
+                output += f"    - {getattr(news, 'title', 'N/A')}\n"
     
     # 显示风险因素
     risk_factors = intelligence_report.get('risk_factors', [])
