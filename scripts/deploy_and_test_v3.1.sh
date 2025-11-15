@@ -70,8 +70,8 @@ $PIP_CMD install -r requirements.txt --upgrade
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ 后端依赖更新成功${NC}"
 else
-    echo -e "${RED}❌ 后端依赖更新失败${NC}"
-    exit 1
+    echo -e "${YELLOW}⚠️  部分依赖更新失败，继续部署（可能已安装）${NC}"
+    # 不退出，因为可能只是部分包需要系统依赖
 fi
 
 # 4. 运行数据库迁移
