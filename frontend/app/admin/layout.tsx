@@ -398,13 +398,6 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       });
     }
     
-    if (checkPermission('logs:view')) {
-      systemChildren.push({
-        key: "/admin/logs",
-        label: <Link href="/admin/logs">日志管理</Link>,
-      });
-    }
-    
     if (checkPermission('system:view')) {
       systemChildren.push({
         key: "/admin/database",
