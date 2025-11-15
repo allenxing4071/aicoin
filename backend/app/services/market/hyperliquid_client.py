@@ -125,6 +125,10 @@ class HyperliquidClient:
                 change_24h = "0.00"
                 try:
                     # 获取24小时K线（1小时间隔，24根）
+                    start_time = int((datetime.now().timestamp() - 86400) * 1000)
+                    end_time = int(datetime.now().timestamp() * 1000)
+                    logger.info(f"📊 获取 {symbol} 24h K线: startTime={start_time}, endTime={end_time}")
+                    
                     candles_response = await self.client.post(
                         url,
                         json={
@@ -132,13 +136,17 @@ class HyperliquidClient:
                             "req": {
                                 "coin": symbol.upper(),
                                 "interval": "1h",
-                                "startTime": int((datetime.now().timestamp() - 86400) * 1000),  # 24小时前
-                                "endTime": int(datetime.now().timestamp() * 1000)
+                                "startTime": start_time,
+                                "endTime": end_time
                             }
                         }
                     )
+                    logger.info(f"📊 {symbol} K线响应状态: {candles_response.status_code}")
+                    
                     if candles_response.status_code == 200:
                         candles_data = candles_response.json()
+                        logger.info(f"📊 {symbol} K线数据长度: {len(candles_data) if candles_data else 0}")
+                        
                         if candles_data and len(candles_data) > 0:
                             # 获取24小时前的开盘价
                             price_24h_ago = float(candles_data[0]['o'])  # 第一根K线的开盘价
@@ -146,9 +154,15 @@ class HyperliquidClient:
                             if price_24h_ago > 0:
                                 change_pct = ((current_price - price_24h_ago) / price_24h_ago) * 100
                                 change_24h = f"{change_pct:.2f}"
-                                logger.info(f"{symbol}: 24h前价格={price_24h_ago}, 当前价格={current_price}, 涨跌幅={change_24h}%")
+                                logger.info(f"✅ {symbol}: 24h前价格={price_24h_ago}, 当前价格={current_price}, 涨跌幅={change_24h}%")
+                        else:
+                            logger.error(f"❌ {symbol}: K线数据为空")
+                    else:
+                        logger.error(f"❌ {symbol}: K线请求失败，状态码 {candles_response.status_code}, 响应: {candles_response.text[:200]}")
                 except Exception as candle_error:
-                    logger.warning(f"Failed to fetch 24h candles for {symbol}: {candle_error}")
+                    logger.error(f"❌ Failed to fetch 24h candles for {symbol}: {candle_error}")
+                    import traceback
+                    logger.error(f"❌ Traceback: {traceback.format_exc()}")
                     # 如果获取K线失败，涨跌幅保持为0
                 
                 return {
