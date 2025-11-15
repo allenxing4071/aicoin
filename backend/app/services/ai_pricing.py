@@ -249,9 +249,8 @@ class AIPricingManager:
             pricing_with_timestamps[provider] = {}
             for model, info in models.items():
                 model_info = info.copy()
-                # 如果原始数据中有 last_updated，保留它；否则使用当前时间
-                if "last_updated" not in model_info or not model_info["last_updated"]:
-                    model_info["last_updated"] = current_time
+                # 总是使用当前的北京时间，覆盖原有的 last_updated
+                model_info["last_updated"] = current_time
                 pricing_with_timestamps[provider][model] = model_info
         
         return {
