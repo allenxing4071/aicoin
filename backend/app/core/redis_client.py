@@ -25,6 +25,10 @@ class RedisClient:
         if self.redis:
             await self.redis.close()
     
+    async def close(self):
+        """Close Redis connection (alias for disconnect)"""
+        await self.disconnect()
+    
     async def get(self, key: str) -> Optional[Any]:
         """Get value from cache"""
         if not self.redis:
@@ -90,6 +94,21 @@ class RedisClient:
         if not self.redis:
             return []
         return await self.redis.zrevrangebyscore(key, max_score, min_score, start=start, num=num, withscores=withscores)
+    
+    async def zrevrange(self, key: str, start: int, end: int, withscores: bool = False):
+        """Get members from sorted set in reverse order by rank"""
+        if not self.redis:
+            return []
+        return await self.redis.zrevrange(key, start, end, withscores=withscores)
+    
+    async def setex(self, key: str, time: int, value: Any):
+        """Set key with expiration time"""
+        if not self.redis:
+            return False
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value)
+        await self.redis.setex(key, time, value)
+        return True
     
     async def hset(self, key: str, mapping: dict = None, **kwargs):
         """Set hash field"""
