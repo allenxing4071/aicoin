@@ -379,45 +379,54 @@ class AITradingOrchestratorV2:
                 # 错误后继续运行，不中断情报循环
     
     async def _get_market_data(self) -> Dict[str, Any]:
-        """获取市场数据 - 6个币种"""
+        """获取市场数据 - 6个币种（从激活的交易所获取真实数据）"""
         try:
-            # 从市场数据服务获取6个主流币种的数据
-            # BTC, ETH, SOL (主要), BNB, DOGE, XRP (辅助)
-            market_data = {
-                "BTC": {
-                    "price": 107225,
-                    "change_24h": 0.0,
-                    "volume_24h": 45000000000
-                },
-                "ETH": {
-                    "price": 3699,
-                    "change_24h": 0.0,
-                    "volume_24h": 18000000000
-                },
-                "SOL": {
-                    "price": 174.79,
-                    "change_24h": 0.0,
-                    "volume_24h": 6000000000
-                },
-                "XRP": {
-                    "price": 1014.05,
-                    "change_24h": 0.0,
-                    "volume_24h": 8000000000
-                },
-                "DOGE": {
-                    "price": 0.17,
-                    "change_24h": 0.0,
-                    "volume_24h": 2000000000
-                },
-                "BNB": {
-                    "price": 2.39,
-                    "change_24h": 0.0,
-                    "volume_24h": 1500000000
-                }
-            }
+            # 从交易所工厂获取当前活跃的适配器
+            from app.services.exchange.exchange_factory import ExchangeFactory
+            
+            adapter = await ExchangeFactory.get_active_exchange()
+            if not adapter:
+                logger.error("❌ 没有激活的交易所")
+                return {}
+            
+            # 获取6个主流币种的实时数据
+            symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB"]
+            market_data = {}
+            
+            for symbol in symbols:
+                try:
+                    # 从激活的交易所获取ticker数据
+                    ticker = await adapter.get_ticker(symbol, market_type='perpetual')
+                    
+                    if ticker:
+                        market_data[symbol] = {
+                            "price": float(ticker.get('last_price', 0)),
+                            "change_24h": float(ticker.get('price_change_24h', 0)),
+                            "volume_24h": float(ticker.get('volume_24h', 0))
+                        }
+                        logger.debug(f"✅ {symbol}: 价格={market_data[symbol]['price']}, 24h涨跌={market_data[symbol]['change_24h']}%")
+                    else:
+                        logger.warning(f"⚠️ 无法获取 {symbol} 的行情数据")
+                        market_data[symbol] = {
+                            "price": 0,
+                            "change_24h": 0.0,
+                            "volume_24h": 0
+                        }
+                except Exception as e:
+                    logger.error(f"❌ 获取 {symbol} 行情失败: {e}")
+                    market_data[symbol] = {
+                        "price": 0,
+                        "change_24h": 0.0,
+                        "volume_24h": 0
+                    }
+            
+            logger.info(f"📊 成功获取 {len(market_data)} 个币种的市场数据")
             return market_data
+            
         except Exception as e:
             logger.error(f"获取市场数据失败: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return {}
     
     async def _get_account_state(self) -> Dict[str, Any]:
