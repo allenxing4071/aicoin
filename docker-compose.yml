@@ -110,6 +110,25 @@ services:
       - aicoin-network
     restart: unless-stopped
 
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: aicoin-nginx
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL证书目录（可选）
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - aicoin-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     name: aicoin_postgres_data
