@@ -39,7 +39,13 @@ export default function ABTestsPage() {
 
   const handleStopTest = async (testId: number) => {
     try {
-      await fetch(`/api/v1/prompts/v2/ab-tests/${testId}/stop`, { method: 'POST' })
+      const token = localStorage.getItem('admin_token')
+      await fetch(`/api/v1/prompts/v2/ab-tests/${testId}/stop`, { 
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       alert('✅ 测试已停止')
       // 刷新列表
     } catch (error) {
