@@ -1,0 +1,567 @@
+# 🚀 AIcoin 快速部署指南
+
+> **一站式部署文档** | 支持 Docker / 本地 / 测试网 / 主网
+
+---
+
+## 📋 目录
+
+1. [部署前准备](#1-部署前准备)
+2. [Docker 部署 (推荐)](#2-docker-部署-推荐)
+3. [本地开发部署](#3-本地开发部署)
+4. [远程服务器部署](#4-远程服务器部署)
+5. [测试网 vs 主网](#5-测试网-vs-主网)
+6. [Git 自动化部署](#6-git-自动化部署)
+
+---
+
+## 1. 部署前准备
+
+### 1.1 系统要求
+
+| 项目 | 最低配置 | 推荐配置 |
+|------|---------|---------|
+| **CPU** | 2 核 | 4 核+ |
+| **内存** | 4GB | 8GB+ |
+| **存储** | 20GB | 50GB+ |
+| **系统** | Ubuntu 20.04+ | Ubuntu 22.04 |
+| **网络** | 稳定互联网 | 低延迟 |
+
+### 1.2 必需软件
+
+```bash
+# Docker (推荐)
+docker --version  # >= 20.10
+docker-compose --version  # >= 2.0
+
+# 或本地开发
+python --version  # >= 3.11
+node --version    # >= 18.0
+npm --version     # >= 9.0
+```
+
+### 1.3 必需的 API 密钥
+
+- ✅ **DeepSeek API Key** (必需)
+  - 获取地址: https://platform.deepseek.com
+  - 费用: ~$1/百万 tokens
+  
+- ✅ **Hyperliquid 钱包** (必需)
+  - 钱包地址
+  - 私钥
+  - 测试网/主网选择
+
+- ⚠️ **可选 API**
+  - Qwen API (情报系统)
+  - Doubao API (备用)
+  - Claude API (备用)
+
+---
+
+## 2. Docker 部署 (推荐)
+
+### 2.1 快速启动 (3 步)
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/allenxing4071/aicoin.git
+cd aicoin
+
+# 2. 配置环境变量
+cp .env.example .env
+nano .env  # 编辑配置
+
+# 3. 启动服务
+docker-compose up -d
+```
+
+### 2.2 环境变量配置
+
+**最小配置 (.env)**:
+```bash
+# ========== AI 平台 ==========
+DEEPSEEK_API_KEY=sk-your-deepseek-key
+
+# ========== 交易所 ==========
+HYPERLIQUID_WALLET_ADDRESS=0xYourAddress
+HYPERLIQUID_PRIVATE_KEY=0xYourPrivateKey
+HYPERLIQUID_TESTNET=true  # true=测试网, false=主网
+
+# ========== 安全密钥 ==========
+SECRET_KEY=your-secret-key-change-this-to-random-string
+JWT_SECRET_KEY=your-jwt-secret-key-change-this
+
+# ========== 数据库 ==========
+POSTGRES_USER=aicoin
+POSTGRES_PASSWORD=your-strong-password
+POSTGRES_DB=aicoin
+DATABASE_URL=postgresql://aicoin:your-strong-password@postgres:5432/aicoin
+
+# ========== Redis ==========
+REDIS_URL=redis://redis:6379/0
+
+# ========== Qdrant ==========
+QDRANT_URL=http://qdrant:6333
+```
+
+### 2.3 验证部署
+
+```bash
+# 查看服务状态
+docker-compose ps
+
+# 预期输出:
+# NAME                COMMAND                  SERVICE             STATUS
+# aicoin-backend-1    "uvicorn app.main:..."   backend             Up
+# aicoin-frontend-1   "docker-entrypoint..."   frontend            Up
+# aicoin-postgres-1   "docker-entrypoint..."   postgres            Up
+# aicoin-redis-1      "docker-entrypoint..."   redis               Up
+# aicoin-qdrant-1     "./entrypoint.sh"        qdrant              Up
+
+# 检查后端健康
+curl http://localhost:8000/health
+
+# 预期输出:
+# {"status":"healthy","version":"4.1.0","ai_orchestrator":true}
+
+# 访问前端
+open http://localhost:3000
+```
+
+### 2.4 常用命令
+
+```bash
+# 启动服务
+docker-compose up -d
+
+# 停止服务
+docker-compose down
+
+# 重启服务
+docker-compose restart
+
+# 查看日志
+docker-compose logs -f
+
+# 查看特定服务日志
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# 重新构建
+docker-compose up -d --build
+
+# 清理并重启
+docker-compose down -v  # 删除数据卷
+docker-compose up -d --build
+```
+
+---
+
+## 3. 本地开发部署
+
+### 3.1 后端部署
+
+```bash
+# 1. 进入后端目录
+cd backend
+
+# 2. 创建虚拟环境
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# 或 venv\Scripts\activate  # Windows
+
+# 3. 安装依赖
+pip install -r requirements.txt
+
+# 4. 配置环境变量
+cp ../.env.example ../.env
+nano ../.env
+
+# 5. 运行数据库迁移
+alembic upgrade head
+
+# 6. 启动后端
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 3.2 前端部署
+
+```bash
+# 1. 进入前端目录
+cd frontend
+
+# 2. 安装依赖
+npm install
+
+# 3. 启动开发服务器
+npm run dev
+
+# 4. 或构建生产版本
+npm run build
+npm run start
+```
+
+### 3.3 数据库服务
+
+**方式一: Docker (推荐)**
+```bash
+# PostgreSQL
+docker run -d \
+  --name postgres \
+  -e POSTGRES_USER=aicoin \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=aicoin \
+  -p 5432:5432 \
+  postgres:15
+
+# Redis
+docker run -d \
+  --name redis \
+  -p 6379:6379 \
+  redis:7
+
+# Qdrant
+docker run -d \
+  --name qdrant \
+  -p 6333:6333 \
+  qdrant/qdrant
+```
+
+**方式二: 本地安装**
+```bash
+# Ubuntu
+sudo apt install postgresql redis-server
+
+# macOS
+brew install postgresql redis
+brew services start postgresql
+brew services start redis
+```
+
+---
+
+## 4. 远程服务器部署
+
+### 4.1 服务器初始化
+
+```bash
+# 1. 连接服务器
+ssh root@your-server-ip
+
+# 2. 更新系统
+apt update && apt upgrade -y
+
+# 3. 安装 Docker
+curl -fsSL https://get.docker.com | sh
+systemctl enable docker
+systemctl start docker
+
+# 4. 安装 Docker Compose
+apt install docker-compose-plugin -y
+
+# 5. 创建工作目录
+mkdir -p /root/AIcoin
+cd /root/AIcoin
+```
+
+### 4.2 部署项目
+
+```bash
+# 1. 克隆代码
+git clone https://github.com/allenxing4071/aicoin.git .
+
+# 2. 配置环境变量
+cp .env.example .env
+nano .env
+
+# 3. 启动服务
+docker-compose up -d
+
+# 4. 配置防火墙
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow 8000/tcp
+ufw allow 3000/tcp
+ufw enable
+```
+
+### 4.3 HTTPS 配置 (可选)
+
+```bash
+# 1. 安装 Certbot
+apt install certbot python3-certbot-nginx -y
+
+# 2. 获取证书
+certbot --nginx -d your-domain.com
+
+# 3. 自动续期
+certbot renew --dry-run
+```
+
+### 4.4 Nginx 反向代理 (可选)
+
+```nginx
+# /etc/nginx/sites-available/aicoin
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location /api {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+```bash
+# 启用站点
+ln -s /etc/nginx/sites-available/aicoin /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
+```
+
+---
+
+## 5. 测试网 vs 主网
+
+### 5.1 测试网部署 (推荐新手)
+
+**优势**:
+- ✅ 无真实资金风险
+- ✅ 免费测试
+- ✅ 快速验证策略
+
+**配置**:
+```bash
+# .env.testnet
+HYPERLIQUID_TESTNET=true
+HYPERLIQUID_WALLET_ADDRESS=0xYourTestnetAddress
+HYPERLIQUID_PRIVATE_KEY=0xYourTestnetPrivateKey
+```
+
+**启动**:
+```bash
+docker-compose -f docker-compose.testnet.yml up -d
+```
+
+### 5.2 主网部署 (生产环境)
+
+**前提条件**:
+- ⚠️ 测试网验证通过
+- ⚠️ 策略稳定盈利
+- ⚠️ 风控参数调优
+- ⚠️ 充分理解风险
+
+**配置**:
+```bash
+# .env.prod
+HYPERLIQUID_TESTNET=false
+HYPERLIQUID_WALLET_ADDRESS=0xYourMainnetAddress
+HYPERLIQUID_PRIVATE_KEY=0xYourMainnetPrivateKey
+
+# 更严格的风控
+MAX_POSITION_PCT=0.10
+MAX_LEVERAGE=2
+CONFIDENCE_THRESHOLD=0.75
+```
+
+**启动**:
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### 5.3 测试网 → 主网迁移
+
+```bash
+# 1. 备份测试网数据
+docker-compose exec postgres pg_dump -U aicoin aicoin > testnet_backup.sql
+
+# 2. 停止测试网
+docker-compose -f docker-compose.testnet.yml down
+
+# 3. 修改配置
+cp .env.testnet .env.prod
+nano .env.prod  # 修改为主网配置
+
+# 4. 启动主网
+docker-compose -f docker-compose.prod.yml up -d
+
+# 5. 验证
+curl http://localhost:8000/health
+```
+
+---
+
+## 6. Git 自动化部署
+
+### 6.1 三种部署脚本
+
+#### 标准部署 (deploy-git.sh)
+```bash
+# 完整部署，重新构建镜像
+./scripts/deploy-git.sh
+
+# 部署指定分支
+./scripts/deploy-git.sh develop
+```
+
+**用途**:
+- ✅ 代码更新
+- ✅ 依赖更新
+- ✅ 首次部署
+
+**耗时**: 5-10 分钟
+
+#### 快速部署 (deploy-git-quick.sh)
+```bash
+# 快速更新，不重新构建
+./scripts/deploy-git-quick.sh
+```
+
+**用途**:
+- ✅ 配置修改
+- ✅ 文档更新
+- ✅ 小改动
+
+**耗时**: 30 秒 - 1 分钟
+
+#### 回滚部署 (deploy-git-rollback.sh)
+```bash
+# 回滚到上一个版本
+./scripts/deploy-git-rollback.sh HEAD~1
+
+# 回滚到指定提交
+./scripts/deploy-git-rollback.sh abc1234
+
+# 回滚到指定标签
+./scripts/deploy-git-rollback.sh v3.2.0
+```
+
+**用途**:
+- ⚠️ 紧急回滚
+- ⚠️ Bug 修复
+
+**耗时**: 5-10 分钟
+
+### 6.2 服务器端配置
+
+```bash
+# 1. SSH 登录服务器
+ssh root@your-server-ip
+
+# 2. 配置 Git
+git config --global user.name "Deploy Bot"
+git config --global user.email "deploy@aicoin.com"
+
+# 3. 配置 SSH Key (推荐)
+ssh-keygen -t ed25519 -C "deploy@aicoin.com"
+cat ~/.ssh/id_ed25519.pub
+# 添加到 GitHub Deploy Keys
+
+# 4. 或配置 Token
+git config --global credential.helper store
+```
+
+### 6.3 部署流程示例
+
+```bash
+# 场景 1: 日常更新
+git add .
+git commit -m "新增功能"
+git push origin main
+./scripts/deploy-git.sh
+
+# 场景 2: 紧急配置修改
+ssh root@server "cd /root/AIcoin && nano .env"
+./scripts/deploy-git-quick.sh
+
+# 场景 3: 发现 Bug 回滚
+./scripts/deploy-git-rollback.sh HEAD~1
+```
+
+---
+
+## 📊 部署检查清单
+
+### 部署前
+- [ ] 系统要求满足
+- [ ] Docker 已安装
+- [ ] API 密钥已获取
+- [ ] 环境变量已配置
+- [ ] 防火墙规则已设置
+
+### 部署中
+- [ ] 服务启动成功
+- [ ] 无错误日志
+- [ ] 数据库连接正常
+- [ ] Redis 连接正常
+
+### 部署后
+- [ ] 健康检查通过
+- [ ] 前端可访问
+- [ ] API 可访问
+- [ ] AI 决策正常
+- [ ] 交易执行正常
+
+---
+
+## 🆘 常见问题
+
+### 端口被占用
+```bash
+# 查看端口占用
+lsof -i :8000
+lsof -i :3000
+
+# 修改端口
+nano docker-compose.yml
+# 修改 ports 配置
+```
+
+### 数据库连接失败
+```bash
+# 检查数据库状态
+docker-compose logs postgres
+
+# 重启数据库
+docker-compose restart postgres
+
+# 重新初始化
+docker-compose down -v
+docker-compose up -d
+```
+
+### Docker 构建失败
+```bash
+# 清理缓存
+docker system prune -a -f
+
+# 重新构建
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+---
+
+## 📚 相关文档
+
+- [配置指南](./configuration.md) - 详细配置说明
+- [运维操作](./operations.md) - 日常运维操作
+- [故障排查](./troubleshooting.md) - 问题诊断与解决
+
+---
+
+**文档维护**: AIcoin Team  
+**最后更新**: 2025-11-15  
+**文档版本**: v2.0
+

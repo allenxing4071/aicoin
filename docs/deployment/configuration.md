@@ -1,0 +1,453 @@
+# ⚙️ AIcoin 配置指南
+
+> **完整配置说明** | 环境变量 | API 配置 | 权限配置
+
+---
+
+## 📋 目录
+
+1. [环境变量配置](#1-环境变量配置)
+2. [AI 平台配置](#2-ai-平台配置)
+3. [交易所配置](#3-交易所配置)
+4. [权限等级配置](#4-权限等级配置)
+5. [高级配置](#5-高级配置)
+
+---
+
+## 1. 环境变量配置
+
+### 1.1 完整 .env 模板
+
+```bash
+# ========== AI 平台配置 ==========
+DEEPSEEK_API_KEY=sk-your-deepseek-key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-chat
+
+# 可选: Qwen 情报系统
+QWEN_API_KEY=sk-your-qwen-key
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen-plus
+
+# 可选: 备用 AI 平台
+DOUBAO_API_KEY=your-doubao-key
+CLAUDE_API_KEY=your-claude-key
+
+# ========== 交易所配置 ==========
+HYPERLIQUID_WALLET_ADDRESS=0xYourWalletAddress
+HYPERLIQUID_PRIVATE_KEY=0xYourPrivateKey
+HYPERLIQUID_TESTNET=true  # true=测试网, false=主网
+HYPERLIQUID_BASE_URL=https://api.hyperliquid.xyz
+
+# ========== 数据库配置 ==========
+POSTGRES_USER=aicoin
+POSTGRES_PASSWORD=your-strong-password-here
+POSTGRES_DB=aicoin
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+
+# ========== Redis 配置 ==========
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_PASSWORD=  # 可选
+REDIS_URL=redis://${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}
+
+# ========== Qdrant 配置 ==========
+QDRANT_HOST=qdrant
+QDRANT_PORT=6333
+QDRANT_URL=http://${QDRANT_HOST}:${QDRANT_PORT}
+QDRANT_API_KEY=  # 可选
+
+# ========== 安全配置 ==========
+SECRET_KEY=your-secret-key-min-32-chars-random-string
+JWT_SECRET_KEY=your-jwt-secret-key-min-32-chars
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# ========== 应用配置 ==========
+ENVIRONMENT=production  # development / production
+DEBUG=false
+LOG_LEVEL=INFO  # DEBUG / INFO / WARNING / ERROR
+CORS_ORIGINS=http://localhost:3000,https://your-domain.com
+
+# ========== 权限配置 ==========
+DEFAULT_PERMISSION_LEVEL=L1
+ENABLE_AUTO_UPGRADE=true
+ENABLE_AUTO_DOWNGRADE=true
+
+# ========== 风控配置 ==========
+MAX_POSITION_PCT=0.10  # 单仓位最大 10%
+MAX_LEVERAGE=2  # 最大杠杆 2x
+MAX_DAILY_LOSS_PCT=0.05  # 单日最大亏损 5%
+MAX_DRAWDOWN_PCT=0.15  # 最大回撤 15%
+MIN_MARGIN_RATIO=0.20  # 最低保证金率 20%
+
+# ========== 交易配置 ==========
+ENABLE_TRADING=true
+ENABLE_DEBATE_SYSTEM=false  # 辩论系统 (可选)
+ENABLE_INTELLIGENCE_SYSTEM=false  # 情报系统 (可选)
+DEFAULT_STOP_LOSS_PCT=0.03  # 默认止损 3%
+DEFAULT_TAKE_PROFIT_PCT=0.05  # 默认止盈 5%
+
+# ========== 监控配置 ==========
+ENABLE_MONITORING=true
+ALERT_EMAIL=your-email@example.com
+ALERT_WEBHOOK=https://your-webhook-url
+
+# ========== 前端配置 ==========
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
+```
+
+### 1.2 环境变量说明
+
+| 变量名 | 必需 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `DEEPSEEK_API_KEY` | ✅ | - | DeepSeek API 密钥 |
+| `HYPERLIQUID_WALLET_ADDRESS` | ✅ | - | Hyperliquid 钱包地址 |
+| `HYPERLIQUID_PRIVATE_KEY` | ✅ | - | Hyperliquid 私钥 |
+| `SECRET_KEY` | ✅ | - | 应用密钥 (≥32字符) |
+| `DATABASE_URL` | ✅ | - | 数据库连接字符串 |
+| `REDIS_URL` | ✅ | - | Redis 连接字符串 |
+| `QWEN_API_KEY` | ⚠️ | - | Qwen API (情报系统需要) |
+| `ENABLE_TRADING` | ❌ | true | 是否启用交易 |
+| `MAX_LEVERAGE` | ❌ | 2 | 最大杠杆倍数 |
+
+---
+
+## 2. AI 平台配置
+
+### 2.1 DeepSeek (主要决策)
+
+**获取 API Key**:
+1. 访问 https://platform.deepseek.com
+2. 注册/登录账号
+3. 进入 API Keys 页面
+4. 创建新密钥
+
+**配置**:
+```bash
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-chat
+```
+
+**费用**:
+- 输入: $0.27/百万 tokens
+- 输出: $1.10/百万 tokens
+- 预估: $10-50/月 (取决于交易频率)
+
+**限制**:
+- 速率限制: 60 请求/分钟
+- 上下文长度: 32K tokens
+
+---
+
+### 2.2 Qwen (情报系统)
+
+**获取 API Key**:
+1. 访问 https://dashscope.aliyun.com
+2. 注册阿里云账号
+3. 开通 DashScope 服务
+4. 创建 API Key
+
+**配置**:
+```bash
+QWEN_API_KEY=sk-xxxxxxxxxxxxxxxx
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen-plus
+ENABLE_INTELLIGENCE_SYSTEM=true
+```
+
+**费用**:
+- Qwen-Plus: ¥0.004/千 tokens
+- 预估: ¥20-100/月
+
+---
+
+### 2.3 云平台配置快速参考
+
+| 平台 | 推荐度 | 难度 | 成本 | 免费额度 |
+|------|--------|------|------|---------|
+| **DeepSeek** | ⭐⭐⭐⭐⭐ | 简单 | 低 | $5 |
+| **Qwen** | ⭐⭐⭐⭐ | 简单 | 低 | ¥100 |
+| **Doubao** | ⭐⭐⭐ | 中等 | 中 | ¥50 |
+| **Claude** | ⭐⭐⭐⭐ | 简单 | 高 | $5 |
+
+---
+
+## 3. 交易所配置
+
+### 3.1 Hyperliquid 配置
+
+**获取钱包信息**:
+1. 安装 MetaMask 或其他 EVM 钱包
+2. 创建新钱包或导入现有钱包
+3. 获取钱包地址和私钥
+4. 访问 Hyperliquid 测试网: https://app.hyperliquid-testnet.xyz
+
+**测试网配置**:
+```bash
+HYPERLIQUID_TESTNET=true
+HYPERLIQUID_WALLET_ADDRESS=0xYourTestnetAddress
+HYPERLIQUID_PRIVATE_KEY=0xYourTestnetPrivateKey
+HYPERLIQUID_BASE_URL=https://api.hyperliquid-testnet.xyz
+```
+
+**主网配置**:
+```bash
+HYPERLIQUID_TESTNET=false
+HYPERLIQUID_WALLET_ADDRESS=0xYourMainnetAddress
+HYPERLIQUID_PRIVATE_KEY=0xYourMainnetPrivateKey
+HYPERLIQUID_BASE_URL=https://api.hyperliquid.xyz
+```
+
+**安全建议**:
+- ⚠️ 私钥加密存储
+- ⚠️ 使用专用交易钱包
+- ⚠️ 定期更换私钥
+- ⚠️ 启用 IP 白名单
+
+---
+
+### 3.2 Binance 配置 (未来支持)
+
+**获取 API Key**:
+1. 登录 Binance
+2. 进入 API 管理
+3. 创建新 API Key
+4. 设置权限: 读取 + 现货交易
+
+**配置**:
+```bash
+BINANCE_API_KEY=your-api-key
+BINANCE_API_SECRET=your-api-secret
+BINANCE_TESTNET=true
+```
+
+---
+
+## 4. 权限等级配置
+
+### 4.1 默认权限配置
+
+**初始化默认配置**:
+```bash
+# 方式一: API 初始化
+curl -X POST http://localhost:8000/api/v1/admin/permissions/levels/init-defaults
+
+# 方式二: 数据库迁移自动初始化
+cd backend && alembic upgrade head
+```
+
+**默认配置**:
+```json
+{
+  "L0": {
+    "max_position_pct": 0.0,
+    "max_leverage": 1,
+    "confidence_threshold": 1.0,
+    "max_daily_trades": 0
+  },
+  "L1": {
+    "max_position_pct": 0.10,
+    "max_leverage": 2,
+    "confidence_threshold": 0.80,
+    "max_daily_trades": 1
+  },
+  "L2": {
+    "max_position_pct": 0.12,
+    "max_leverage": 2,
+    "confidence_threshold": 0.75,
+    "max_daily_trades": 2
+  },
+  "L3": {
+    "max_position_pct": 0.15,
+    "max_leverage": 3,
+    "confidence_threshold": 0.70,
+    "max_daily_trades": 4
+  },
+  "L4": {
+    "max_position_pct": 0.20,
+    "max_leverage": 4,
+    "confidence_threshold": 0.65,
+    "max_daily_trades": 6
+  },
+  "L5": {
+    "max_position_pct": 0.25,
+    "max_leverage": 5,
+    "confidence_threshold": 0.60,
+    "max_daily_trades": 999
+  }
+}
+```
+
+### 4.2 自定义权限配置
+
+**通过 API 修改**:
+```bash
+# 修改 L1 配置
+curl -X PUT http://localhost:8000/api/v1/admin/permissions/levels/L1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "trading_params": {
+      "max_position_pct": 0.08,
+      "confidence_threshold": 0.75,
+      "max_daily_trades": 2
+    }
+  }'
+```
+
+**通过前端修改**:
+1. 访问 http://localhost:3000/admin/permissions
+2. 选择权限等级
+3. 点击"编辑"
+4. 修改参数
+5. 保存
+
+---
+
+## 5. 高级配置
+
+### 5.1 日志配置
+
+```bash
+# 日志级别
+LOG_LEVEL=INFO  # DEBUG / INFO / WARNING / ERROR / CRITICAL
+
+# 日志文件
+LOG_FILE=/app/logs/aicoin.log
+LOG_MAX_SIZE=100MB
+LOG_BACKUP_COUNT=10
+```
+
+**日志级别说明**:
+- `DEBUG`: 详细调试信息 (开发环境)
+- `INFO`: 常规信息 (生产环境推荐)
+- `WARNING`: 警告信息
+- `ERROR`: 错误信息
+- `CRITICAL`: 严重错误
+
+---
+
+### 5.2 性能配置
+
+```bash
+# 数据库连接池
+DB_POOL_SIZE=20
+DB_MAX_OVERFLOW=10
+DB_POOL_TIMEOUT=30
+
+# Redis 连接池
+REDIS_POOL_SIZE=10
+REDIS_POOL_TIMEOUT=10
+
+# API 限流
+RATE_LIMIT_PER_MINUTE=60
+RATE_LIMIT_PER_HOUR=1000
+```
+
+---
+
+### 5.3 监控告警配置
+
+```bash
+# 启用监控
+ENABLE_MONITORING=true
+
+# 邮件告警
+ALERT_EMAIL=your-email@example.com
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+
+# Webhook 告警
+ALERT_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# 告警阈值
+ALERT_MAX_DRAWDOWN=0.10  # 回撤 ≥ 10% 告警
+ALERT_DAILY_LOSS=0.05    # 单日亏损 ≥ 5% 告警
+ALERT_CONSECUTIVE_LOSS=3  # 连续 3 次亏损告警
+```
+
+---
+
+### 5.4 辩论系统配置
+
+```bash
+# 启用辩论系统
+ENABLE_DEBATE_SYSTEM=true
+
+# 辩论配置
+DEBATE_ROUNDS=2  # 辩论轮数 (1-5)
+DEBATE_MEMORY_TOP_K=5  # 检索历史辩论数量
+DEBATE_MIN_CONFIDENCE=0.70  # 最低置信度
+
+# 角色配置
+BULL_ANALYST_MODEL=deepseek-chat
+BEAR_ANALYST_MODEL=deepseek-chat
+RESEARCH_MANAGER_MODEL=deepseek-chat
+```
+
+---
+
+### 5.5 情报系统配置
+
+```bash
+# 启用情报系统
+ENABLE_INTELLIGENCE_SYSTEM=true
+
+# 情报源
+ENABLE_NEWS_SOURCE=true
+ENABLE_SOCIAL_SOURCE=true
+ENABLE_ONCHAIN_SOURCE=false
+
+# 更新频率
+INTELLIGENCE_UPDATE_INTERVAL=30  # 分钟
+
+# Qwen 配置
+QWEN_API_KEY=sk-your-qwen-key
+QWEN_MODEL=qwen-plus
+```
+
+---
+
+## 📊 配置检查清单
+
+### 必需配置
+- [ ] DeepSeek API Key
+- [ ] Hyperliquid 钱包地址
+- [ ] Hyperliquid 私钥
+- [ ] SECRET_KEY (≥32字符)
+- [ ] JWT_SECRET_KEY (≥32字符)
+- [ ] 数据库密码
+
+### 推荐配置
+- [ ] LOG_LEVEL 设置为 INFO
+- [ ] 启用监控告警
+- [ ] 配置邮件/Webhook
+- [ ] 设置合理的风控参数
+
+### 可选配置
+- [ ] Qwen API (情报系统)
+- [ ] 辩论系统
+- [ ] HTTPS 证书
+- [ ] Nginx 反向代理
+
+---
+
+## 📚 相关文档
+
+- [快速部署](./quick-deploy.md) - 部署指南
+- [运维操作](./operations.md) - 日常运维
+- [故障排查](./troubleshooting.md) - 问题诊断
+
+---
+
+**文档维护**: AIcoin Team  
+**最后更新**: 2025-11-15  
+**文档版本**: v2.0
+
