@@ -332,6 +332,21 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       });
     }
     
+    // Prompt模板管理 - 需要 ai:view 权限
+    if (checkPermission('ai:view')) {
+      items.push({
+        key: "prompts-group",
+        icon: <FileTextOutlined />,
+        label: "Prompt管理",
+        children: [
+          {
+            key: "/admin/prompts-v2",
+            label: <Link href="/admin/prompts-v2">模板列表</Link>,
+          },
+        ],
+      });
+    }
+    
     // 数据湖 - 需要 system:view 权限
     if (checkPermission('system:view')) {
       items.push({
