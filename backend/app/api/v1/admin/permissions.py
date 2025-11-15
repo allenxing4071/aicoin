@@ -74,6 +74,7 @@ class PermissionLevelResponse(BaseModel):
     trading_params: dict
     upgrade_conditions: dict
     downgrade_conditions: dict
+    prompts: dict  # 新增：Prompt 关联信息
     is_active: bool
     is_default: bool
     created_at: str
