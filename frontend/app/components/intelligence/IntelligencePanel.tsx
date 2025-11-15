@@ -43,17 +43,62 @@ interface IntelligenceReport {
   confidence: number;
 }
 
+interface DebatedReport {
+  original_intelligence: IntelligenceReport;
+  debate_result: {
+    recommendation: string;
+    confidence: number;
+    rationale: string;
+    bull_viewpoint?: string;
+    bear_viewpoint?: string;
+  };
+  enhanced_sentiment: string;
+  enhanced_confidence: number;
+  is_debated: boolean;
+}
+
 export default function IntelligencePanel() {
   const [report, setReport] = useState<IntelligenceReport | null>(null);
+  const [debatedReport, setDebatedReport] = useState<DebatedReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchLatestIntelligence();
+    fetchDebatedIntelligence();
     // Auto-refresh every 30 minutes
-    const interval = setInterval(fetchLatestIntelligence, 30 * 60 * 1000);
+    const interval = setInterval(fetchDebatedIntelligence, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchDebatedIntelligence = async () => {
+    try {
+      // 优先获取辩论后的情报
+      const response = await axios.get(`${API_BASE}/intelligence/debated-report`);
+      if (response.data.success && response.data.data) {
+        setDebatedReport(response.data.data);
+        setReport(response.data.data.original_intelligence);
+      } else {
+        // 如果辩论报告不可用，降级到普通情报
+        const fallbackResponse = await axios.get(`${API_BASE}/intelligence/latest`);
+        if (fallbackResponse.data.success && fallbackResponse.data.data) {
+          setReport(fallbackResponse.data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch debated intelligence:', error);
+      // 降级到普通情报
+      try {
+        const fallbackResponse = await axios.get(`${API_BASE}/intelligence/latest`);
+        if (fallbackResponse.data.success && fallbackResponse.data.data) {
+          setReport(fallbackResponse.data.data);
+        }
+      } catch (fallbackError) {
+        console.error('Failed to fetch fallback intelligence:', fallbackError);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchLatestIntelligence = async () => {
     try {
@@ -145,9 +190,19 @@ export default function IntelligencePanel() {
       {/* Header */}
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
-            🕵️‍♀️ Qwen情报中心
-          </h2>
+          <div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
+              🕵️‍♀️ Qwen情报中心
+              {debatedReport?.is_debated && (
+                <span className="ml-3 px-3 py-1 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                  ⚔️ 辩论增强版
+                </span>
+              )}
+            </h2>
+            {debatedReport?.is_debated && (
+              <p className="text-sm text-gray-600 mt-1">经过多空辩论验证的高质量情报</p>
+            )}
+          </div>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -381,6 +436,76 @@ export default function IntelligencePanel() {
           <div className="bg-white rounded-xl p-4 text-gray-700 leading-relaxed">
             {report.qwen_analysis}
           </div>
+        </div>
+      )}
+
+      {/* Debate Result */}
+      {debatedReport?.is_debated && debatedReport.debate_result && (
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl shadow-lg p-6">
+          <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4 flex items-center">
+            ⚔️ 多空辩论后的综合判断
+          </h3>
+          
+          {/* 研究经理推荐 */}
+          <div className="bg-white rounded-xl p-6 mb-4 border-2 border-purple-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-bold text-gray-900">研究经理推荐</h4>
+              <span className={`px-4 py-2 rounded-full font-bold text-lg ${
+                debatedReport.debate_result.recommendation === 'BUY' ? 'bg-green-100 text-green-700' :
+                debatedReport.debate_result.recommendation === 'SELL' ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {debatedReport.debate_result.recommendation === 'BUY' ? '🟢 做多' :
+                 debatedReport.debate_result.recommendation === 'SELL' ? '🔴 做空' :
+                 '⚪ 观望'}
+              </span>
+            </div>
+            <div className="mb-3">
+              <div className="text-sm text-gray-600 mb-1">辩论后置信度</div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-gray-200 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      debatedReport.debate_result.confidence >= 0.7 ? 'bg-green-500' :
+                      debatedReport.debate_result.confidence >= 0.5 ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}
+                    style={{ width: `${debatedReport.debate_result.confidence * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-lg font-bold text-gray-900">
+                  {(debatedReport.debate_result.confidence * 100).toFixed(0)}%
+                </span>
+              </div>
+            </div>
+            <div className="bg-purple-50 rounded-xl p-4 text-gray-700 leading-relaxed">
+              {debatedReport.debate_result.rationale}
+            </div>
+          </div>
+
+          {/* 多头观点 */}
+          {debatedReport.debate_result.bull_viewpoint && (
+            <details className="bg-green-50 rounded-xl p-4 mb-3 border border-green-200">
+              <summary className="font-bold text-green-800 cursor-pointer hover:text-green-600">
+                🐂 多头分析师观点
+              </summary>
+              <div className="mt-3 text-gray-700 leading-relaxed">
+                {debatedReport.debate_result.bull_viewpoint}
+              </div>
+            </details>
+          )}
+
+          {/* 空头观点 */}
+          {debatedReport.debate_result.bear_viewpoint && (
+            <details className="bg-red-50 rounded-xl p-4 border border-red-200">
+              <summary className="font-bold text-red-800 cursor-pointer hover:text-red-600">
+                🐻 空头分析师观点
+              </summary>
+              <div className="mt-3 text-gray-700 leading-relaxed">
+                {debatedReport.debate_result.bear_viewpoint}
+              </div>
+            </details>
+          )}
         </div>
       )}
     </div>
