@@ -102,26 +102,58 @@ export default function RealtimeIntelligencePage() {
   }, []);
 
   const triggerDebate = useCallback(async () => {
-    if (!confirm('启动多空辩论将消耗 API 额度，是否继续？')) {
+    if (!confirm('启动多空辩论将消耗 API 额度，预计需要 60-90 秒，是否继续？')) {
       return;
     }
     
     try {
       setDebating(true);
+      
+      // 1. 启动后台辩论任务
       const res = await fetch('/api/v1/intelligence/trigger-debate', {
         method: 'POST'
       });
       const data = await res.json();
       
-      if (data.success && data.data) {
-        setDebatedReport(data.data);
-        setShowDebateDetails(true);
-        alert('✅ 辩论完成！');
+      if (data.success && data.status === 'processing') {
+        // 显示进度提示
+        alert(`✅ 辩论已启动！\n${data.message}\n预计时间：${data.estimated_time}\n\n请等待约 60-90 秒后刷新页面查看结果。`);
+        
+        // 2. 开始轮询结果（每 5 秒检查一次，最多 20 次 = 100 秒）
+        let pollCount = 0;
+        const maxPolls = 20;
+        const pollInterval = setInterval(async () => {
+          pollCount++;
+          
+          try {
+            const reportRes = await fetch('/api/v1/intelligence/debated-report');
+            const reportData = await reportRes.json();
+            
+            if (reportData.data && reportData.data.debate_result) {
+              // 辩论完成
+              setDebatedReport(reportData.data);
+              setShowDebateDetails(true);
+              clearInterval(pollInterval);
+              setDebating(false);
+              alert('🎉 辩论完成！结果已更新。');
+            } else if (pollCount >= maxPolls) {
+              // 超时
+              clearInterval(pollInterval);
+              setDebating(false);
+              alert('⏰ 辩论超时，请稍后手动刷新页面查看结果。');
+            }
+          } catch (error) {
+            console.error('轮询辩论结果失败:', error);
+            if (pollCount >= maxPolls) {
+              clearInterval(pollInterval);
+              setDebating(false);
+            }
+          }
+        }, 5000); // 每 5 秒轮询一次
       }
     } catch (error) {
       console.error('Failed to trigger debate:', error);
       alert('启动辩论失败，请查看控制台日志');
-    } finally {
       setDebating(false);
     }
   }, []);

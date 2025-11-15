@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime, timedelta
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, desc
@@ -528,22 +528,39 @@ async def get_debated_intelligence_report(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/trigger-debate")
-async def trigger_debate_manually(db: AsyncSession = Depends(get_db)):
+async def trigger_debate_manually(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """
-    手动触发情报辩论
+    手动触发情报辩论（异步后台执行）
     
     用户可以点击按钮手动触发新一轮辩论
+    辩论将在后台执行，避免超时
     """
     try:
-        # 复用 get_debated_intelligence_report 的逻辑
-        result = await get_debated_intelligence_report(db)
+        import asyncio
+        
+        logger.info("🚀 启动后台辩论任务...")
+        
+        # 在后台执行辩论
+        async def run_debate_in_background():
+            try:
+                # 创建新的数据库会话
+                from app.core.database import AsyncSessionLocal
+                async with AsyncSessionLocal() as bg_db:
+                    await get_debated_intelligence_report(bg_db)
+                    logger.info("✅ 后台辩论任务完成")
+            except Exception as e:
+                logger.error(f"❌ 后台辩论任务失败: {e}", exc_info=True)
+        
+        # 启动后台任务
+        asyncio.create_task(run_debate_in_background())
         
         return {
             "success": True,
-            "message": "辩论已完成",
-            "data": result["data"]
+            "message": "辩论已启动，正在后台执行中...",
+            "status": "processing",
+            "estimated_time": "60-90秒"
         }
     
     except Exception as e:
-        logger.error(f"手动触发辩论失败: {e}", exc_info=True)
+        logger.error(f"启动辩论任务失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
