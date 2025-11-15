@@ -46,6 +46,23 @@ export default function PromptSelector({
     return icons[cat as keyof typeof icons] || '📝';
   };
 
+  // 获取 Prompt 名称的中文备注
+  const getPromptNameWithChinese = (name: string) => {
+    const nameMap: Record<string, string> = {
+      'bear_analyst': 'bear_analyst (空头分析师)',
+      'bull_analyst': 'bull_analyst (多头分析师)',
+      'research_manager': 'research_manager (研究经理)',
+      'default': 'default (默认策略)',
+      'l0_conservative': 'l0_conservative (L0-极度保守)',
+      'l1_moderate': 'l1_moderate (L1-保守稳健)',
+      'l2_balanced': 'l2_balanced (L2-平衡型)',
+      'l3_aggressive': 'l3_aggressive (L3-积极进取)',
+      'l4_high_risk': 'l4_high_risk (L4-高风险)',
+      'l5_extreme': 'l5_extreme (L5-极限激进)',
+    };
+    return nameMap[name] || name;
+  };
+
   if (loading) {
     return (
       <select className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm" disabled>
@@ -63,7 +80,7 @@ export default function PromptSelector({
       <option value="">未选择</option>
       {filteredPrompts.map((prompt) => (
         <option key={prompt.id} value={prompt.id}>
-          {getCategoryIcon(prompt.category)} {prompt.name} (v{prompt.version})
+          {getCategoryIcon(prompt.category)} {getPromptNameWithChinese(prompt.name)} (v{prompt.version})
         </option>
       ))}
     </select>

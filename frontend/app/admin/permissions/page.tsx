@@ -151,6 +151,23 @@ export default function PermissionsAdmin() {
     return colors[level as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
+  // 获取 Prompt 名称的中文备注
+  const getPromptNameWithChinese = (name: string) => {
+    const nameMap: Record<string, string> = {
+      'bear_analyst': 'bear_analyst (空头分析师)',
+      'bull_analyst': 'bull_analyst (多头分析师)',
+      'research_manager': 'research_manager (研究经理)',
+      'default': 'default (默认策略)',
+      'l0_conservative': 'l0_conservative (L0-极度保守)',
+      'l1_moderate': 'l1_moderate (L1-保守稳健)',
+      'l2_balanced': 'l2_balanced (L2-平衡型)',
+      'l3_aggressive': 'l3_aggressive (L3-积极进取)',
+      'l4_high_risk': 'l4_high_risk (L4-高风险)',
+      'l5_extreme': 'l5_extreme (L5-极限激进)',
+    };
+    return nameMap[name] || name;
+  };
+
   const handleEdit = (level: PermissionLevel) => {
     setEditingLevel({ ...level });
     setShowEditModal(true);
@@ -556,7 +573,7 @@ export default function PermissionsAdmin() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <span className="text-2xl">{categoryStyle.icon}</span>
-                          <h3 className="text-xl font-bold text-gray-900">{prompt.name}</h3>
+                          <h3 className="text-xl font-bold text-gray-900">{getPromptNameWithChinese(prompt.name)}</h3>
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${categoryStyle.badge}`}>
                             {prompt.category}
                           </span>
