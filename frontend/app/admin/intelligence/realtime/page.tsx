@@ -128,7 +128,8 @@ export default function RealtimeIntelligencePage() {
 
   useEffect(() => {
     fetchReports();
-    fetchDebatedReport(); // 自动加载辩论后的报告
+    // 注释掉自动加载辩论报告，避免页面加载时触发耗时的辩论 API
+    // fetchDebatedReport(); // 自动加载辩论后的报告
     
     let interval: NodeJS.Timeout;
     if (autoRefresh) {
