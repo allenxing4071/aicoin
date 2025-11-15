@@ -59,6 +59,10 @@ class PermissionLevelUpdate(BaseModel):
     downgrade_conditions: Optional[DowngradeConditions] = None
     is_active: Optional[bool] = None
     is_default: Optional[bool] = None
+    # 新增：Prompt 关联
+    decision_prompt_id: Optional[int] = Field(None, description="决策 Prompt ID")
+    debate_prompt_id: Optional[int] = Field(None, description="辩论 Prompt ID")
+    intelligence_prompt_id: Optional[int] = Field(None, description="情报 Prompt ID")
 
 
 class PermissionLevelResponse(BaseModel):
@@ -186,13 +190,84 @@ async def create_permission_level(
         )
 
 
-@router.put("/levels/{level}", response_model=PermissionLevelResponse)
-async def update_permission_level(
+@router.put("/levels/{level_id}", response_model=PermissionLevelResponse)
+async def update_permission_level_by_id(
+    level_id: int,
+    data: PermissionLevelUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """通过 ID 更新权限等级配置（支持 Prompt 关联）"""
+    try:
+        # 通过 ID 查询
+        config = await db.get(PermissionLevelConfig, level_id)
+        
+        if not config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Permission level with ID {level_id} not found"
+            )
+        
+        # 更新基本信息
+        if data.name is not None:
+            config.name = data.name
+        if data.description is not None:
+            config.description = data.description
+        if data.is_active is not None:
+            config.is_active = data.is_active
+        if data.is_default is not None:
+            config.is_default = data.is_default
+        
+        # 更新 Prompt 关联
+        if data.decision_prompt_id is not None:
+            config.decision_prompt_id = data.decision_prompt_id
+        if data.debate_prompt_id is not None:
+            config.debate_prompt_id = data.debate_prompt_id
+        if data.intelligence_prompt_id is not None:
+            config.intelligence_prompt_id = data.intelligence_prompt_id
+        
+        # 更新交易参数
+        if data.trading_params:
+            config.max_position_pct = data.trading_params.max_position_pct
+            config.max_leverage = data.trading_params.max_leverage
+            config.confidence_threshold = data.trading_params.confidence_threshold
+            config.max_daily_trades = data.trading_params.max_daily_trades
+        
+        # 更新升级条件
+        if data.upgrade_conditions:
+            config.upgrade_win_rate_7d = data.upgrade_conditions.win_rate_7d
+            config.upgrade_win_rate_30d = data.upgrade_conditions.win_rate_30d
+            config.upgrade_sharpe_ratio = data.upgrade_conditions.sharpe_ratio
+            config.upgrade_min_trades = data.upgrade_conditions.min_trades
+            config.upgrade_min_days = data.upgrade_conditions.min_days
+        
+        # 更新降级条件
+        if data.downgrade_conditions:
+            config.downgrade_max_drawdown = data.downgrade_conditions.max_drawdown
+            config.downgrade_consecutive_losses = data.downgrade_conditions.consecutive_losses
+            config.downgrade_win_rate_7d = data.downgrade_conditions.win_rate_7d
+        
+        await db.commit()
+        await db.refresh(config)
+        
+        return config.to_dict()
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update permission level: {str(e)}"
+        )
+
+
+@router.put("/levels/by-name/{level}", response_model=PermissionLevelResponse)
+async def update_permission_level_by_name(
     level: str,
     data: PermissionLevelUpdate,
     db: AsyncSession = Depends(get_db)
 ):
-    """更新权限等级配置"""
+    """通过 level 名称更新权限等级配置"""
     try:
         stmt = select(PermissionLevelConfig).where(PermissionLevelConfig.level == level)
         result = await db.execute(stmt)
@@ -213,6 +288,14 @@ async def update_permission_level(
             config.is_active = data.is_active
         if data.is_default is not None:
             config.is_default = data.is_default
+        
+        # 更新 Prompt 关联
+        if data.decision_prompt_id is not None:
+            config.decision_prompt_id = data.decision_prompt_id
+        if data.debate_prompt_id is not None:
+            config.debate_prompt_id = data.debate_prompt_id
+        if data.intelligence_prompt_id is not None:
+            config.intelligence_prompt_id = data.intelligence_prompt_id
         
         # 更新交易参数
         if data.trading_params:
