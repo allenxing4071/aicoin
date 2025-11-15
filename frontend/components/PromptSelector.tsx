@@ -53,15 +53,23 @@ export default function PromptSelector({
       'bear_analyst': 'bear_analyst (空头分析师)',
       'bull_analyst': 'bull_analyst (多头分析师)',
       'research_manager': 'research_manager (研究经理)',
-      // 决策系统
+      // 决策系统 - 旧版本
       'default': 'default (默认策略)',
       'decision_base': 'decision_base (决策基础模板)',
+      'conservative_decision': 'conservative_decision (保守型)',
       'l0_conservative': 'l0_conservative (L0-极度保守)',
       'l1_moderate': 'l1_moderate (L1-保守稳健)',
       'l2_balanced': 'l2_balanced (L2-平衡型)',
       'l3_aggressive': 'l3_aggressive (L3-积极进取)',
       'l4_high_risk': 'l4_high_risk (L4-高风险)',
       'l5_extreme': 'l5_extreme (L5-极限激进)',
+      // 决策系统 - 新版本 (L0-L5)
+      'decision_l0_conservative': 'L0 极度保守型决策',
+      'decision_l1_stable': 'L1 保守稳健型决策',
+      'decision_l2_balanced': 'L2 平衡型决策',
+      'decision_l3_aggressive': 'L3 积极进取型决策',
+      'decision_l4_high_risk': 'L4 高风险型决策',
+      'decision_l5_extreme': 'L5 极限激进型决策',
       // 情报系统
       'intelligence_analysis': 'intelligence_analysis (情报分析)',
       'multi_platform_synthesis': 'multi_platform_synthesis (多平台综合)',
@@ -73,10 +81,16 @@ export default function PromptSelector({
     }
     
     // 否则，尝试智能生成中文备注
+    if (name.includes('l0') || name.includes('L0')) return `${name} (L0-极度保守型)`;
+    if (name.includes('l1') || name.includes('L1')) return `${name} (L1-保守稳健型)`;
+    if (name.includes('l2') || name.includes('L2')) return `${name} (L2-平衡型)`;
+    if (name.includes('l3') || name.includes('L3')) return `${name} (L3-积极进取型)`;
+    if (name.includes('l4') || name.includes('L4')) return `${name} (L4-高风险型)`;
+    if (name.includes('l5') || name.includes('L5')) return `${name} (L5-极限激进型)`;
     if (name.includes('conservative')) return `${name} (保守型)`;
     if (name.includes('aggressive')) return `${name} (激进型)`;
     if (name.includes('balanced')) return `${name} (平衡型)`;
-    if (name.includes('moderate')) return `${name} (稳健型)`;
+    if (name.includes('stable') || name.includes('moderate')) return `${name} (稳健型)`;
     if (name.includes('base')) return `${name} (基础模板)`;
     if (name.includes('decision')) return `${name} (决策模板)`;
     if (name.includes('debate')) return `${name} (辩论模板)`;
