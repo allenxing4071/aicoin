@@ -195,12 +195,12 @@ export default function IntelligenceMonitoringPage() {
               <div className="text-xs text-gray-600">
                 {component.status}
               </div>
-              {component.latency_ms && (
+              {'latency_ms' in component && component.latency_ms && (
                 <div className="text-xs text-gray-500 mt-1">
                   延迟: {component.latency_ms.toFixed(1)}ms
                 </div>
               )}
-              {component.source_count !== undefined && (
+              {'source_count' in component && typeof component.source_count === 'number' && (
                 <div className="text-xs text-gray-500 mt-1">
                   源: {component.source_count}个
                 </div>
