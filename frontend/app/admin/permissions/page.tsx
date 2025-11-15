@@ -108,7 +108,16 @@ export default function PermissionsAdmin() {
       // 检查每个等级的 prompts 数据
       response.data.forEach((level: any) => {
         console.log(`📝 ${level.level} 的 Prompt 数据:`, level.prompts);
+        console.log(`   - decision_prompt_id: ${level.prompts?.decision_prompt_id}`);
+        console.log(`   - debate_prompt_id: ${level.prompts?.debate_prompt_id}`);
+        console.log(`   - intelligence_prompt_id: ${level.prompts?.intelligence_prompt_id}`);
       });
+      
+      // 🔍 特别检查 L0 的数据（数据库显示它有完整数据）
+      const l0 = response.data.find((l: any) => l.level === 'L0');
+      if (l0) {
+        console.log('🔍 L0 完整数据:', JSON.stringify(l0, null, 2));
+      }
       
       setLevels(response.data);
       setError(null);
