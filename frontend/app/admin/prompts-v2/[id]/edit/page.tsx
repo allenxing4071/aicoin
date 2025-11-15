@@ -21,7 +21,12 @@ export default function PromptEditPage() {
 
   const fetchPrompt = async () => {
     try {
-      const response = await fetch(`/api/v1/prompts/v2/${promptId}`)
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch(`/api/v1/prompts/v2/${promptId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       const data = await response.json()
       setPromptInfo(data)
       setOriginalContent(data.content)
@@ -34,9 +39,13 @@ export default function PromptEditPage() {
   const handleOptimize = async () => {
     try {
       setOptimizing(true)
+      const token = localStorage.getItem('admin_token')
       const response = await fetch('/api/v1/prompts/v2/optimize', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           template_id: promptId,
           optimization_goal: '提高决策准确率，降低误判风险'
@@ -55,16 +64,20 @@ export default function PromptEditPage() {
   const handleSave = async (content: string, summary: string) => {
     try {
       setLoading(true)
+      const token = localStorage.getItem('admin_token')
       await fetch(`/api/v1/prompts/v2/${promptId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           content,
           change_summary: summary
         })
       })
       alert('✅ 保存成功')
-      router.push('/admin/prompts-v2')
+      router.push('/admin/permissions')
     } catch (error) {
       alert('❌ 保存失败')
     } finally {
