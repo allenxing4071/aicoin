@@ -209,6 +209,14 @@ export default function PermissionsAdmin() {
         intelligence: 'intelligence_prompt_id'
       };
       
+      console.log(`🔄 开始关联 Prompt:`, {
+        levelId,
+        levelName,
+        promptType,
+        promptId,
+        field: fieldMap[promptType]
+      });
+      
       const token = localStorage.getItem('admin_token');
       const response = await axios.put(`${API_BASE}/admin/permissions/levels/${levelId}`, {
         [fieldMap[promptType]]: promptId
@@ -218,20 +226,26 @@ export default function PermissionsAdmin() {
         }
       });
       
+      console.log(`📥 后端响应:`, response.data);
+      
       if (response.status === 200) {
-        // 更新本地状态
-        setLevels(levels.map(l => {
+        // 更新本地状态 - 注意：prompts 是一个嵌套对象
+        const updatedLevels = levels.map(l => {
           if (l.id === levelId) {
-            return {
+            const updated = {
               ...l,
               prompts: {
-                ...l.prompts,
+                ...(l.prompts || {}),
                 [fieldMap[promptType]]: promptId
               }
             };
+            console.log(`📝 更新后的本地状态:`, updated.prompts);
+            return updated;
           }
           return l;
-        }));
+        });
+        
+        setLevels(updatedLevels);
         
         const promptName = promptId ? allPrompts.find(p => p.id === promptId)?.name : '无';
         console.log(`✅ 已关联 ${promptType} Prompt "${promptName}" 到 ${levelName}`);

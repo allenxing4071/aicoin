@@ -224,6 +224,12 @@ async def update_permission_level_by_id(
 ):
     """通过 ID 更新权限等级配置（支持 Prompt 关联）"""
     try:
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🔄 收到更新请求 - Level ID: {level_id}")
+        logger.info(f"📥 请求数据: decision_prompt_id={data.decision_prompt_id}, debate_prompt_id={data.debate_prompt_id}, intelligence_prompt_id={data.intelligence_prompt_id}")
+        
         # 通过 ID 查询
         config = await db.get(PermissionLevelConfig, level_id)
         
@@ -232,6 +238,8 @@ async def update_permission_level_by_id(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Permission level with ID {level_id} not found"
             )
+        
+        logger.info(f"📝 更新前的值: decision_prompt_id={config.decision_prompt_id}, debate_prompt_id={config.debate_prompt_id}, intelligence_prompt_id={config.intelligence_prompt_id}")
         
         # 更新基本信息
         if data.name is not None:
@@ -245,10 +253,13 @@ async def update_permission_level_by_id(
         
         # 更新 Prompt 关联
         if data.decision_prompt_id is not None:
+            logger.info(f"✏️ 更新 decision_prompt_id: {config.decision_prompt_id} -> {data.decision_prompt_id}")
             config.decision_prompt_id = data.decision_prompt_id
         if data.debate_prompt_id is not None:
+            logger.info(f"✏️ 更新 debate_prompt_id: {config.debate_prompt_id} -> {data.debate_prompt_id}")
             config.debate_prompt_id = data.debate_prompt_id
         if data.intelligence_prompt_id is not None:
+            logger.info(f"✏️ 更新 intelligence_prompt_id: {config.intelligence_prompt_id} -> {data.intelligence_prompt_id}")
             config.intelligence_prompt_id = data.intelligence_prompt_id
         
         # 更新交易参数
@@ -272,15 +283,20 @@ async def update_permission_level_by_id(
             config.downgrade_consecutive_losses = data.downgrade_conditions.consecutive_losses
             config.downgrade_win_rate_7d = data.downgrade_conditions.win_rate_7d
         
+        logger.info(f"💾 准备提交到数据库...")
         await db.commit()
         await db.refresh(config)
+        logger.info(f"✅ 提交成功！更新后的值: decision_prompt_id={config.decision_prompt_id}, debate_prompt_id={config.debate_prompt_id}, intelligence_prompt_id={config.intelligence_prompt_id}")
         
-        return config.to_dict()
+        result = config.to_dict()
+        logger.info(f"📤 返回数据: {result.get('prompts')}")
+        return result
     
     except HTTPException:
         raise
     except Exception as e:
         await db.rollback()
+        logger.error(f"❌ 更新失败: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update permission level: {str(e)}"
