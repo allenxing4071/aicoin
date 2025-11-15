@@ -218,28 +218,28 @@ export default function IntelligenceMonitoringPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 情报收集指标</h3>
             <StatCardGrid>
               <StatCard
-                title="总收集次数"
+                label="总收集次数"
                 value={metrics.collection_metrics.total_collections}
-                subtitle="次"
-                theme={theme}
+                icon="📊"
+                color="blue"
               />
               <StatCard
-                title="成功收集"
+                label="成功收集"
                 value={metrics.collection_metrics.successful_collections}
-                subtitle="次"
-                theme={theme}
+                icon="✅"
+                color="green"
               />
               <StatCard
-                title="成功率"
+                label="成功率"
                 value={`${(metrics.collection_metrics.success_rate * 100).toFixed(1)}%`}
-                subtitle={`${metrics.collection_metrics.successful_collections}/${metrics.collection_metrics.total_collections}`}
-                theme={theme}
+                icon="📈"
+                color="purple"
               />
               <StatCard
-                title="平均耗时"
+                label="平均耗时"
                 value={`${metrics.collection_metrics.avg_collection_time_seconds.toFixed(1)}s`}
-                subtitle="每次收集"
-                theme={theme}
+                icon="⏱️"
+                color="orange"
               />
             </StatCardGrid>
           </div>
