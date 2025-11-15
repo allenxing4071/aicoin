@@ -44,6 +44,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
   const [username, setUsername] = useState<string | null>(null);
   // 确保侧边栏默认展开
   const [collapsed, setCollapsed] = useState(false);
+  // 控制菜单展开状态
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
 
   useEffect(() => {
     const user = localStorage.getItem("admin_user");
@@ -55,6 +57,59 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       setCollapsed(true);
     }
   }, []);
+
+  // 根据当前路径自动展开父菜单
+  useEffect(() => {
+    const parentKeys: string[] = [];
+    
+    // 根据路径判断需要展开的父菜单
+    if (pathname.startsWith('/admin/intelligence')) {
+      parentKeys.push('intelligence-group');
+    }
+    if (pathname.startsWith('/admin/ai-platforms')) {
+      parentKeys.push('ai-platforms-group');
+      // 如果是子菜单，也展开二级菜单
+      if (pathname.includes('/intelligence') || pathname.includes('/decision') || pathname.includes('/analysis')) {
+        parentKeys.push('model-config');
+      }
+      if (pathname.includes('/ai-cost')) {
+        parentKeys.push('cost-management');
+      }
+      if (pathname.includes('/response-time') || pathname.includes('/success-rate') || pathname.includes('/stats')) {
+        parentKeys.push('performance-monitoring');
+      }
+    }
+    if (pathname.startsWith('/admin/memory')) {
+      parentKeys.push('memory-group');
+    }
+    if (pathname.startsWith('/admin/debate')) {
+      parentKeys.push('debate-group');
+    }
+    if (pathname.startsWith('/admin/ai-cost')) {
+      parentKeys.push('ai-platforms-group');
+      parentKeys.push('cost-management');
+    }
+    if (pathname.startsWith('/admin/trading') || pathname.startsWith('/admin/orders')) {
+      parentKeys.push('trading-group');
+    }
+    if (pathname.startsWith('/admin/ai-decisions')) {
+      parentKeys.push('ai-decision-group');
+    }
+    if (pathname.startsWith('/admin/trades') || pathname.startsWith('/admin/accounts') || 
+        pathname.startsWith('/admin/risk-events') || pathname.startsWith('/admin/market-data')) {
+      parentKeys.push('data-management-group');
+    }
+    if (pathname.startsWith('/admin/rbac') || pathname.startsWith('/admin/users')) {
+      parentKeys.push('rbac-group');
+    }
+    if (pathname === '/admin/backup' || pathname === '/admin/logs' || 
+        pathname === '/admin/database' || pathname === '/admin/api-docs' ||
+        pathname.startsWith('/admin/permissions') || pathname.startsWith('/admin/prompts')) {
+      parentKeys.push('system-management-group');
+    }
+    
+    setOpenKeys(parentKeys);
+  }, [pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
@@ -603,7 +658,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
           <Menu
             mode="inline"
             selectedKeys={[pathname]}
-            defaultOpenKeys={[]}  // 默认关闭所有菜单
+            openKeys={openKeys}
+            onOpenChange={(keys) => setOpenKeys(keys as string[])}
             items={menuItems}
             style={{
               border: "none",
