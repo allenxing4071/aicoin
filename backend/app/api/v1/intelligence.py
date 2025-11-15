@@ -456,7 +456,7 @@ async def get_debated_intelligence_report(db: AsyncSession = Depends(get_db)):
         intelligence_dict = {
             "market_sentiment": report.market_sentiment.value if hasattr(report.market_sentiment, 'value') else str(report.market_sentiment),
             "confidence": report.confidence,
-            "summary": report.summary[:500] if report.summary else "",
+            "summary": report.qwen_analysis[:500] if report.qwen_analysis else "",
             "key_news": report.key_news[:3] if report.key_news else [],
             "whale_signals": report.whale_signals[:3] if report.whale_signals else [],
             "platform_contributions": getattr(report, 'platform_contributions', {}),
