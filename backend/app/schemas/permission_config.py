@@ -32,6 +32,11 @@ class PermissionLevelConfigBase(BaseModel):
     # 状态
     is_active: bool = Field(True, description="是否启用")
     is_default: bool = Field(False, description="是否为默认等级")
+    
+    # 关联 Prompt 模板
+    decision_prompt_id: Optional[int] = Field(None, description="决策 Prompt 模板 ID")
+    debate_prompt_id: Optional[int] = Field(None, description="辩论 Prompt 模板 ID")
+    intelligence_prompt_id: Optional[int] = Field(None, description="情报 Prompt 模板 ID")
 
 
 class PermissionLevelConfigCreate(PermissionLevelConfigBase):
@@ -57,6 +62,9 @@ class PermissionLevelConfigUpdate(BaseModel):
     downgrade_win_rate_7d: Optional[float] = None
     is_active: Optional[bool] = None
     is_default: Optional[bool] = None
+    decision_prompt_id: Optional[int] = None
+    debate_prompt_id: Optional[int] = None
+    intelligence_prompt_id: Optional[int] = None
 
 
 class PermissionLevelConfigResponse(PermissionLevelConfigBase):

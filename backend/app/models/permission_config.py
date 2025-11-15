@@ -41,6 +41,11 @@ class PermissionLevelConfig(Base):
     is_active = Column(Boolean, default=True, nullable=False)  # 是否启用
     is_default = Column(Boolean, default=False, nullable=False)  # 是否为默认等级
     
+    # 关联 Prompt 模板
+    decision_prompt_id = Column(Integer, nullable=True, comment="决策 Prompt 模板 ID")
+    debate_prompt_id = Column(Integer, nullable=True, comment="辩论 Prompt 模板 ID")
+    intelligence_prompt_id = Column(Integer, nullable=True, comment="情报 Prompt 模板 ID")
+    
     # 时间戳
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -69,6 +74,11 @@ class PermissionLevelConfig(Base):
                 "max_drawdown": self.downgrade_max_drawdown,
                 "consecutive_losses": self.downgrade_consecutive_losses,
                 "win_rate_7d": self.downgrade_win_rate_7d
+            },
+            "prompts": {
+                "decision_prompt_id": self.decision_prompt_id,
+                "debate_prompt_id": self.debate_prompt_id,
+                "intelligence_prompt_id": self.intelligence_prompt_id
             },
             "is_active": self.is_active,
             "is_default": self.is_default,

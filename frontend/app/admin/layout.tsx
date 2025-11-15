@@ -332,20 +332,7 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       });
     }
     
-    // Prompt模板管理 - 需要 ai:view 权限
-    if (checkPermission('ai:view')) {
-      items.push({
-        key: "prompts-group",
-        icon: <FileTextOutlined />,
-        label: "Prompt管理",
-        children: [
-          {
-            key: "/admin/prompts-v2",
-            label: <Link href="/admin/prompts-v2">模板列表</Link>,
-          },
-        ],
-      });
-    }
+    // Prompt模板管理已整合到权限管理中，不再需要独立菜单项
     
     // 数据湖 - 需要 system:view 权限
     if (checkPermission('system:view')) {

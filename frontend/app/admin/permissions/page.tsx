@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import PageHeader from '../../components/common/PageHeader';
 import { API_BASE } from '../../../lib/api';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import PromptSelector from '@/components/PromptSelector';
 
 interface TradingParams {
   max_position_pct: number;
@@ -38,22 +41,52 @@ interface PermissionLevel {
   is_default: boolean;
   created_at: string;
   updated_at: string;
+  // 新增：关联的 Prompt
+  prompts?: {
+    decision_prompt_id?: number;
+    debate_prompt_id?: number;
+    intelligence_prompt_id?: number;
+  };
+}
+
+interface PromptTemplate {
+  id: number;
+  name: string;
+  category: string;
+  permission_level: string | null;
+  content: string;
+  version: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export default function PermissionsAdmin() {
+  const router = useRouter();
   const [levels, setLevels] = useState<PermissionLevel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingLevel, setEditingLevel] = useState<PermissionLevel | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentAILevel, setCurrentAILevel] = useState<string>('L1'); // AI当前使用的权限等级
+  
+  // Prompt 模板相关状态
+  const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
+  const [promptsLoading, setPromptsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedLevel, setSelectedLevel] = useState<string>('all');
 
   useEffect(() => {
     fetchLevels();
     fetchCurrentAILevel();
+    fetchPrompts();
     const interval = setInterval(fetchCurrentAILevel, 10000); // 每10秒更新AI当前等级
     return () => clearInterval(interval);
   }, []);
+  
+  useEffect(() => {
+    fetchPrompts();
+  }, [selectedCategory, selectedLevel]);
 
   const fetchLevels = async () => {
     try {
@@ -77,6 +110,60 @@ export default function PermissionsAdmin() {
     } catch (err) {
       console.error('获取AI当前权限等级失败:', err);
     }
+  };
+  
+  const fetchPrompts = async () => {
+    try {
+      setPromptsLoading(true);
+      let url = '/api/v1/prompts/v2/';
+      const params = new URLSearchParams();
+      
+      if (selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (selectedLevel !== 'all') params.append('permission_level', selectedLevel);
+      
+      if (params.toString()) url += `?${params.toString()}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      setPrompts(data);
+    } catch (error) {
+      console.error('获取Prompt列表失败:', error);
+    } finally {
+      setPromptsLoading(false);
+    }
+  };
+  
+  const handleReloadPrompts = async () => {
+    try {
+      await fetch('/api/v1/prompts/v2/reload', { method: 'POST' });
+      alert('✅ Prompt已重载');
+      fetchPrompts();
+    } catch (error) {
+      alert('❌ 重载失败');
+    }
+  };
+  
+  // 获取类别图标和颜色
+  const getCategoryStyle = (category: string) => {
+    const styles = {
+      decision: { icon: '🎯', color: 'from-blue-50 to-cyan-50', border: 'border-blue-200', badge: 'bg-blue-100 text-blue-800' },
+      debate: { icon: '⚔️', color: 'from-purple-50 to-pink-50', border: 'border-purple-200', badge: 'bg-purple-100 text-purple-800' },
+      intelligence: { icon: '🔍', color: 'from-green-50 to-emerald-50', border: 'border-green-200', badge: 'bg-green-100 text-green-800' }
+    };
+    return styles[category as keyof typeof styles] || styles.decision;
+  };
+  
+  // 获取权限等级颜色
+  const getPromptLevelColor = (level: string) => {
+    const colors = {
+      L0: 'bg-gray-100 text-gray-800',
+      L1: 'bg-blue-100 text-blue-800',
+      L2: 'bg-green-100 text-green-800',
+      L3: 'bg-yellow-100 text-yellow-800',
+      L4: 'bg-orange-100 text-orange-800',
+      L5: 'bg-red-100 text-red-800'
+    };
+    return colors[level as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
   const handleEdit = (level: PermissionLevel) => {
@@ -151,7 +238,7 @@ export default function PermissionsAdmin() {
       <PageHeader
         icon="🔐"
         title="权限管理"
-        description="管理用户角色和权限配置"
+        description="管理用户角色、权限配置和 Prompt 模板"
         color="purple"
         actions={
           <button
@@ -162,6 +249,16 @@ export default function PermissionsAdmin() {
           </button>
         }
       />
+      
+      {/* Tabs 布局 */}
+      <Tabs defaultValue="levels" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="levels">权限等级配置</TabsTrigger>
+          <TabsTrigger value="prompts">Prompt 模板库</TabsTrigger>
+        </TabsList>
+        
+        {/* Tab 1: 权限等级配置 */}
+        <TabsContent value="levels" className="space-y-6">
 
       {/* 当前AI使用的权限等级指示器 */}
       {currentLevelData && (
@@ -325,9 +422,201 @@ export default function PermissionsAdmin() {
                 </div>
               </div>
             </div>
+            
+            {/* 关联 Prompt 模板 */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h4 className="font-semibold text-gray-700 mb-3">📝 关联 Prompt 模板</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">🎯 决策 Prompt</label>
+                  <PromptSelector
+                    category="decision"
+                    selectedPromptId={level.prompts?.decision_prompt_id}
+                    onSelect={(promptId) => {
+                      // TODO: 保存关联
+                      console.log(`关联决策Prompt ${promptId} 到 ${level.level}`);
+                    }}
+                    permissionLevel={level.level}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">⚔️ 辩论 Prompt</label>
+                  <PromptSelector
+                    category="debate"
+                    selectedPromptId={level.prompts?.debate_prompt_id}
+                    onSelect={(promptId) => {
+                      // TODO: 保存关联
+                      console.log(`关联辩论Prompt ${promptId} 到 ${level.level}`);
+                    }}
+                    permissionLevel={level.level}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">🔍 情报 Prompt</label>
+                  <PromptSelector
+                    category="intelligence"
+                    selectedPromptId={level.prompts?.intelligence_prompt_id}
+                    onSelect={(promptId) => {
+                      // TODO: 保存关联
+                      console.log(`关联情报Prompt ${promptId} 到 ${level.level}`);
+                    }}
+                    permissionLevel={level.level}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                💡 提示：为每个权限等级选择对应的 Prompt 模板，AI 将根据当前权限等级使用相应的 Prompt
+              </p>
+            </div>
           </div>
         ))}
       </div>
+        </TabsContent>
+        
+        {/* Tab 2: Prompt 模板库 */}
+        <TabsContent value="prompts" className="space-y-6">
+          {/* 页面标题和操作区 */}
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">📝 Prompt 模板库</h2>
+                <p className="text-gray-600">管理 AI 决策、辩论和情报系统的 Prompt 模板</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleReloadPrompts}
+                  className="px-6 py-3 bg-white border-2 border-indigo-300 text-indigo-700 rounded-xl font-semibold hover:bg-indigo-50 transition-all transform hover:scale-105 shadow-sm"
+                >
+                  🔄 热重载
+                </button>
+                <button
+                  onClick={() => router.push('/admin/prompts-v2/create')}
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg"
+                >
+                  ➕ 创建 Prompt
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 筛选器 */}
+          <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="flex gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">📂 类别筛选</label>
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl font-medium text-gray-900 focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="all">全部类别</option>
+                  <option value="decision">🎯 决策</option>
+                  <option value="debate">⚔️ 辩论</option>
+                  <option value="intelligence">🔍 情报</option>
+                </select>
+              </div>
+              
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">🔑 权限等级</label>
+                <select 
+                  value={selectedLevel}
+                  onChange={(e) => setSelectedLevel(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl font-medium text-gray-900 focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option value="all">全部等级</option>
+                  <option value="L0">L0 - 极度保守</option>
+                  <option value="L1">L1 - 保守稳健</option>
+                  <option value="L2">L2 - 平衡型</option>
+                  <option value="L3">L3 - 积极进取</option>
+                  <option value="L4">L4 - 高风险</option>
+                  <option value="L5">L5 - 极限激进</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                共找到 <span className="font-bold text-indigo-600">{prompts.length}</span> 个 Prompt 模板
+              </p>
+            </div>
+          </div>
+
+          {/* Prompt 列表 */}
+          {promptsLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-gray-500">加载中...</div>
+            </div>
+          ) : prompts.length === 0 ? (
+            <div className="bg-white border-2 border-gray-200 rounded-xl p-12 text-center">
+              <div className="text-6xl mb-4">📭</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">暂无 Prompt 模板</h3>
+              <p className="text-gray-600">点击上方"创建 Prompt"按钮添加新模板</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {prompts.map((prompt) => {
+                const categoryStyle = getCategoryStyle(prompt.category);
+                return (
+                  <div 
+                    key={prompt.id} 
+                    className={`bg-gradient-to-r ${categoryStyle.color} border-2 ${categoryStyle.border} rounded-xl p-6 hover:shadow-xl transition-all transform hover:scale-[1.01]`}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-2xl">{categoryStyle.icon}</span>
+                          <h3 className="text-xl font-bold text-gray-900">{prompt.name}</h3>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${categoryStyle.badge}`}>
+                            {prompt.category}
+                          </span>
+                          {prompt.permission_level && (
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPromptLevelColor(prompt.permission_level)}`}>
+                              {prompt.permission_level}
+                            </span>
+                          )}
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                            v{prompt.version}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          更新时间: {new Date(prompt.updated_at).toLocaleString('zh-CN')}
+                        </p>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => router.push(`/admin/prompts-v2/${prompt.id}/edit`)}
+                          className="px-4 py-2 bg-white border-2 border-indigo-300 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-50 transition-all text-sm"
+                        >
+                          ✏️ 编辑
+                        </button>
+                        <button 
+                          onClick={() => router.push(`/admin/prompts-v2/${prompt.id}/versions`)}
+                          className="px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all text-sm"
+                        >
+                          📚 版本
+                        </button>
+                        <button 
+                          onClick={() => router.push(`/admin/prompts-v2/${prompt.id}/metrics`)}
+                          className="px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all text-sm"
+                        >
+                          📊 指标
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg p-4">
+                      <pre className="text-sm text-gray-700 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">
+{prompt.content.substring(0, 300)}{prompt.content.length > 300 && '...'}
+                      </pre>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* 编辑模态框 */}
       {showEditModal && editingLevel && (
