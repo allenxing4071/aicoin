@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 实时情报页面
+ * 实时情报页面 - 增强版（包含辩论系统）
  * 
  * 路径: /admin/intelligence/realtime
  * 
@@ -9,13 +9,13 @@
  * - 实时情报流
  * - AI分析结果
  * - 市场情绪
+ * - 多空辩论验证
  * - 风险和机会
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/app/components/common/PageHeader';
-import { unifiedDesignSystem, getThemeStyles } from '@/app/admin/unified-design-system';
-import { StatCardGrid, StatCard } from '@/app/components/common/Cards';
+import { getThemeStyles } from '@/app/admin/unified-design-system';
 
 interface IntelligenceReport {
   id: number;
@@ -30,29 +30,38 @@ interface IntelligenceReport {
   opportunities: string[];
   qwen_analysis: string;
   created_at: string;
-  // 新增：多平台验证字段
-  platform_contributions?: {
-    [platform: string]: {
-      confidence: number;
-      sentiment: string;
-    };
-  };
+  platform_contributions?: any;
   platform_consensus?: number;
-  verification_metadata?: {
-    platforms_used: number;
-    cross_validation: boolean;
-    consensus_threshold: number;
-  };
+  verification_metadata?: any;
   summary?: string;
+}
+
+interface DebatedReport {
+  original_intelligence: any;
+  debate_result: {
+    recommendation: string;
+    confidence: number;
+    reasoning: string;
+    bull_argument: string[];
+    bear_argument: string[];
+    consensus_level: number;
+    total_rounds: number;
+    duration_seconds: number;
+  };
+  enhanced_sentiment: string;
+  enhanced_confidence: number;
+  is_debated: boolean;
 }
 
 export default function RealtimeIntelligencePage() {
   const [reports, setReports] = useState<IntelligenceReport[]>([]);
   const [latestReport, setLatestReport] = useState<IntelligenceReport | null>(null);
+  const [debatedReport, setDebatedReport] = useState<DebatedReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [debating, setDebating] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [showDebateDetails, setShowDebateDetails] = useState(false);
   
-  // 使用统一的橙色主题
   const theme = getThemeStyles('orange');
 
   const fetchReports = useCallback(async () => {
@@ -74,32 +83,74 @@ export default function RealtimeIntelligencePage() {
     }
   }, []);
 
+  const fetchDebatedReport = useCallback(async () => {
+    try {
+      setDebating(true);
+      const res = await fetch('/api/v1/intelligence/debated-report');
+      const data = await res.json();
+      
+      if (data.success && data.data) {
+        setDebatedReport(data.data);
+        setShowDebateDetails(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch debated report:', error);
+      alert('获取辩论报告失败，请查看控制台日志');
+    } finally {
+      setDebating(false);
+    }
+  }, []);
+
+  const triggerDebate = useCallback(async () => {
+    if (!confirm('启动多空辩论将消耗 API 额度，是否继续？')) {
+      return;
+    }
+    
+    try {
+      setDebating(true);
+      const res = await fetch('/api/v1/intelligence/trigger-debate', {
+        method: 'POST'
+      });
+      const data = await res.json();
+      
+      if (data.success && data.data) {
+        setDebatedReport(data.data);
+        setShowDebateDetails(true);
+        alert('✅ 辩论完成！');
+      }
+    } catch (error) {
+      console.error('Failed to trigger debate:', error);
+      alert('启动辩论失败，请查看控制台日志');
+    } finally {
+      setDebating(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchReports();
+    fetchDebatedReport(); // 自动加载辩论后的报告
     
-    // 自动刷新
     let interval: NodeJS.Timeout;
     if (autoRefresh) {
       interval = setInterval(() => {
         fetchReports();
-      }, 30000); // 每30秒刷新
+      }, 30000);
     }
     
     return () => {
       if (interval) clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh]);
+  }, [autoRefresh, fetchReports, fetchDebatedReport]);
 
   const getSentimentColor = (sentiment: string) => {
-    if (sentiment === 'BULLISH') return 'bg-green-100 text-green-800 border-green-500';
-    if (sentiment === 'BEARISH') return 'bg-red-100 text-red-800 border-red-500';
+    if (sentiment === 'BULLISH' || sentiment === 'BUY') return 'bg-green-100 text-green-800 border-green-500';
+    if (sentiment === 'BEARISH' || sentiment === 'SELL') return 'bg-red-100 text-red-800 border-red-500';
     return 'bg-gray-100 text-gray-600 border-gray-500';
   };
 
   const getSentimentIcon = (sentiment: string) => {
-    if (sentiment === 'BULLISH') return '🚀';
-    if (sentiment === 'BEARISH') return '📉';
+    if (sentiment === 'BULLISH' || sentiment === 'BUY') return '🚀';
+    if (sentiment === 'BEARISH' || sentiment === 'SELL') return '📉';
     return '➖';
   };
 
@@ -121,8 +172,8 @@ export default function RealtimeIntelligencePage() {
     <div className="space-y-6">
       <PageHeader
         icon="⚡"
-        title="实时情报"
-        description="查看实时市场情报和AI分析结果"
+        title="Qwen情报中心（辩论增强版）"
+        description="经过多空辩论验证的高质量情报"
         color="orange"
       />
 
@@ -135,7 +186,14 @@ export default function RealtimeIntelligencePage() {
               disabled={loading}
               className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-400"
             >
-              {loading ? '刷新中...' : '🔄 手动刷新'}
+              {loading ? '刷新中...' : '🔄 刷新情报'}
+            </button>
+            <button
+              onClick={triggerDebate}
+              disabled={debating}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold"
+            >
+              {debating ? '辩论中...' : '⚔️ 启动辩论'}
             </button>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -153,13 +211,108 @@ export default function RealtimeIntelligencePage() {
         </div>
       </div>
 
-      {/* 最新情报概览 */}
+      {/* 辩论后的综合分析 */}
+      {debatedReport && (
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-lg p-6 border-2 border-purple-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-2xl font-bold text-purple-900 flex items-center gap-2">
+              ⚔️ 多空辩论综合判断
+              <span className="text-sm bg-purple-200 text-purple-800 px-3 py-1 rounded-full">
+                已验证
+              </span>
+            </h3>
+            <button
+              onClick={() => setShowDebateDetails(!showDebateDetails)}
+              className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+            >
+              {showDebateDetails ? '收起详情 ▲' : '展开详情 ▼'}
+            </button>
+          </div>
+
+          {/* 综合判断 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-lg p-4 shadow">
+              <div className="text-sm text-gray-600 mb-1">研究经理推荐</div>
+              <div className={`text-2xl font-bold ${getSentimentColor(debatedReport.debate_result.recommendation).split(' ')[1]}`}>
+                {getSentimentIcon(debatedReport.debate_result.recommendation)} {debatedReport.debate_result.recommendation}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <div className="text-sm text-gray-600 mb-1">辩论后置信度</div>
+              <div className={`text-2xl font-bold ${getConfidenceColor(debatedReport.debate_result.confidence)}`}>
+                {(debatedReport.debate_result.confidence * 100).toFixed(0)}%
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                原始: {(debatedReport.original_intelligence.confidence * 100).toFixed(0)}% 
+                → 提升 {((debatedReport.debate_result.confidence - debatedReport.original_intelligence.confidence) * 100).toFixed(0)}%
+              </div>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <div className="text-sm text-gray-600 mb-1">多空共识度</div>
+              <div className={`text-2xl font-bold ${getConfidenceColor(debatedReport.debate_result.consensus_level)}`}>
+                {(debatedReport.debate_result.consensus_level * 100).toFixed(0)}%
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {debatedReport.debate_result.total_rounds} 轮辩论 · {debatedReport.debate_result.duration_seconds}秒
+              </div>
+            </div>
+          </div>
+
+          {/* 研究经理分析 */}
+          <div className="bg-white rounded-lg p-4 shadow mb-4">
+            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <span className="text-xl">👔</span> 研究经理综合分析
+            </h4>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {debatedReport.debate_result.reasoning}
+            </p>
+          </div>
+
+          {/* 辩论详情（可折叠） */}
+          {showDebateDetails && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 多头观点 */}
+              <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
+                <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                  <span className="text-xl">🐂</span> 多头分析师观点
+                </h4>
+                <div className="space-y-2">
+                  {debatedReport.debate_result.bull_argument.map((arg, idx) => (
+                    <div key={idx} className="bg-white rounded p-3 text-sm text-gray-700">
+                      {arg}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 空头观点 */}
+              <div className="bg-red-50 rounded-lg p-4 border-2 border-red-200">
+                <h4 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
+                  <span className="text-xl">🐻</span> 空头分析师观点
+                </h4>
+                <div className="space-y-2">
+                  {debatedReport.debate_result.bear_argument.map((arg, idx) => (
+                    <div key={idx} className="bg-white rounded p-3 text-sm text-gray-700">
+                      {arg}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 原始 Qwen 情报 */}
       {latestReport && (
         <div className={`bg-white rounded-xl shadow p-6 border-l-4 ${getSentimentColor(latestReport.market_sentiment).split(' ')[2]}`}>
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {getSentimentIcon(latestReport.market_sentiment)} 最新市场情绪
+              <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                {getSentimentIcon(latestReport.market_sentiment)} Qwen 原始情报
+                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                  未经辩论
+                </span>
               </h3>
               <div className="flex items-center gap-4 flex-wrap">
                 <span className={`px-4 py-2 rounded-lg font-semibold ${getSentimentColor(latestReport.market_sentiment)}`}>
@@ -175,24 +328,6 @@ export default function RealtimeIntelligencePage() {
                     {(latestReport.confidence * 100).toFixed(0)}%
                   </span>
                 </span>
-                
-                {/* 新增：多平台验证徽章 */}
-                {latestReport.platform_contributions && (
-                  <>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
-                      🔄 {Object.keys(latestReport.platform_contributions).length}平台验证
-                    </span>
-                    {latestReport.platform_consensus !== undefined && (
-                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                        latestReport.platform_consensus >= 0.8 ? 'bg-green-100 text-green-800' :
-                        latestReport.platform_consensus >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        🎯 {(latestReport.platform_consensus * 100).toFixed(0)}%共识
-                      </span>
-                    )}
-                  </>
-                )}
               </div>
             </div>
             <span className="text-sm text-gray-500">
@@ -231,54 +366,6 @@ export default function RealtimeIntelligencePage() {
               </div>
             )}
           </div>
-
-          {/* 新增：平台验证详情（可折叠） */}
-          {latestReport.platform_contributions && (
-            <details className="mt-4 bg-blue-50 rounded-lg p-4">
-              <summary className="cursor-pointer text-sm font-semibold text-gray-900 hover:text-blue-600">
-                查看平台验证详情 ▼
-              </summary>
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-                {Object.entries(latestReport.platform_contributions).map(([platform, data]) => (
-                  <div key={platform} className="bg-white rounded-lg p-3 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-gray-900 capitalize">{platform}</span>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        data.sentiment === 'BULLISH' ? 'bg-green-100 text-green-800' :
-                        data.sentiment === 'BEARISH' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {data.sentiment}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">置信度:</span>
-                      <div className="flex-1">
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-blue-500"
-                            style={{ width: `${data.confidence * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                      <span className="text-xs font-medium text-blue-600">
-                        {(data.confidence * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {latestReport.verification_metadata && (
-                <div className="mt-3 flex items-center gap-4 text-xs text-gray-600">
-                  <span>✓ 使用 {latestReport.verification_metadata.platforms_used} 个平台</span>
-                  {latestReport.verification_metadata.cross_validation && (
-                    <span>✓ 交叉验证已启用</span>
-                  )}
-                  <span>✓ 共识阈值: {(latestReport.verification_metadata.consensus_threshold * 100).toFixed(0)}%</span>
-                </div>
-              )}
-            </details>
-          )}
 
           {/* 数据来源统计 */}
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">

@@ -415,3 +415,135 @@ async def get_data_quality_stats(
     except Exception as e:
         logger.error(f"获取数据质量统计失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/debated-report")
+async def get_debated_intelligence_report(db: AsyncSession = Depends(get_db)):
+    """
+    获取经过辩论验证的情报报告
+    
+    流程：
+    1. 获取最新的 Qwen 情报
+    2. 触发多空辩论系统（Bull vs Bear）
+    3. 研究经理综合判断
+    4. 返回辩论后的综合报告
+    """
+    try:
+        from app.services.decision.debate_system import DebateCoordinator
+        from app.services.decision.prompt_manager_db import PromptManagerDB
+        from app.core.redis_client import redis_client
+        import openai
+        from app.core.config import settings
+        
+        logger.info("🔄 开始生成辩论后的情报报告...")
+        
+        # 1. 获取最新的 Qwen 情报
+        report = await intelligence_storage.get_latest_report()
+        if not report:
+            raise HTTPException(status_code=404, detail="暂无最新情报报告")
+        
+        logger.info(f"📊 获取到 Qwen 情报: 情绪={report.market_sentiment}, 置信度={report.confidence:.2%}")
+        
+        # 2. 准备市场数据（简化版，用于辩论）
+        market_data = {
+            "BTC": {
+                "price": 95000,  # 可以从实际市场数据获取
+                "change_24h": 2.5
+            }
+        }
+        
+        # 3. 准备情报字典
+        intelligence_dict = {
+            "market_sentiment": report.market_sentiment.value if hasattr(report.market_sentiment, 'value') else str(report.market_sentiment),
+            "confidence": report.confidence,
+            "summary": report.summary[:500] if report.summary else "",
+            "key_news": report.key_news[:3] if report.key_news else [],
+            "whale_signals": report.whale_signals[:3] if report.whale_signals else [],
+            "platform_contributions": getattr(report, 'platform_contributions', {}),
+            "platform_consensus": getattr(report, 'platform_consensus', 0.0),
+        }
+        
+        # 4. 初始化辩论系统
+        llm_client = openai.OpenAI(
+            api_key=settings.DEEPSEEK_API_KEY,
+            base_url="https://api.deepseek.com/v1"
+        )
+        
+        prompt_manager = PromptManagerDB(db)
+        
+        debate_coordinator = DebateCoordinator(
+            llm_client=llm_client,
+            max_debate_rounds=1,  # 1轮辩论
+            timeout_seconds=60,
+            prompt_manager=prompt_manager
+        )
+        
+        # 5. 执行辩论
+        logger.info("⚔️  启动多空辩论...")
+        debate_result = await debate_coordinator.conduct_debate(
+            market_data=market_data,
+            intelligence_report=intelligence_dict,
+            past_memories=[]
+        )
+        
+        logger.info(f"✅ 辩论完成: 推荐={debate_result['final_decision'].get('recommendation')}, "
+                   f"共识度={debate_result['consensus_level']:.2f}")
+        
+        # 6. 构建返回数据
+        return {
+            "success": True,
+            "data": {
+                # 原始 Qwen 情报
+                "original_intelligence": {
+                    "market_sentiment": intelligence_dict["market_sentiment"],
+                    "confidence": intelligence_dict["confidence"],
+                    "summary": intelligence_dict["summary"],
+                    "key_news": intelligence_dict["key_news"],
+                    "whale_signals": intelligence_dict["whale_signals"],
+                    "timestamp": report.timestamp.isoformat() if report.timestamp else None
+                },
+                # 辩论结果
+                "debate_result": {
+                    "recommendation": debate_result['final_decision'].get('recommendation', 'HOLD'),
+                    "confidence": debate_result['final_decision'].get('confidence', 0.5),
+                    "reasoning": debate_result['final_decision'].get('reasoning', ''),
+                    "bull_argument": debate_result['debate_history'].get('bull_arguments', []),
+                    "bear_argument": debate_result['debate_history'].get('bear_arguments', []),
+                    "consensus_level": debate_result['consensus_level'],
+                    "total_rounds": debate_result['total_rounds'],
+                    "duration_seconds": debate_result['duration_seconds']
+                },
+                # 综合分析
+                "enhanced_sentiment": debate_result['final_decision'].get('recommendation', 'HOLD'),
+                "enhanced_confidence": debate_result['final_decision'].get('confidence', 0.5),
+                "is_debated": True
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"生成辩论后情报失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"辩论失败: {str(e)}")
+
+
+@router.post("/trigger-debate")
+async def trigger_debate_manually(db: AsyncSession = Depends(get_db)):
+    """
+    手动触发情报辩论
+    
+    用户可以点击按钮手动触发新一轮辩论
+    """
+    try:
+        # 复用 get_debated_intelligence_report 的逻辑
+        result = await get_debated_intelligence_report(db)
+        
+        return {
+            "success": True,
+            "message": "辩论已完成",
+            "data": result["data"]
+        }
+    
+    except Exception as e:
+        logger.error(f"手动触发辩论失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
