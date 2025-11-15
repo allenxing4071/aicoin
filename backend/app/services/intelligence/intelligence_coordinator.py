@@ -60,6 +60,10 @@ class IntelligenceCoordinator:
         self.use_multi_platform = getattr(settings, 'INTELLIGENCE_USE_MULTI_PLATFORM', True)
         self.use_storage_layers = getattr(settings, 'INTELLIGENCE_USE_STORAGE_LAYERS', True)
         
+        # 异步任务追踪
+        self._storage_tasks: list = []
+        self._task_lock = asyncio.Lock()
+        
         # 初始化四层存储
         try:
             self.l1_cache = ShortTermIntelligenceCache(redis_client)
@@ -122,9 +126,13 @@ class IntelligenceCoordinator:
             duration = time.time() - start_time
             logger.info(f"✅ 情报收集完成，耗时: {duration:.2f}秒")
             
-            # 存储到四层架构（异步，不阻塞）
+            # 存储到四层架构（异步，带追踪和错误处理）
             if self.use_storage_layers and report:
-                asyncio.create_task(self._store_to_layers(report))
+                task = asyncio.create_task(self._store_to_layers_with_tracking(report))
+                async with self._task_lock:
+                    self._storage_tasks.append(task)
+                    # 清理已完成的任务
+                    self._storage_tasks = [t for t in self._storage_tasks if not t.done()]
             
             return report
             
@@ -255,6 +263,55 @@ class IntelligenceCoordinator:
         except Exception as e:
             logger.error(f"❌ 存储到四层架构失败: {e}", exc_info=True)
     
+    async def _store_to_layers_with_tracking(self, report: IntelligenceReport):
+        """
+        存储到四层架构（带错误追踪和重试）
+        
+        Args:
+            report: 情报报告
+        """
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                await self._store_to_layers(report)
+                logger.info(f"✅ 四层存储成功")
+                return
+            except Exception as e:
+                retry_count += 1
+                logger.error(f"❌ 四层存储失败 (尝试 {retry_count}/{max_retries}): {e}")
+                if retry_count < max_retries:
+                    await asyncio.sleep(2 ** retry_count)  # 指数退避
+                else:
+                    logger.error(f"❌ 四层存储最终失败，已重试{max_retries}次")
+    
+    async def wait_for_storage_tasks(self, timeout: float = 30.0):
+        """
+        等待所有存储任务完成
+        
+        Args:
+            timeout: 超时时间（秒）
+        """
+        if not self._storage_tasks:
+            return
+        
+        try:
+            async with self._task_lock:
+                tasks = [t for t in self._storage_tasks if not t.done()]
+            
+            if tasks:
+                logger.info(f"⏳ 等待 {len(tasks)} 个存储任务完成...")
+                await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=timeout
+                )
+                logger.info(f"✅ 所有存储任务已完成")
+        except asyncio.TimeoutError:
+            logger.warning(f"⚠️ 存储任务等待超时 ({timeout}秒)")
+        except Exception as e:
+            logger.error(f"❌ 等待存储任务失败: {e}")
+
     async def _trigger_l2_analysis(self):
         """触发L2中期分析"""
         try:

@@ -16,6 +16,54 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def format_intelligence_with_verification(intelligence_report: Dict) -> str:
+    """
+    格式化情报报告，突出显示多平台验证信息（公共函数）
+    
+    Args:
+        intelligence_report: 情报报告字典
+        
+    Returns:
+        格式化的情报字符串
+    """
+    if not intelligence_report:
+        return "Intelligence Report: No data available"
+    
+    output = "Intelligence Report (Multi-Platform Verified):\n"
+    output += f"  Market Sentiment: {intelligence_report.get('market_sentiment', 'NEUTRAL')}\n"
+    output += f"  Confidence: {intelligence_report.get('confidence', 0):.2f}\n"
+    
+    # 显示多平台验证信息
+    platform_contributions = intelligence_report.get('platform_contributions', {})
+    if platform_contributions:
+        output += f"\n  📊 Multi-Platform Verification ({len(platform_contributions)} platforms):\n"
+        for platform, contrib in platform_contributions.items():
+            output += f"    - {platform}: {contrib.get('weight', 0):.1%} weight\n"
+        
+        # 显示共识度
+        platform_consensus = intelligence_report.get('platform_consensus', 0)
+        output += f"  🎯 Platform Consensus: {platform_consensus:.1%}\n"
+    
+    # 显示关键信息
+    key_news = intelligence_report.get('key_news', [])
+    if key_news:
+        output += f"\n  📰 Key News ({len(key_news)}):\n"
+        for news in key_news[:3]:
+            output += f"    - {news.get('title', 'N/A')}\n"
+    
+    # 显示风险因素
+    risk_factors = intelligence_report.get('risk_factors', [])
+    if risk_factors:
+        output += f"\n  ⚠️  Risk Factors: {', '.join(risk_factors[:3])}\n"
+    
+    # 显示机会
+    opportunities = intelligence_report.get('opportunities', [])
+    if opportunities:
+        output += f"\n  💡 Opportunities: {', '.join(opportunities[:3])}\n"
+    
+    return output
+
+
 class DebateState:
     """
     辩论状态管理
@@ -151,7 +199,7 @@ Use this information to deliver a compelling bull argument, refute the bear's co
         
         # 拼接动态数据（借鉴NOFX的buildUserPrompt）
         # 增强：展示多平台验证信息
-        intelligence_summary = self._format_intelligence_with_verification(intelligence_report)
+        intelligence_summary = format_intelligence_with_verification(intelligence_report)
         
         prompt = f"""{base_prompt}
 
@@ -302,7 +350,7 @@ Use this information to deliver a compelling bear argument, refute the bull's cl
         
         # 拼接动态数据
         # 增强：展示多平台验证信息
-        intelligence_summary = self._format_intelligence_with_verification(intelligence_report)
+        intelligence_summary = format_intelligence_with_verification(intelligence_report)
         
         prompt = f"""{base_prompt}
 
@@ -451,7 +499,7 @@ Take into account your past mistakes on similar situations. Use these insights t
         
         # 拼接动态数据
         # 增强：展示多平台验证信息
-        intelligence_summary = self._format_intelligence_with_verification(intelligence_report)
+        intelligence_summary = format_intelligence_with_verification(intelligence_report)
         
         prompt = f"""{base_prompt}
 

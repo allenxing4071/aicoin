@@ -305,8 +305,15 @@ class CloudPlatformCoordinator:
         
         logger.info(f"📡 同时调用 {len(tasks)} 个平台: {', '.join(platform_names)}")
         
-        # 使用asyncio.gather并行执行，return_exceptions=True避免一个失败影响其他
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # 使用asyncio.gather并行执行，带超时控制
+        try:
+            results = await asyncio.wait_for(
+                asyncio.gather(*tasks, return_exceptions=True),
+                timeout=30.0  # 30秒超时
+            )
+        except asyncio.TimeoutError:
+            logger.error("❌ 多平台调用超时（30秒）")
+            return {}
         
         # 收集成功的结果
         successful_results = {}

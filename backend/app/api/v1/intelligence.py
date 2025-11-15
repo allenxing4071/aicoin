@@ -37,28 +37,30 @@ async def get_latest_intelligence():
 
 
 @router.post("/refresh")
-async def refresh_intelligence():
-    """手动触发情报收集"""
+async def refresh_intelligence(db: AsyncSession = Depends(get_db)):
+    """手动触发情报收集（使用新的IntelligenceCoordinator）"""
     try:
-        # 导入并调用情报收集服务
-        from app.services.intelligence.qwen_engine import qwen_intelligence_engine
+        # 使用新的统一协调器
+        from app.services.intelligence.intelligence_coordinator import IntelligenceCoordinator
+        from app.core.redis_client import redis_client
         
-        logger.info("🔄 手动触发情报收集...")
+        logger.info("🔄 手动触发情报收集（使用IntelligenceCoordinator）...")
         
-        # 执行情报收集
-        report = await qwen_intelligence_engine.collect_intelligence()
+        # 创建协调器并执行收集
+        coordinator = IntelligenceCoordinator(redis_client, db)
+        report = await coordinator.collect_intelligence()
         
         if not report:
             raise HTTPException(status_code=500, detail="情报收集失败，请检查日志")
         
         return {
             "success": True,
-            "message": "情报收集成功",
+            "message": "情报收集成功（多平台验证+四层存储）",
             "data": report.to_dict()
         }
     
     except Exception as e:
-        logger.error(f"手动收集情报失败: {e}")
+        logger.error(f"手动收集情报失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
