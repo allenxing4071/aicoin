@@ -96,7 +96,12 @@ export default function PermissionsAdmin() {
   const fetchLevels = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE}/admin/permissions/levels`);
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.get(`${API_BASE}/admin/permissions/levels`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       setLevels(response.data);
       setError(null);
     } catch (err: any) {
@@ -137,8 +142,13 @@ export default function PermissionsAdmin() {
         intelligence: 'intelligence_prompt_id'
       };
       
+      const token = localStorage.getItem('admin_token');
       const response = await axios.put(`${API_BASE}/admin/permissions/levels/${levelId}`, {
         [fieldMap[promptType]]: promptId
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (response.status === 200) {

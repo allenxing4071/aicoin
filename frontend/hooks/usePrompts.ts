@@ -72,7 +72,12 @@ export function usePrompts(options: UsePromptsOptions = {}): UsePromptsResult {
 
       if (params.toString()) url += `?${params.toString()}`;
 
-      const response = await fetch(url);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
