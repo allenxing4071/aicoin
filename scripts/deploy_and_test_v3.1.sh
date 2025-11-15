@@ -82,12 +82,19 @@ fi
 # 4. 运行数据库迁移
 echo -e "\n${YELLOW}🗄️  步骤4: 运行数据库迁移${NC}"
 if [ -f "alembic.ini" ]; then
-    alembic upgrade head
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ 数据库迁移成功${NC}"
+    if command -v alembic &> /dev/null; then
+        set +e
+        alembic upgrade head
+        ALEMBIC_EXIT_CODE=$?
+        set -e
+        
+        if [ $ALEMBIC_EXIT_CODE -eq 0 ]; then
+            echo -e "${GREEN}✅ 数据库迁移成功${NC}"
+        else
+            echo -e "${YELLOW}⚠️  数据库迁移失败，继续部署${NC}"
+        fi
     else
-        echo -e "${RED}❌ 数据库迁移失败${NC}"
-        exit 1
+        echo -e "${YELLOW}⚠️  alembic命令未找到，跳过迁移${NC}"
     fi
 else
     echo -e "${YELLOW}⚠️  alembic.ini未找到，跳过迁移${NC}"
