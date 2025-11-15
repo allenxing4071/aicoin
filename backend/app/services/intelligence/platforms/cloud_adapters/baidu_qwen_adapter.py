@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from app.utils.timezone import get_beijing_time
 import logging
 import httpx
 from ..base_adapter import BasePlatformAdapter, PlatformRole
@@ -105,7 +106,7 @@ class BaiduQwenAdapter(BasePlatformAdapter):
             key_findings = self._extract_key_findings(analysis_text)
             
             # 记录成功调用
-            response_time = (datetime.now() - start_time).total_seconds() * 1000
+            response_time = (get_beijing_time() - start_time).total_seconds() * 1000
             await self._record_call(success=True, cost=0.0, response_time=response_time)
             
             result = {
@@ -116,7 +117,7 @@ class BaiduQwenAdapter(BasePlatformAdapter):
                 "key_findings": key_findings,
                 "search_sources": search_sources,
                 "search_query": search_query,
-                "timestamp": datetime.now(),
+                "timestamp": get_beijing_time(),
                 "cost": 0.0
             }
             
@@ -125,7 +126,7 @@ class BaiduQwenAdapter(BasePlatformAdapter):
             
         except Exception as e:
             logger.error(f"❌ 百度智能云搜索失败: {e}", exc_info=True)
-            response_time = (datetime.now() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
+            response_time = (get_beijing_time() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
             await self._record_call(success=False, cost=0.0, response_time=response_time)
             
             return {
@@ -134,7 +135,7 @@ class BaiduQwenAdapter(BasePlatformAdapter):
                 "analysis": "百度智能云实时搜索暂时不可用",
                 "confidence": 0.0,
                 "key_findings": [],
-                "timestamp": datetime.now(),
+                "timestamp": get_beijing_time(),
                 "cost": 0.0,
                 "error": str(e)
             }
@@ -198,7 +199,7 @@ class BaiduQwenAdapter(BasePlatformAdapter):
             return False
         
         try:
-            start_time = datetime.now()
+            start_time = get_beijing_time()
             response = await self.client.post(
                 f"{self.base_url}/chat/completions",
                 json={

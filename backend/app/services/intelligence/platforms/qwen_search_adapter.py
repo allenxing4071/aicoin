@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from app.utils.timezone import get_beijing_time
 import logging
 import openai
 from .base_adapter import BasePlatformAdapter, PlatformRole
@@ -112,7 +113,7 @@ class QwenSearchAdapter(BasePlatformAdapter):
                 "confidence": 0.85,  # 实时搜索置信度较高
                 "key_findings": key_findings,
                 "search_query": search_query,
-                "timestamp": datetime.now(),
+                "timestamp": get_beijing_time(),
                 "cost": cost,
                 "tokens_used": {
                     "prompt": usage.prompt_tokens if usage else 0,
@@ -126,7 +127,7 @@ class QwenSearchAdapter(BasePlatformAdapter):
             
         except Exception as e:
             logger.error(f"❌ Qwen搜索失败: {e}", exc_info=True)
-            response_time = (datetime.now() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
+            response_time = (get_beijing_time() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
             await self._record_call(success=False, cost=0.0, response_time=response_time)
             
             return {
@@ -135,7 +136,7 @@ class QwenSearchAdapter(BasePlatformAdapter):
                 "analysis": "实时搜索暂时不可用",
                 "confidence": 0.0,
                 "key_findings": [],
-                "timestamp": datetime.now(),
+                "timestamp": get_beijing_time(),
                 "cost": 0.0,
                 "error": str(e)
             }
@@ -220,7 +221,7 @@ class QwenSearchAdapter(BasePlatformAdapter):
             return False
         
         try:
-            start_time = datetime.now()
+            start_time = get_beijing_time()
             # 简单的ping测试
             response = await self.client.chat.completions.create(
                 model=self.model,

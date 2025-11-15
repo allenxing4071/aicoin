@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from app.utils.timezone import get_beijing_time
 import logging
 from .base_adapter import BasePlatformAdapter, PlatformRole
 
@@ -95,7 +96,7 @@ class FreePlatformAdapter(BasePlatformAdapter):
                 key_findings.append(f"市场情绪偏向: {market_sentiment}")
             
             # 记录成功调用
-            response_time = (datetime.now() - start_time).total_seconds() * 1000
+            response_time = (get_beijing_time() - start_time).total_seconds() * 1000
             await self._record_call(success=True, cost=0.0, response_time=response_time)
             
             result = {
@@ -109,7 +110,7 @@ class FreePlatformAdapter(BasePlatformAdapter):
                     "significant_whales": [self._serialize_whale(w) for w in significant_whales],
                     "market_sentiment": market_sentiment
                 },
-                "timestamp": datetime.now(),
+                "timestamp": get_beijing_time(),
                 "cost": 0.0
             }
             
@@ -118,7 +119,7 @@ class FreePlatformAdapter(BasePlatformAdapter):
             
         except Exception as e:
             logger.error(f"❌ 免费平台分析失败: {e}", exc_info=True)
-            response_time = (datetime.now() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
+            response_time = (get_beijing_time() - start_time).total_seconds() * 1000 if "start_time" in locals() else 0.0
             await self._record_call(success=False, cost=0.0, response_time=response_time)
             
             return {
@@ -127,7 +128,7 @@ class FreePlatformAdapter(BasePlatformAdapter):
                 "analysis": "基础筛选暂时不可用",
                 "confidence": 0.0,
                 "key_findings": [],
-                "timestamp": datetime.now(),
+                "timestamp": get_beijing_time(),
                 "cost": 0.0,
                 "error": str(e)
             }

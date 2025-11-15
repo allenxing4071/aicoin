@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import aiohttp
 from .models import NewsItem, WhaleActivity, OnChainMetrics
 from app.core.config import settings
+from app.utils.timezone import get_beijing_time
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class CryptoNewsAPI:
                                 
                                 for entry in feed.entries[:5]:  # 每个源取5条
                                     # 解析发布时间
-                                    published_at = datetime.now()
+                                    published_at = get_beijing_time()
                                     if hasattr(entry, 'published_parsed') and entry.published_parsed:
                                         published_at = datetime(*entry.published_parsed[:6])
                                     
@@ -119,7 +120,7 @@ class CryptoNewsAPI:
                     "title": "Bitcoin突破10万美元大关，机构买盘强劲",
                     "source": "CoinDesk",
                     "url": "https://coindesk.com/btc-100k",
-                    "published_at": datetime.now() - timedelta(hours=2),
+                    "published_at": get_beijing_time() - timedelta(hours=2),
                     "content": "比特币价格突破历史新高，主要由机构投资者推动...",
                     "impact": "high",
                     "sentiment": "bullish"
@@ -128,7 +129,7 @@ class CryptoNewsAPI:
                     "title": "以太坊Layer2活跃度创新高",
                     "source": "Decrypt",
                     "url": "https://decrypt.co/eth-l2",
-                    "published_at": datetime.now() - timedelta(hours=5),
+                    "published_at": get_beijing_time() - timedelta(hours=5),
                     "content": "Arbitrum和Optimism交易量激增...",
                     "impact": "medium",
                     "sentiment": "bullish"
@@ -137,8 +138,8 @@ class CryptoNewsAPI:
                     "title": "美联储会议纪要：加息周期可能接近尾声",
                     "source": "Reuters",
                     "url": "https://reuters.com/fed",
-                    "published_at": datetime.now() - timedelta(hours=8),
-                    "content": "联储官员暗示可能暂停加息...",
+                    "published_at": get_beijing_time() - timedelta(hours=8),
+                    "content": "联储官员暂示可能暂停加息...",
                     "impact": "high",
                     "sentiment": "neutral"
                 }
@@ -181,7 +182,7 @@ class OnChainDataAPI:
                     "action": "buy",
                     "amount_usd": 15_000_000,
                     "address": "bc1q...xyz",
-                    "timestamp": datetime.now() - timedelta(hours=1),
+                    "timestamp": get_beijing_time() - timedelta(hours=1),
                     "exchange": "Binance"
                 },
                 {
@@ -189,7 +190,7 @@ class OnChainDataAPI:
                     "action": "transfer",
                     "amount_usd": 8_000_000,
                     "address": "0x...abc",
-                    "timestamp": datetime.now() - timedelta(hours=3),
+                    "timestamp": get_beijing_time() - timedelta(hours=3),
                     "exchange": None
                 },
                 {
@@ -197,7 +198,7 @@ class OnChainDataAPI:
                     "action": "sell",
                     "amount_usd": 2_500_000,
                     "address": "Sol...def",
-                    "timestamp": datetime.now() - timedelta(hours=6),
+                    "timestamp": get_beijing_time() - timedelta(hours=6),
                     "exchange": "Coinbase"
                 }
         ]
@@ -229,7 +230,7 @@ class OnChainDataAPI:
                 active_addresses=1_250_000,
                 gas_price=25.5,  # Gwei
                 transaction_volume=5_000_000_000,  # $5B
-                timestamp=datetime.now()
+                timestamp=get_beijing_time()
             )
             
             logger.info(f"📊 获取链上指标成功")
@@ -243,7 +244,7 @@ class OnChainDataAPI:
                 active_addresses=0,
                 gas_price=0,
                 transaction_volume=0,
-                timestamp=datetime.now()
+                timestamp=get_beijing_time()
             )
 
 

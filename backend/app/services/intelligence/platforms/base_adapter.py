@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import logging
+from app.utils.timezone import get_beijing_time
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +155,7 @@ class BasePlatformAdapter(ABC):
         else:
             self.failure_count += 1
         self.total_cost += cost
-        self.last_call_time = datetime.now()
+        self.last_call_time = get_beijing_time()
         
         # 2. 实时同步到数据库（intelligence_platforms 表）
         if self.provider and self.provider != 'unknown':
@@ -179,7 +180,7 @@ class BasePlatformAdapter(ABC):
             async with AsyncSessionLocal() as db:
                 usage_log = AIModelUsageLog(
                     model_name=f"{self.provider}_{self.platform_type}" if hasattr(self, 'platform_type') else self.provider,
-                    decision_id=f"{self.provider}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                    decision_id=f"{self.provider}_{get_beijing_time().strftime('%Y%m%d_%H%M%S_%f')}",
                     prompt_tokens=input_tokens,
                     completion_tokens=output_tokens,
                     cost=cost,
@@ -187,7 +188,7 @@ class BasePlatformAdapter(ABC):
                     success=success,
                     error_message=None if success else "调用失败",
                     purpose="intelligence",
-                    timestamp=datetime.utcnow()
+                    timestamp=get_beijing_time()
                 )
                 db.add(usage_log)
                 await db.commit()
