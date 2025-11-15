@@ -483,10 +483,27 @@ class HyperliquidMarketData:
             if self.info:
                 price_data = await self._fetch_latest_price(symbol)
                 if price_data:
+                    current_price = price_data.get('price', 0)
+                    
+                    # 计算 24 小时涨跌幅
+                    change_24h = '0.0'
+                    try:
+                        # 获取 24 小时 K 线数据
+                        klines = await self.get_klines(symbol, '1h', 24)
+                        if klines and len(klines) > 0:
+                            # 第一根 K 线的开盘价作为 24 小时前的价格
+                            price_24h_ago = klines[0].get('open', 0)
+                            if price_24h_ago > 0:
+                                change_pct = ((current_price - price_24h_ago) / price_24h_ago) * 100
+                                change_24h = f"{change_pct:.2f}"
+                                logger.info(f"✅ {symbol}: 24h前={price_24h_ago}, 当前={current_price}, 涨跌幅={change_24h}%")
+                    except Exception as e:
+                        logger.warning(f"⚠️ 计算 {symbol} 24h涨跌幅失败: {e}")
+                    
                     return {
                         'symbol': symbol,
-                        'price': str(price_data.get('price', 0)),
-                        'change_24h': '0.0',
+                        'price': str(current_price),
+                        'change_24h': change_24h,
                         'timestamp': price_data.get('timestamp', datetime.now().isoformat())
                     }
             
