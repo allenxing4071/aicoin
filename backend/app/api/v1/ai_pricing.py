@@ -131,18 +131,14 @@ async def calculate_cost(request: CostCalculationRequest):
 @router.post("/update-price")
 async def update_price(
     request: PriceUpdateRequest,
-    current_user: Dict = Depends(get_current_user)
+    current_user: str = Depends(get_current_user)
 ):
     """
-    更新模型价格（需要管理员权限）
+    更新模型价格（需要登录）
     
     用于手动校准价格表
     """
     try:
-        # 检查权限
-        if current_user.get("role") not in ["super_admin", "admin"]:
-            raise HTTPException(status_code=403, detail="需要管理员权限")
-        
         pricing_manager = get_pricing_manager()
         
         success = pricing_manager.update_price(
@@ -159,7 +155,7 @@ async def update_price(
         updated_info = pricing_manager.get_model_info(request.provider, request.model)
         
         logger.info(
-            f"✅ 价格已更新: {request.provider}/{request.model} by {current_user.get('username')}"
+            f"✅ 价格已更新: {request.provider}/{request.model} by {current_user}"
         )
         
         return {
@@ -177,23 +173,19 @@ async def update_price(
 
 @router.post("/sync-official")
 async def sync_official_pricing(
-    current_user: Dict = Depends(get_current_user)
+    current_user: str = Depends(get_current_user)
 ):
     """
-    同步官方价格（需要管理员权限）
+    同步官方价格（需要登录）
     
     从各平台官方API或文档同步最新价格
     """
     try:
-        # 检查权限
-        if current_user.get("role") not in ["super_admin", "admin"]:
-            raise HTTPException(status_code=403, detail="需要管理员权限")
-        
         pricing_manager = get_pricing_manager()
         
         # 重新加载价格配置（从配置文件或官方源）
         # 这里简单地重新初始化定价管理器
-        logger.info(f"🔄 同步官方价格 by {current_user.get('username')}")
+        logger.info(f"🔄 同步官方价格 by {current_user}")
         
         # 获取最新价格表
         pricing_data = pricing_manager.get_all_pricing()
