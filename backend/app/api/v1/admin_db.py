@@ -102,7 +102,7 @@ def verify_token(token: str) -> Optional[str]:
     except jwt.ExpiredSignatureError:
         logger.warning("Token has expired")
         return None
-    except jwt.JWTError as e:
+    except Exception as e:
         logger.warning(f"Token validation failed: {e}")
         return None
 
