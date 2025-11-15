@@ -168,20 +168,34 @@ class IntelligenceMonitor:
     async def _check_l4_health(self) -> Dict[str, Any]:
         """检查L4向量库健康"""
         try:
-            from .storage_layers import IntelligenceVectorKB
+            from qdrant_client import QdrantClient
             from app.core.config import settings
             
-            l4_vector = IntelligenceVectorKB(
-                qdrant_host=settings.QDRANT_HOST,
-                qdrant_port=settings.QDRANT_PORT
+            # 直接使用QdrantClient检查，避免重复创建collection
+            client = QdrantClient(
+                host=settings.QDRANT_HOST,
+                port=settings.QDRANT_PORT
             )
             
-            # 简单检查：尝试搜索
-            # 这里只做基本检查
+            # 检查collection是否存在
+            collection_name = "intelligence_knowledge"
+            collections = client.get_collections().collections
+            collection_exists = any(c.name == collection_name for c in collections)
+            
+            if not collection_exists:
+                return {
+                    "status": "unhealthy",
+                    "error": f"Collection '{collection_name}' does not exist"
+                }
+            
+            # 获取collection信息
+            collection_info = client.get_collection(collection_name)
             
             return {
                 "status": "healthy",
-                "note": "Basic health check passed"
+                "collection": collection_name,
+                "vectors_count": collection_info.vectors_count,
+                "points_count": collection_info.points_count
             }
         except Exception as e:
             logger.error(f"L4健康检查失败: {e}")
