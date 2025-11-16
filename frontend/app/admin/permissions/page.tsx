@@ -88,9 +88,18 @@ function ABTestsSection() {
   const router = useRouter();
   const [tests, setTests] = useState<ABTest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [createForm, setCreateForm] = useState({
+    test_name: '',
+    prompt_a_id: '',
+    prompt_b_id: '',
+    duration_days: 7
+  });
 
   useEffect(() => {
     fetchTests();
+    fetchTemplates();
   }, []);
 
   const fetchTests = async () => {
@@ -115,6 +124,69 @@ function ABTestsSection() {
       setTests([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/v1/prompts/v2', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('获取模板失败');
+      }
+
+      const data = await response.json();
+      setTemplates(data);
+    } catch (error) {
+      console.error('获取模板列表失败:', error);
+      setTemplates([]);
+    }
+  };
+
+  const handleCreateTest = async () => {
+    if (!createForm.test_name || !createForm.prompt_a_id || !createForm.prompt_b_id) {
+      alert('请填写所有必填字段');
+      return;
+    }
+
+    if (createForm.prompt_a_id === createForm.prompt_b_id) {
+      alert('A组和B组不能选择相同的模板');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/v1/prompts/v2/ab-tests', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          test_name: createForm.test_name,
+          prompt_a_id: parseInt(createForm.prompt_a_id),
+          prompt_b_id: parseInt(createForm.prompt_b_id),
+          duration_days: createForm.duration_days
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || '创建失败');
+      }
+
+      alert('✅ A/B 测试创建成功');
+      setShowCreateModal(false);
+      setCreateForm({ test_name: '', prompt_a_id: '', prompt_b_id: '', duration_days: 7 });
+      fetchTests();
+    } catch (error: any) {
+      console.error('创建A/B测试失败:', error);
+      alert(`❌ 创建失败: ${error.message}`);
     }
   };
 
@@ -158,7 +230,7 @@ function ABTestsSection() {
             <p className="text-gray-600">科学验证 Prompt 优化效果，确保统计显著性</p>
           </div>
           <button
-            onClick={() => router.push('/admin/prompts-v2/ab-tests/create')}
+            onClick={() => setShowCreateModal(true)}
             className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg"
           >
             ➕ 创建测试
@@ -173,7 +245,7 @@ function ABTestsSection() {
           <h3 className="text-xl font-semibold text-gray-900 mb-2">暂无 A/B 测试</h3>
           <p className="text-gray-600 mb-4">点击上方"创建测试"按钮开始您的第一个 A/B 测试</p>
           <button
-            onClick={() => router.push('/admin/prompts-v2/ab-tests/create')}
+            onClick={() => setShowCreateModal(true)}
             className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all"
           >
             ➕ 创建测试
@@ -236,6 +308,88 @@ function ABTestsSection() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 创建测试弹窗 */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h2 className="text-2xl font-bold mb-4">创建 A/B 测试</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">测试名称 *</label>
+                <input
+                  type="text"
+                  value={createForm.test_name}
+                  onChange={(e) => setCreateForm({ ...createForm, test_name: e.target.value })}
+                  placeholder="例如: 保守型 vs 激进型决策"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">A组模板（对照组）*</label>
+                <select
+                  value={createForm.prompt_a_id}
+                  onChange={(e) => setCreateForm({ ...createForm, prompt_a_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">请选择模板</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} (v{template.current_version})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">B组模板（实验组）*</label>
+                <select
+                  value={createForm.prompt_b_id}
+                  onChange={(e) => setCreateForm({ ...createForm, prompt_b_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">请选择模板</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} (v{template.current_version})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">测试持续天数</label>
+                <input
+                  type="number"
+                  value={createForm.duration_days}
+                  onChange={(e) => setCreateForm({ ...createForm, duration_days: parseInt(e.target.value) })}
+                  min="1"
+                  max="30"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">建议至少运行7天以获取足够的样本量</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCreateTest}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all"
+              >
+                创建测试
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
