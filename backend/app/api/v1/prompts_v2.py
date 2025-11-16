@@ -103,6 +103,136 @@ async def list_prompts(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ===== A/B测试 API（必须在 /{template_id} 之前定义）=====
+
+@router.get("/ab-tests")
+async def list_ab_tests(
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _: Dict = Depends(verify_admin_token)
+):
+    """获取A/B测试列表"""
+    try:
+        query = select(PromptABTest).order_by(desc(PromptABTest.start_time))
+        
+        if status:
+            query = query.where(PromptABTest.status == status)
+        
+        result = await db.execute(query)
+        tests = result.scalars().all()
+        
+        return [{
+            "id": test.id,
+            "test_name": test.test_name,
+            "status": test.status,
+            "prompt_a_id": test.prompt_a_id,
+            "prompt_b_id": test.prompt_b_id,
+            "a_stats": {
+                "total_decisions": test.a_total_decisions,
+                "win_rate": float(test.a_win_rate) if test.a_win_rate else 0.0,
+                "total_pnl": float(test.a_total_pnl) if test.a_total_pnl else 0.0
+            },
+            "b_stats": {
+                "total_decisions": test.b_total_decisions,
+                "win_rate": float(test.b_win_rate) if test.b_win_rate else 0.0,
+                "total_pnl": float(test.b_total_pnl) if test.b_total_pnl else 0.0
+            },
+            "p_value": float(test.p_value) if test.p_value else None,
+            "is_significant": test.is_significant,
+            "winner": test.winner
+        } for test in tests]
+    
+    except Exception as e:
+        logger.error(f"获取A/B测试列表失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ab-tests", status_code=201)
+async def create_ab_test(
+    data: ABTestCreate,
+    db: AsyncSession = Depends(get_db),
+    user: Dict = Depends(verify_admin_token)
+):
+    """创建A/B测试"""
+    try:
+        ab_framework = PromptABTestFramework(db)
+        test = await ab_framework.create_ab_test(
+            test_name=data.test_name,
+            prompt_a_id=data.prompt_a_id,
+            prompt_b_id=data.prompt_b_id,
+            traffic_split=data.traffic_split,
+            duration_days=data.duration_days,
+            created_by=user.get("id")
+        )
+        
+        return {
+            "id": test.id,
+            "test_name": test.test_name,
+            "status": test.status,
+            "start_time": test.start_time
+        }
+    
+    except Exception as e:
+        logger.error(f"创建A/B测试失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ab-tests/{test_id}")
+async def get_ab_test(
+    test_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: Dict = Depends(verify_admin_token)
+):
+    """获取A/B测试结果"""
+    test = await db.get(PromptABTest, test_id)
+    if not test:
+        raise HTTPException(status_code=404, detail="测试不存在")
+    
+    return {
+        "id": test.id,
+        "test_name": test.test_name,
+        "status": test.status,
+        "prompt_a_id": test.prompt_a_id,
+        "prompt_b_id": test.prompt_b_id,
+        "a_stats": {
+            "total_decisions": test.a_total_decisions,
+            "win_rate": float(test.a_win_rate) if test.a_win_rate else 0,
+            "total_pnl": float(test.a_total_pnl) if test.a_total_pnl else 0
+        },
+        "b_stats": {
+            "total_decisions": test.b_total_decisions,
+            "win_rate": float(test.b_win_rate) if test.b_win_rate else 0,
+            "total_pnl": float(test.b_total_pnl) if test.b_total_pnl else 0
+        },
+        "p_value": float(test.p_value) if test.p_value else None,
+        "is_significant": test.is_significant,
+        "winner": test.winner,
+        "conclusion": test.conclusion
+    }
+
+
+@router.post("/ab-tests/{test_id}/stop")
+async def stop_ab_test(
+    test_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: Dict = Depends(verify_admin_token)
+):
+    """停止A/B测试"""
+    try:
+        ab_framework = PromptABTestFramework(db)
+        test = await ab_framework.stop_test(test_id)
+        
+        return {
+            "success": True,
+            "winner": test.winner,
+            "conclusion": test.conclusion
+        }
+    
+    except Exception as e:
+        logger.error(f"停止A/B测试失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{template_id}", response_model=PromptTemplateInfo)
 async def get_prompt(
     template_id: int,
@@ -803,135 +933,5 @@ async def get_risk_metrics(
     
     except Exception as e:
         logger.error(f"获取风险指标失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ===== A/B测试 API =====
-
-@router.get("/ab-tests")
-async def list_ab_tests(
-    status: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(verify_admin_token)
-):
-    """获取A/B测试列表"""
-    try:
-        query = select(PromptABTest).order_by(desc(PromptABTest.start_time))
-        
-        if status:
-            query = query.where(PromptABTest.status == status)
-        
-        result = await db.execute(query)
-        tests = result.scalars().all()
-        
-        return [{
-            "id": test.id,
-            "test_name": test.test_name,
-            "status": test.status,
-            "prompt_a_id": test.prompt_a_id,
-            "prompt_b_id": test.prompt_b_id,
-            "a_stats": {
-                "total_decisions": test.a_total_decisions,
-                "win_rate": float(test.a_win_rate) if test.a_win_rate else 0.0,
-                "total_pnl": float(test.a_total_pnl) if test.a_total_pnl else 0.0
-            },
-            "b_stats": {
-                "total_decisions": test.b_total_decisions,
-                "win_rate": float(test.b_win_rate) if test.b_win_rate else 0.0,
-                "total_pnl": float(test.b_total_pnl) if test.b_total_pnl else 0.0
-            },
-            "p_value": float(test.p_value) if test.p_value else None,
-            "is_significant": test.is_significant,
-            "winner": test.winner
-        } for test in tests]
-    
-    except Exception as e:
-        logger.error(f"获取A/B测试列表失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/ab-tests", status_code=201)
-async def create_ab_test(
-    data: ABTestCreate,
-    db: AsyncSession = Depends(get_db),
-    user: Dict = Depends(verify_admin_token)
-):
-    """创建A/B测试"""
-    try:
-        ab_framework = PromptABTestFramework(db)
-        test = await ab_framework.create_ab_test(
-            test_name=data.test_name,
-            prompt_a_id=data.prompt_a_id,
-            prompt_b_id=data.prompt_b_id,
-            traffic_split=data.traffic_split,
-            duration_days=data.duration_days,
-            created_by=user.get("id")
-        )
-        
-        return {
-            "id": test.id,
-            "test_name": test.test_name,
-            "status": test.status,
-            "start_time": test.start_time
-        }
-    
-    except Exception as e:
-        logger.error(f"创建A/B测试失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/ab-tests/{test_id}")
-async def get_ab_test(
-    test_id: int,
-    db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(verify_admin_token)
-):
-    """获取A/B测试结果"""
-    test = await db.get(PromptABTest, test_id)
-    if not test:
-        raise HTTPException(status_code=404, detail="测试不存在")
-    
-    return {
-        "id": test.id,
-        "test_name": test.test_name,
-        "status": test.status,
-        "prompt_a_id": test.prompt_a_id,
-        "prompt_b_id": test.prompt_b_id,
-        "a_stats": {
-            "total_decisions": test.a_total_decisions,
-            "win_rate": float(test.a_win_rate) if test.a_win_rate else 0,
-            "total_pnl": float(test.a_total_pnl) if test.a_total_pnl else 0
-        },
-        "b_stats": {
-            "total_decisions": test.b_total_decisions,
-            "win_rate": float(test.b_win_rate) if test.b_win_rate else 0,
-            "total_pnl": float(test.b_total_pnl) if test.b_total_pnl else 0
-        },
-        "p_value": float(test.p_value) if test.p_value else None,
-        "is_significant": test.is_significant,
-        "winner": test.winner,
-        "conclusion": test.conclusion
-    }
-
-
-@router.post("/ab-tests/{test_id}/stop")
-async def stop_ab_test(
-    test_id: int,
-    db: AsyncSession = Depends(get_db),
-    _: Dict = Depends(verify_admin_token)
-):
-    """停止A/B测试"""
-    try:
-        ab_framework = PromptABTestFramework(db)
-        test = await ab_framework.stop_test(test_id)
-        
-        return {
-            "success": True,
-            "winner": test.winner,
-            "conclusion": test.conclusion
-        }
-    
-    except Exception as e:
-        logger.error(f"停止A/B测试失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
