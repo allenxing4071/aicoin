@@ -33,22 +33,54 @@ export default function ABTestsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // TODO: 实现获取A/B测试列表
-    setLoading(false)
+    fetchTests()
   }, [])
+
+  const fetchTests = async () => {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem('admin_token')
+      
+      const response = await fetch('/api/v1/prompts/v2/ab-tests', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('获取失败')
+      }
+
+      const data = await response.json()
+      setTests(data)
+    } catch (error) {
+      console.error('获取A/B测试列表失败:', error)
+      // 如果是404或者空列表，设置为空数组
+      setTests([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleStopTest = async (testId: number) => {
     try {
       const token = localStorage.getItem('admin_token')
-      await fetch(`/api/v1/prompts/v2/ab-tests/${testId}/stop`, { 
+      const response = await fetch(`/api/v1/prompts/v2/ab-tests/${testId}/stop`, { 
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
+
+      if (!response.ok) {
+        throw new Error('停止失败')
+      }
+
       alert('✅ 测试已停止')
       // 刷新列表
+      fetchTests()
     } catch (error) {
+      console.error('停止测试失败:', error)
       alert('❌ 停止失败')
     }
   }
