@@ -108,7 +108,7 @@ const LogManagementPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (hasPermission('logs:view')) {
+    if (hasPermission('log:view')) {
       fetchFiles();
       fetchStats();
       fetchLogLevel();
@@ -277,7 +277,7 @@ const LogManagementPage: React.FC = () => {
     }
   ];
 
-  if (!hasPermission('logs:view')) {
+  if (!hasPermission('log:view')) {
     return (
       <div className="p-6">
         <Alert message="您没有权限访问日志管理" type="warning" showIcon />
@@ -383,7 +383,7 @@ const LogManagementPage: React.FC = () => {
               danger
               icon={<DeleteOutlined />}
               onClick={handleCleanupLogs}
-              disabled={!hasPermission('logs:delete')}
+              disabled={!hasPermission('log:clean')}
             >
               清理旧日志
             </Button>
@@ -394,7 +394,7 @@ const LogManagementPage: React.FC = () => {
                 value={logLevel}
                 style={{ width: 120 }}
                 onChange={handleUpdateLogLevel}
-                disabled={!hasPermission('logs:config')}
+                disabled={!hasPermission('log:config')}
               >
                 <Option value="DEBUG">DEBUG</Option>
                 <Option value="INFO">INFO</Option>

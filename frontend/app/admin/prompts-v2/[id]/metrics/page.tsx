@@ -85,7 +85,7 @@ export default function PromptMetricsPage() {
         </div>
       </div>
 
-      {/* 基础指标 */}
+        {/* 基础指标 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* 总决策次数 */}
         <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-6 hover:shadow-xl transition-all">
@@ -104,8 +104,8 @@ export default function PromptMetricsPage() {
             <span className="text-3xl">✅</span>
           </div>
           <p className="text-5xl font-bold text-green-600">
-            {((metrics?.win_rate || 0) * 100).toFixed(2)}%
-          </p>
+              {((metrics?.win_rate || 0) * 100).toFixed(2)}%
+            </p>
           <p className="text-sm text-gray-600 mt-2">成功决策的比例</p>
         </div>
 
@@ -116,8 +116,8 @@ export default function PromptMetricsPage() {
             <span className="text-3xl">{(metrics?.total_pnl || 0) >= 0 ? '📈' : '📉'}</span>
           </div>
           <p className={`text-5xl font-bold ${(metrics?.total_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            ${(metrics?.total_pnl || 0).toFixed(2)}
-          </p>
+              ${(metrics?.total_pnl || 0).toFixed(2)}
+            </p>
           <p className="text-sm text-gray-600 mt-2">累计盈利或亏损</p>
         </div>
       </div>
@@ -178,9 +178,9 @@ export default function PromptMetricsPage() {
                 <p className="text-xs text-gray-500 mt-1">从峰值到谷底的最大跌幅</p>
               </div>
               <span className="text-2xl font-bold text-red-600">
-                {((metrics?.max_drawdown || 0) * 100).toFixed(2)}%
-              </span>
-            </div>
+                  {((metrics?.max_drawdown || 0) * 100).toFixed(2)}%
+                </span>
+              </div>
             
             <div className="flex justify-between items-center p-4 bg-white rounded-lg border border-red-200">
               <div>
