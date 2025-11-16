@@ -98,8 +98,8 @@ class Settings(BaseSettings):
     STOP_LOSS_PERCENTAGE: float = 0.05      # 止损5%
     TAKE_PROFIT_PERCENTAGE: float = 0.10    # 止盈10%
     
-    # 最小置信度（激进模式 - 快速交易）
-    MIN_CONFIDENCE: float = 0.50            # 降低到50%以增加交易机会
+    # 最小置信度（测试模式 - 快速开仓）
+    MIN_CONFIDENCE: float = 0.30            # 测试模式：降低到30%快速看到交易效果
     
     # 告警阈值
     ALERT_MIN_ACCOUNT_VALUE: float = 180.0  # 低于$180告警

@@ -73,8 +73,8 @@ class PermissionManager:
             name="稳定级",
             max_position_pct=0.15,
             max_leverage=3,
-            confidence_threshold=0.50,  # 降低阈值以增加交易机会
-            max_daily_trades=4
+            confidence_threshold=0.30,  # 测试模式：极低阈值快速开仓
+            max_daily_trades=10
         ),
         "L4": PermissionLevel(
             level="L4",
@@ -89,7 +89,7 @@ class PermissionManager:
             name="专家级",
             max_position_pct=0.25,
             max_leverage=5,
-            confidence_threshold=0.60,
+            confidence_threshold=0.30,  # 测试模式：极低阈值快速开仓
             max_daily_trades=999
         )
     }
