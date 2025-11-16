@@ -56,6 +56,12 @@ celery_app.conf.beat_schedule = {
         'task': 'app.tasks.intelligence_learning.generate_optimization_report',
         'schedule': crontab(day_of_week=0, hour=23, minute=0),  # 每周日23点
     },
+    
+    # 每4小时自动生成辩论报告
+    'auto-generate-debate-report': {
+        'task': 'app.tasks.intelligence_learning.auto_generate_debate_report',
+        'schedule': crontab(minute=0, hour='*/4'),  # 每4小时
+    },
 }
 
 
@@ -408,10 +414,91 @@ def generate_optimization_report():
         }
 
 
+@celery_app.task(name='app.tasks.intelligence_learning.auto_generate_debate_report')
+def auto_generate_debate_report():
+    """
+    每4小时自动生成辩论报告
+    
+    职责：
+    1. 检查是否有新的情报报告
+    2. 自动触发辩论生成
+    3. 缓存结果到Redis
+    4. 避免用户每次都手动触发
+    
+    优势：
+    - 用户访问时直接从缓存读取，无需等待
+    - 定期更新，保持报告时效性
+    - 降低API调用成本（避免重复生成）
+    """
+    try:
+        logger.info("🤖 开始自动辩论报告生成任务...")
+        
+        # 检查Redis缓存是否已过期（超过30分钟）
+        from app.core.redis_client import redis_client
+        import asyncio
+        
+        async def check_and_generate():
+            try:
+                # 检查缓存
+                cached_report = await redis_client.get("debated_report:latest")
+                
+                if cached_report:
+                    # 检查缓存时间（通过TTL）
+                    ttl = await redis_client.ttl("debated_report:latest")
+                    remaining_time = ttl if ttl > 0 else 0
+                    
+                    # 如果缓存剩余时间 > 10分钟，跳过生成
+                    if remaining_time > 600:  # 10分钟
+                        logger.info(f"⏸️  缓存仍然有效（剩余{remaining_time//60}分钟），跳过生成")
+                        return {
+                            "status": "skipped",
+                            "reason": "cache_still_valid",
+                            "remaining_seconds": remaining_time
+                        }
+                
+                # 执行辩论生成
+                logger.info("🔄 缓存已过期或不存在，开始生成新的辩论报告...")
+                
+                from app.core.database import AsyncSessionLocal
+                from app.api.v1.intelligence import _execute_debate_and_cache
+                
+                async with AsyncSessionLocal() as db:
+                    await _execute_debate_and_cache(db)
+                
+                logger.info("✅ 自动辩论报告生成成功")
+                
+                return {
+                    "status": "success",
+                    "message": "辩论报告已自动生成并缓存",
+                    "timestamp": datetime.now().isoformat()
+                }
+                
+            except Exception as e:
+                logger.error(f"❌ 自动生成辩论报告失败: {e}", exc_info=True)
+                raise
+        
+        result = asyncio.run(check_and_generate())
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"❌ 自动辩论报告任务失败: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+
 # 手动触发任务的辅助函数
 def trigger_weight_optimization():
     """手动触发权重优化"""
     return optimize_source_weights.delay()
+
+
+def trigger_debate_generation():
+    """手动触发辩论报告生成"""
+    return auto_generate_debate_report.delay()
 
 
 def trigger_behavior_analysis():
