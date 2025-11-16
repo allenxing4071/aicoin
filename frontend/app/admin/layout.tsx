@@ -63,48 +63,83 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     const parentKeys: string[] = [];
     
     // 根据路径判断需要展开的父菜单
+    // 交易网关
+    if (pathname.startsWith('/admin/exchanges')) {
+      parentKeys.push('exchange-group');
+    }
+    
+    // 情报中枢
     if (pathname.startsWith('/admin/intelligence')) {
       parentKeys.push('intelligence-group');
+      // 展开数据源管理或情报分析子菜单
+      if (pathname.includes('/rss') || pathname.includes('/whale') || pathname.includes('/onchain') || 
+          pathname.includes('/kol') || pathname.includes('/smart-money')) {
+        parentKeys.push('data-sources');
+      }
+      if (pathname.includes('/realtime') || pathname.includes('/reports') || pathname.includes('/monitoring')) {
+        parentKeys.push('intelligence-analysis');
+      }
     }
+    
+    // AI平台管理
     if (pathname.startsWith('/admin/ai-platforms')) {
       parentKeys.push('ai-platforms-group');
       // 如果是子菜单，也展开二级菜单
       if (pathname.includes('/intelligence') || pathname.includes('/decision') || pathname.includes('/analysis')) {
         parentKeys.push('model-config');
       }
-      if (pathname.includes('/ai-cost')) {
-        parentKeys.push('cost-management');
-      }
       if (pathname.includes('/response-time') || pathname.includes('/success-rate') || pathname.includes('/stats')) {
         parentKeys.push('performance-monitoring');
       }
     }
-    if (pathname.startsWith('/admin/memory')) {
-      parentKeys.push('memory-group');
-    }
-    if (pathname.startsWith('/admin/debate')) {
-      parentKeys.push('debate-group');
-    }
-    if (pathname.startsWith('/admin/ai-cost')) {
+    
+    // AI成本管理（可能从多个路径访问）
+    if (pathname.startsWith('/admin/ai-cost') || pathname.startsWith('/admin/ai-pricing')) {
       parentKeys.push('ai-platforms-group');
       parentKeys.push('cost-management');
     }
-    if (pathname.startsWith('/admin/trading') || pathname.startsWith('/admin/orders')) {
+    
+    // 神经网络
+    if (pathname.startsWith('/admin/memory')) {
+      parentKeys.push('memory-group');
+    }
+    
+    // 辩论系统
+    if (pathname.startsWith('/admin/debate')) {
+      parentKeys.push('debate-group');
+    }
+    
+    // 交易引擎（修复：包含所有交易引擎下的页面）
+    if (pathname.startsWith('/admin/trading') || pathname.startsWith('/admin/orders') || 
+        pathname.startsWith('/admin/trades') || pathname.startsWith('/admin/accounts')) {
       parentKeys.push('trading-group');
     }
-    if (pathname.startsWith('/admin/ai-decisions')) {
+    
+    // 智能决策（修复：添加缺失的展开逻辑）
+    if (pathname.startsWith('/admin/ai-decisions') || pathname.startsWith('/admin/model-performance')) {
       parentKeys.push('ai-decision-group');
     }
-    if (pathname.startsWith('/admin/trades') || pathname.startsWith('/admin/accounts') || 
-        pathname.startsWith('/admin/risk-events') || pathname.startsWith('/admin/market-data')) {
+    
+    // 数据湖（修复：只包含实际在这个组下的页面）
+    if (pathname.startsWith('/admin/market-data')) {
       parentKeys.push('data-management-group');
     }
-    if (pathname.startsWith('/admin/rbac') || pathname.startsWith('/admin/users')) {
+    
+    // 系统控制 - RBAC权限管理（修复：需要同时展开父菜单和子菜单）
+    if (pathname.startsWith('/admin/rbac')) {
+      parentKeys.push('system-management-group');
       parentKeys.push('rbac-group');
     }
-    if (pathname === '/admin/backup' || pathname === '/admin/logs' || 
-        pathname === '/admin/database' || pathname === '/admin/api-docs' ||
-        pathname.startsWith('/admin/permissions') || pathname.startsWith('/admin/prompts')) {
+    
+    // 系统控制 - 其他子菜单（修复：分别处理每个页面）
+    if (pathname.startsWith('/admin/users') || 
+        pathname.startsWith('/admin/risk-events') ||
+        pathname.startsWith('/admin/permissions') ||
+        pathname.startsWith('/admin/backup') || 
+        pathname.startsWith('/admin/logs') || 
+        pathname.startsWith('/admin/database') || 
+        pathname.startsWith('/admin/api-docs') ||
+        pathname.startsWith('/admin/prompts')) {
       parentKeys.push('system-management-group');
     }
     
