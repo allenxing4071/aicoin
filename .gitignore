@@ -61,6 +61,8 @@ build/
 dist/
 env/
 logs/
+# 但允许前端管理页面的 logs 目录（源代码）
+!frontend/app/admin/logs/
 node_modules/
 out/
 venv/
