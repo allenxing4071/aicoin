@@ -401,9 +401,10 @@ class DecisionEngineV2:
             await self._ensure_prompt_manager_loaded()
             
             # 获取对应权限等级的Prompt模板
+            # 优先使用权限等级专属模板，降级到decision_base
             template = self.prompt_manager.get_template(
                 category="decision",
-                name="default",
+                name="decision_base",
                 permission_level=self.current_permission_level
             )
             
