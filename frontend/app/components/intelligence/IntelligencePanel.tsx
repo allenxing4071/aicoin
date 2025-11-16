@@ -249,6 +249,117 @@ export default function IntelligencePanel() {
         </div>
       </div>
 
+      {/* Debate Result - 紧跟头部信息 */}
+      {debatedReport?.is_debated && debatedReport.debate_result && (
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl shadow-lg p-6">
+          <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4 flex items-center">
+            ⚔️ 多空辩论后的综合判断
+          </h3>
+          
+          {/* 研究经理推荐 */}
+          <div className="bg-white rounded-xl p-6 mb-4 border-2 border-purple-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-bold text-gray-900">研究经理推荐</h4>
+              <span className={`px-4 py-2 rounded-full font-bold text-lg ${
+                debatedReport.debate_result.recommendation === 'BUY' ? 'bg-green-100 text-green-700' :
+                debatedReport.debate_result.recommendation === 'SELL' ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {debatedReport.debate_result.recommendation === 'BUY' ? '🟢 做多' :
+                 debatedReport.debate_result.recommendation === 'SELL' ? '🔴 做空' :
+                 '⚪ 观望'}
+              </span>
+            </div>
+            <div className="mb-3">
+              <div className="text-sm text-gray-600 mb-1">辩论后置信度</div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-gray-200 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      debatedReport.debate_result.confidence >= 0.7 ? 'bg-green-500' :
+                      debatedReport.debate_result.confidence >= 0.5 ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}
+                    style={{ width: `${debatedReport.debate_result.confidence * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-lg font-bold text-gray-900">
+                  {debatedReport.debate_result.confidence !== undefined ? (debatedReport.debate_result.confidence * 100).toFixed(0) : '0'}%
+                </span>
+              </div>
+            </div>
+            <div className="bg-purple-50 rounded-xl p-4 text-gray-700 leading-relaxed">
+              {debatedReport.debate_result.rationale}
+            </div>
+          </div>
+
+          {/* 多头观点 */}
+          {debatedReport.debate_result.bull_viewpoint && (
+            <details className="bg-green-50 rounded-xl p-4 mb-3 border border-green-200">
+              <summary className="font-bold text-green-800 cursor-pointer hover:text-green-600">
+                🐂 多头分析师观点
+              </summary>
+              <div className="mt-3 text-gray-700 leading-relaxed">
+                {debatedReport.debate_result.bull_viewpoint}
+              </div>
+            </details>
+          )}
+
+          {/* 空头观点 */}
+          {debatedReport.debate_result.bear_viewpoint && (
+            <details className="bg-red-50 rounded-xl p-4 border border-red-200">
+              <summary className="font-bold text-red-800 cursor-pointer hover:text-red-600">
+                🐻 空头分析师观点
+              </summary>
+              <div className="mt-3 text-gray-700 leading-relaxed">
+                {debatedReport.debate_result.bear_viewpoint}
+              </div>
+            </details>
+          )}
+        </div>
+      )}
+
+      {/* Risk & Opportunities - 放在辩论结果后面 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Risks */}
+        <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl shadow-lg p-6">
+          <h3 className="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-4 flex items-center">
+            ⚠️ 风险因素
+          </h3>
+          <ul className="space-y-2">
+            {report.risk_factors && report.risk_factors.length > 0 ? (
+              report.risk_factors.map((risk, index) => (
+                <li key={index} className="bg-white rounded-xl p-3 flex items-start">
+                  <span className="text-red-500 mr-2">•</span>
+                  <span className="text-gray-700">{risk}</span>
+                </li>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">暂无风险提示</p>
+            )}
+          </ul>
+        </div>
+
+        {/* Opportunities */}
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-lg p-6">
+          <h3 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-4 flex items-center">
+            ✨ 机会点
+          </h3>
+          <ul className="space-y-2">
+            {report.opportunities && report.opportunities.length > 0 ? (
+              report.opportunities.map((opp, index) => (
+                <li key={index} className="bg-white rounded-xl p-3 flex items-start">
+                  <span className="text-green-500 mr-2">✓</span>
+                  <span className="text-gray-700">{opp}</span>
+                </li>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">暂无机会提示</p>
+            )}
+          </ul>
+        </div>
+      </div>
+
       {/* Key News */}
       <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl shadow-lg p-6">
         <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-4 flex items-center">
@@ -390,76 +501,6 @@ export default function IntelligencePanel() {
         </div>
       )}
 
-      {/* Debate Result - 移到最前面 */}
-      {debatedReport?.is_debated && debatedReport.debate_result && (
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4 flex items-center">
-            ⚔️ 多空辩论后的综合判断
-          </h3>
-          
-          {/* 研究经理推荐 */}
-          <div className="bg-white rounded-xl p-6 mb-4 border-2 border-purple-200">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-lg font-bold text-gray-900">研究经理推荐</h4>
-              <span className={`px-4 py-2 rounded-full font-bold text-lg ${
-                debatedReport.debate_result.recommendation === 'BUY' ? 'bg-green-100 text-green-700' :
-                debatedReport.debate_result.recommendation === 'SELL' ? 'bg-red-100 text-red-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {debatedReport.debate_result.recommendation === 'BUY' ? '🟢 做多' :
-                 debatedReport.debate_result.recommendation === 'SELL' ? '🔴 做空' :
-                 '⚪ 观望'}
-              </span>
-            </div>
-            <div className="mb-3">
-              <div className="text-sm text-gray-600 mb-1">辩论后置信度</div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 bg-gray-200 rounded-full h-3">
-                  <div
-                    className={`h-3 rounded-full transition-all ${
-                      debatedReport.debate_result.confidence >= 0.7 ? 'bg-green-500' :
-                      debatedReport.debate_result.confidence >= 0.5 ? 'bg-yellow-500' :
-                      'bg-red-500'
-                    }`}
-                    style={{ width: `${debatedReport.debate_result.confidence * 100}%` }}
-                  ></div>
-                </div>
-                <span className="text-lg font-bold text-gray-900">
-                  {debatedReport.debate_result.confidence !== undefined ? (debatedReport.debate_result.confidence * 100).toFixed(0) : '0'}%
-                </span>
-              </div>
-            </div>
-            <div className="bg-purple-50 rounded-xl p-4 text-gray-700 leading-relaxed">
-              {debatedReport.debate_result.rationale}
-            </div>
-          </div>
-
-          {/* 多头观点 */}
-          {debatedReport.debate_result.bull_viewpoint && (
-            <details className="bg-green-50 rounded-xl p-4 mb-3 border border-green-200">
-              <summary className="font-bold text-green-800 cursor-pointer hover:text-green-600">
-                🐂 多头分析师观点
-              </summary>
-              <div className="mt-3 text-gray-700 leading-relaxed">
-                {debatedReport.debate_result.bull_viewpoint}
-              </div>
-            </details>
-          )}
-
-          {/* 空头观点 */}
-          {debatedReport.debate_result.bear_viewpoint && (
-            <details className="bg-red-50 rounded-xl p-4 border border-red-200">
-              <summary className="font-bold text-red-800 cursor-pointer hover:text-red-600">
-                🐻 空头分析师观点
-              </summary>
-              <div className="mt-3 text-gray-700 leading-relaxed">
-                {debatedReport.debate_result.bear_viewpoint}
-              </div>
-            </details>
-          )}
-        </div>
-      )}
-
       {/* Qwen Analysis */}
       {report.qwen_analysis && (
         <div className="bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-200 rounded-xl shadow-lg p-6">
@@ -471,47 +512,6 @@ export default function IntelligencePanel() {
           </div>
         </div>
       )}
-
-      {/* Risk & Opportunities - 移到辩论结果后面 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Risks */}
-        <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-4 flex items-center">
-            ⚠️ 风险因素
-          </h3>
-          <ul className="space-y-2">
-            {report.risk_factors && report.risk_factors.length > 0 ? (
-              report.risk_factors.map((risk, index) => (
-                <li key={index} className="bg-white rounded-xl p-3 flex items-start">
-                  <span className="text-red-500 mr-2">•</span>
-                  <span className="text-gray-700">{risk}</span>
-                </li>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">暂无风险提示</p>
-            )}
-          </ul>
-        </div>
-
-        {/* Opportunities */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-4 flex items-center">
-            ✨ 机会点
-          </h3>
-          <ul className="space-y-2">
-            {report.opportunities && report.opportunities.length > 0 ? (
-              report.opportunities.map((opp, index) => (
-                <li key={index} className="bg-white rounded-xl p-3 flex items-start">
-                  <span className="text-green-500 mr-2">✓</span>
-                  <span className="text-gray-700">{opp}</span>
-                </li>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">暂无机会提示</p>
-            )}
-          </ul>
-        </div>
-      </div>
     </div>
   );
 }
