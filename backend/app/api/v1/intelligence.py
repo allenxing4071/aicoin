@@ -420,27 +420,96 @@ async def get_data_quality_stats(
 @router.get("/debated-report")
 async def get_debated_intelligence_report(db: AsyncSession = Depends(get_db)):
     """
-    获取经过辩论验证的情报报告
+    获取经过辩论验证的情报报告（从缓存读取）
     
     流程：
-    1. 获取最新的 Qwen 情报
-    2. 触发多空辩论系统（Bull vs Bear）
-    3. 研究经理综合判断
-    4. 返回辩论后的综合报告
+    1. 优先从 Redis 缓存读取最新的辩论报告
+    2. 如果缓存不存在，返回最新的 Qwen 情报（未辩论）
+    3. 建议：使用 POST /trigger-debate 在后台生成新的辩论报告
     """
     try:
-        from app.services.decision.debate_system import DebateCoordinator
-        from app.services.decision.prompt_manager_db import PromptManagerDB
         from app.core.redis_client import redis_client
-        import openai
-        from app.core.config import settings
+        import json
         
-        logger.info("🔄 开始生成辩论后的情报报告...")
+        logger.info("🔄 获取辩论报告（从缓存）...")
+        
+        # 1. 尝试从 Redis 缓存获取
+        cached_report = await redis_client.get("debated_report:latest")
+        
+        if cached_report:
+            try:
+                debate_data = json.loads(cached_report)
+                logger.info("✅ 从缓存返回辩论报告")
+                return {
+                    "success": True,
+                    "data": debate_data,
+                    "cached": True
+                }
+            except json.JSONDecodeError as e:
+                logger.warning(f"缓存解析失败: {e}")
+        
+        # 2. 缓存不存在，返回原始情报 + 提示
+        logger.info("⚠️  缓存中无辩论报告，返回原始情报")
+        report = await intelligence_storage.get_latest_report()
+        if not report:
+            raise HTTPException(status_code=404, detail="暂无最新情报报告")
+        
+        # 准备情报字典
+        intelligence_dict = {
+            "market_sentiment": report.market_sentiment.value if hasattr(report.market_sentiment, 'value') else str(report.market_sentiment),
+            "confidence": report.confidence,
+            "summary": report.qwen_analysis[:500] if report.qwen_analysis else "",
+            "key_news": report.key_news[:3] if report.key_news else [],
+            "whale_signals": report.whale_signals[:3] if report.whale_signals else [],
+            "platform_contributions": getattr(report, 'platform_contributions', {}),
+            "platform_consensus": getattr(report, 'platform_consensus', 0.0),
+        }
+        
+        return {
+            "success": True,
+            "data": {
+                "original_intelligence": {
+                    "market_sentiment": intelligence_dict["market_sentiment"],
+                    "confidence": intelligence_dict["confidence"],
+                    "summary": intelligence_dict["summary"],
+                    "key_news": intelligence_dict["key_news"],
+                    "whale_signals": intelligence_dict["whale_signals"],
+                    "timestamp": report.timestamp.isoformat() if report.timestamp else None
+                },
+                "debate_result": None,  # 无辩论结果
+                "enhanced_sentiment": intelligence_dict["market_sentiment"],
+                "enhanced_confidence": intelligence_dict["confidence"],
+                "is_debated": False
+            },
+            "cached": False,
+            "message": "辩论报告未生成，请调用 POST /trigger-debate 生成"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取辩论报告失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取失败: {str(e)}")
+
+
+async def _execute_debate_and_cache(db: AsyncSession):
+    """
+    执行辩论并将结果缓存到 Redis（内部函数）
+    """
+    from app.services.decision.debate_system import DebateCoordinator
+    from app.services.decision.prompt_manager_db import PromptManagerDB
+    from app.core.redis_client import redis_client
+    import openai
+    import json
+    from app.core.config import settings
+    
+    try:
+        logger.info("🔄 开始执行辩论...")
         
         # 1. 获取最新的 Qwen 情报
         report = await intelligence_storage.get_latest_report()
         if not report:
-            raise HTTPException(status_code=404, detail="暂无最新情报报告")
+            raise ValueError("暂无最新情报报告")
         
         logger.info(f"📊 获取到 Qwen 情报: 情绪={report.market_sentiment}, 置信度={report.confidence:.2%}")
         
@@ -489,42 +558,47 @@ async def get_debated_intelligence_report(db: AsyncSession = Depends(get_db)):
         logger.info(f"✅ 辩论完成: 推荐={debate_result['final_decision'].get('recommendation')}, "
                    f"共识度={debate_result['consensus_level']:.2f}")
         
-        # 6. 构建返回数据
-        return {
-            "success": True,
-            "data": {
-                # 原始 Qwen 情报
-                "original_intelligence": {
-                    "market_sentiment": intelligence_dict["market_sentiment"],
-                    "confidence": intelligence_dict["confidence"],
-                    "summary": intelligence_dict["summary"],
-                    "key_news": intelligence_dict["key_news"],
-                    "whale_signals": intelligence_dict["whale_signals"],
-                    "timestamp": report.timestamp.isoformat() if report.timestamp else None
-                },
-                # 辩论结果
-                "debate_result": {
-                    "recommendation": debate_result['final_decision'].get('recommendation', 'HOLD'),
-                    "confidence": debate_result['final_decision'].get('confidence', 0.5),
-                    "reasoning": debate_result['final_decision'].get('reasoning', ''),
-                    "bull_argument": debate_result['debate_history'].get('bull_arguments', []),
-                    "bear_argument": debate_result['debate_history'].get('bear_arguments', []),
-                    "consensus_level": debate_result['consensus_level'],
-                    "total_rounds": debate_result['total_rounds'],
-                    "duration_seconds": debate_result['duration_seconds']
-                },
-                # 综合分析
-                "enhanced_sentiment": debate_result['final_decision'].get('recommendation', 'HOLD'),
-                "enhanced_confidence": debate_result['final_decision'].get('confidence', 0.5),
-                "is_debated": True
-            }
+        # 6. 构建结果数据
+        result_data = {
+            # 原始 Qwen 情报
+            "original_intelligence": {
+                "market_sentiment": intelligence_dict["market_sentiment"],
+                "confidence": intelligence_dict["confidence"],
+                "summary": intelligence_dict["summary"],
+                "key_news": intelligence_dict["key_news"],
+                "whale_signals": intelligence_dict["whale_signals"],
+                "timestamp": report.timestamp.isoformat() if report.timestamp else None
+            },
+            # 辩论结果
+            "debate_result": {
+                "recommendation": debate_result['final_decision'].get('recommendation', 'HOLD'),
+                "confidence": debate_result['final_decision'].get('confidence', 0.5),
+                "reasoning": debate_result['final_decision'].get('reasoning', ''),
+                "bull_argument": debate_result['debate_history'].get('bull_arguments', []),
+                "bear_argument": debate_result['debate_history'].get('bear_arguments', []),
+                "consensus_level": debate_result['consensus_level'],
+                "total_rounds": debate_result['total_rounds'],
+                "duration_seconds": debate_result['duration_seconds']
+            },
+            # 综合分析
+            "enhanced_sentiment": debate_result['final_decision'].get('recommendation', 'HOLD'),
+            "enhanced_confidence": debate_result['final_decision'].get('confidence', 0.5),
+            "is_debated": True
         }
-    
-    except HTTPException:
-        raise
+        
+        # 7. 保存到 Redis 缓存（30分钟过期）
+        await redis_client.setex(
+            "debated_report:latest",
+            1800,  # 30分钟
+            json.dumps(result_data, ensure_ascii=False)
+        )
+        
+        logger.info("💾 辩论结果已缓存到 Redis")
+        return result_data
+        
     except Exception as e:
-        logger.error(f"生成辩论后情报失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"辩论失败: {str(e)}")
+        logger.error(f"辩论执行失败: {e}", exc_info=True)
+        raise
 
 
 @router.post("/trigger-debate")
@@ -546,7 +620,7 @@ async def trigger_debate_manually(background_tasks: BackgroundTasks, db: AsyncSe
                 # 创建新的数据库会话
                 from app.core.database import AsyncSessionLocal
                 async with AsyncSessionLocal() as bg_db:
-                    await get_debated_intelligence_report(bg_db)
+                    await _execute_debate_and_cache(bg_db)
                     logger.info("✅ 后台辩论任务完成")
             except Exception as e:
                 logger.error(f"❌ 后台辩论任务失败: {e}", exc_info=True)
