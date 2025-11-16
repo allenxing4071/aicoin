@@ -385,13 +385,37 @@ class BinanceAdapter(BaseExchangeAdapter):
         price: Optional[Decimal],
         order_type: str
     ) -> Dict[str, Any]:
-        """合约下单"""
+        """合约下单 - size 是 USD 价值，需要转换为币的数量"""
         try:
+            # 1. 获取当前价格（如果是市价单）
+            if order_type == 'MARKET':
+                ticker = await self.futures_client.futures_symbol_ticker(symbol=symbol)
+                current_price = float(ticker['price'])
+            else:
+                current_price = float(price)
+            
+            # 2. 计算币的数量 = USD价值 / 当前价格
+            quantity = float(size) / current_price
+            
+            # 3. 获取交易对精度信息
+            exchange_info = await self.futures_client.futures_exchange_info()
+            symbol_info = next((s for s in exchange_info['symbols'] if s['symbol'] == symbol), None)
+            
+            if symbol_info:
+                # 获取数量精度
+                quantity_precision = symbol_info.get('quantityPrecision', 3)
+                # 四舍五入到正确的精度
+                quantity = round(quantity, quantity_precision)
+                logger.info(f"💡 {symbol}: USD ${float(size):.2f} ÷ ${current_price:.4f} = {quantity} (精度: {quantity_precision})")
+            else:
+                logger.warning(f"⚠️ 无法获取 {symbol} 的精度信息，使用默认精度 3")
+                quantity = round(quantity, 3)
+            
             params = {
                 'symbol': symbol,
                 'side': side,
                 'type': order_type,
-                'quantity': float(size),
+                'quantity': quantity,
             }
             
             if order_type == 'LIMIT':
