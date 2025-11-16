@@ -885,8 +885,8 @@ class DecisionEngineV2:
         # 添加情报信息
         if intelligence_report:
             desc_parts.append(f"Market sentiment: {intelligence_report.market_sentiment.value}")
-            if intelligence_report.summary:
-                desc_parts.append(f"Summary: {intelligence_report.summary[:200]}")
+            if hasattr(intelligence_report, 'qwen_analysis') and intelligence_report.qwen_analysis:
+                desc_parts.append(f"Summary: {intelligence_report.qwen_analysis[:200]}")
         
         return " | ".join(desc_parts)
 
