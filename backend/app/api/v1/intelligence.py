@@ -438,15 +438,23 @@ async def get_debated_intelligence_report(db: AsyncSession = Depends(get_db)):
         
         if cached_report:
             try:
-                debate_data = json.loads(cached_report)
+                # 如果已经是字典，直接使用；否则解析JSON
+                if isinstance(cached_report, dict):
+                    debate_data = cached_report
+                elif isinstance(cached_report, str):
+                    debate_data = json.loads(cached_report)
+                else:
+                    # 尝试解码为字符串后再解析
+                    debate_data = json.loads(str(cached_report))
+                
                 logger.info("✅ 从缓存返回辩论报告")
                 return {
                     "success": True,
                     "data": debate_data,
                     "cached": True
                 }
-            except json.JSONDecodeError as e:
-                logger.warning(f"缓存解析失败: {e}")
+            except (json.JSONDecodeError, TypeError, ValueError) as e:
+                logger.warning(f"缓存解析失败: {e}, 类型: {type(cached_report)}")
         
         # 2. 缓存不存在，返回原始情报 + 提示
         logger.info("⚠️  缓存中无辩论报告，返回原始情报")
