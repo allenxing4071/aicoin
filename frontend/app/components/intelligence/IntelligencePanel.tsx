@@ -255,7 +255,7 @@ export default function IntelligencePanel() {
           📰 关键新闻
         </h3>
         <div className="space-y-3">
-          {report.key_news.length > 0 ? (
+          {report.key_news && report.key_news.length > 0 ? (
             report.key_news.map((news, index) => {
               const sentimentIcon = {
                 bullish: '📈',
@@ -298,7 +298,7 @@ export default function IntelligencePanel() {
           🐋 巨鲸活动
         </h3>
         <div className="space-y-3">
-          {report.whale_signals.length > 0 ? (
+          {report.whale_signals && report.whale_signals.length > 0 ? (
             report.whale_signals.map((whale, index) => {
               const actionEmoji = {
                 buy: '🟢',
@@ -398,7 +398,7 @@ export default function IntelligencePanel() {
             ⚠️ 风险因素
           </h3>
           <ul className="space-y-2">
-            {report.risk_factors.length > 0 ? (
+            {report.risk_factors && report.risk_factors.length > 0 ? (
               report.risk_factors.map((risk, index) => (
                 <li key={index} className="bg-white rounded-xl p-3 flex items-start">
                   <span className="text-red-500 mr-2">•</span>
@@ -417,7 +417,7 @@ export default function IntelligencePanel() {
             ✨ 机会点
           </h3>
           <ul className="space-y-2">
-            {report.opportunities.length > 0 ? (
+            {report.opportunities && report.opportunities.length > 0 ? (
               report.opportunities.map((opp, index) => (
                 <li key={index} className="bg-white rounded-xl p-3 flex items-start">
                   <span className="text-green-500 mr-2">✓</span>
