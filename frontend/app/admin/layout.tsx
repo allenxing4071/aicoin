@@ -109,11 +109,6 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       parentKeys.push('debate-group');
     }
     
-    // Prompt 管理
-    if (pathname.startsWith('/admin/prompts-v2')) {
-      parentKeys.push('prompt-management-group');
-    }
-    
     // 交易引擎（修复：包含所有交易引擎下的页面）
     if (pathname.startsWith('/admin/trading') || pathname.startsWith('/admin/orders') || 
         pathname.startsWith('/admin/trades') || pathname.startsWith('/admin/accounts')) {
@@ -439,25 +434,6 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
           {
             key: "/admin/market-data",
             label: <Link href="/admin/market-data">市场行情</Link>,
-          },
-        ],
-      });
-    }
-    
-    // Prompt 管理 - 只有 super_admin 和 admin 可以访问
-    if (userRole === 'super_admin' || userRole === 'admin') {
-      items.push({
-        key: "prompt-management-group",
-        icon: <FileTextOutlined />,
-        label: "Prompt 管理",
-        children: [
-          {
-            key: "/admin/prompts-v2",
-            label: <Link href="/admin/prompts-v2">模板列表</Link>,
-          },
-          {
-            key: "/admin/prompts-v2/ab-tests",
-            label: <Link href="/admin/prompts-v2/ab-tests">A/B 测试</Link>,
           },
         ],
       });

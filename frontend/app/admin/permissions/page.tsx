@@ -62,6 +62,186 @@ interface PromptTemplate {
   updated_at: string;
 }
 
+interface ABTest {
+  id: number;
+  test_name: string;
+  status: string;
+  prompt_a_id: number;
+  prompt_b_id: number;
+  a_stats: {
+    total_decisions: number;
+    win_rate: number;
+    total_pnl: number;
+  };
+  b_stats: {
+    total_decisions: number;
+    win_rate: number;
+    total_pnl: number;
+  };
+  p_value: number | null;
+  is_significant: boolean;
+  winner: string | null;
+}
+
+// A/B 测试组件
+function ABTestsSection() {
+  const router = useRouter();
+  const [tests, setTests] = useState<ABTest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTests();
+  }, []);
+
+  const fetchTests = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('admin_token');
+      
+      const response = await fetch('/api/v1/prompts/v2/ab-tests', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('获取失败');
+      }
+
+      const data = await response.json();
+      setTests(data);
+    } catch (error) {
+      console.error('获取A/B测试列表失败:', error);
+      setTests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStopTest = async (testId: number) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/v1/prompts/v2/ab-tests/${testId}/stop`, { 
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('停止失败');
+      }
+
+      alert('✅ 测试已停止');
+      fetchTests();
+    } catch (error) {
+      console.error('停止测试失败:', error);
+      alert('❌ 停止失败');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 页面标题和操作区 */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl p-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">🧪 A/B 测试管理</h2>
+            <p className="text-gray-600">科学验证 Prompt 优化效果，确保统计显著性</p>
+          </div>
+          <button
+            onClick={() => router.push('/admin/prompts-v2/ab-tests/create')}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg"
+          >
+            ➕ 创建测试
+          </button>
+        </div>
+      </div>
+
+      {/* 测试列表 */}
+      {tests.length === 0 ? (
+        <div className="bg-white border-2 border-gray-200 rounded-xl p-12 text-center">
+          <div className="text-6xl mb-4">🧪</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">暂无 A/B 测试</h3>
+          <p className="text-gray-600 mb-4">点击上方"创建测试"按钮开始您的第一个 A/B 测试</p>
+          <button
+            onClick={() => router.push('/admin/prompts-v2/ab-tests/create')}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all"
+          >
+            ➕ 创建测试
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {tests.map((test) => (
+            <div key={test.id} className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900">{test.test_name}</h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      test.status === 'RUNNING' ? 'bg-green-100 text-green-800' :
+                      test.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {test.status}
+                    </span>
+                  </div>
+                </div>
+                {test.status === 'RUNNING' && (
+                  <button
+                    onClick={() => handleStopTest(test.id)}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition-all text-sm"
+                  >
+                    ⏹️ 停止测试
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* A组 */}
+                <div className="border-2 border-blue-200 bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-bold mb-3 text-blue-900">A组（对照组）</h4>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-gray-700">决策次数: <span className="font-bold text-blue-900">{test.a_stats.total_decisions}</span></p>
+                    <p className="text-gray-700">胜率: <span className="font-bold text-blue-900">{(test.a_stats.win_rate * 100).toFixed(2)}%</span></p>
+                    <p className="text-gray-700">总盈亏: <span className="font-bold text-blue-900">${test.a_stats.total_pnl.toFixed(2)}</span></p>
+                  </div>
+                </div>
+
+                {/* B组 */}
+                <div className="border-2 border-purple-200 bg-purple-50 p-4 rounded-lg">
+                  <h4 className="font-bold mb-3 text-purple-900">B组（实验组）</h4>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-gray-700">决策次数: <span className="font-bold text-purple-900">{test.b_stats.total_decisions}</span></p>
+                    <p className="text-gray-700">胜率: <span className="font-bold text-purple-900">{(test.b_stats.win_rate * 100).toFixed(2)}%</span></p>
+                    <p className="text-gray-700">总盈亏: <span className="font-bold text-purple-900">${test.b_stats.total_pnl.toFixed(2)}</span></p>
+                  </div>
+                </div>
+              </div>
+
+              {test.is_significant && (
+                <div className="mt-4 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                  <p className="font-bold text-green-900 mb-1">✅ 统计显著（p={test.p_value?.toFixed(4)}）</p>
+                  <p className="text-green-800">获胜者: <span className="font-bold">{test.winner}</span></p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PermissionsAdmin() {
   const router = useRouter();
   const [levels, setLevels] = useState<PermissionLevel[]>([]);
@@ -452,9 +632,10 @@ export default function PermissionsAdmin() {
       
       {/* Tabs 布局 */}
       <Tabs defaultValue="levels" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
           <TabsTrigger value="levels">权限等级配置</TabsTrigger>
           <TabsTrigger value="prompts">Prompt 模板库</TabsTrigger>
+          <TabsTrigger value="abtests">A/B 测试</TabsTrigger>
         </TabsList>
         
         {/* Tab 1: 权限等级配置 */}
@@ -812,6 +993,11 @@ export default function PermissionsAdmin() {
               })}
             </div>
           )}
+        </TabsContent>
+        
+        {/* Tab 3: A/B 测试 */}
+        <TabsContent value="abtests" className="space-y-6">
+          <ABTestsSection />
         </TabsContent>
       </Tabs>
 
