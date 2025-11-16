@@ -609,8 +609,10 @@ async def _execute_debate_and_cache(db: AsyncSession):
                 "recommendation": str(debate_result['final_decision'].get('recommendation', 'HOLD')),
                 "confidence": float(debate_result['final_decision'].get('confidence', 0.5)),
                 "reasoning": str(debate_result['final_decision'].get('reasoning', '')),
-                "bull_argument": debate_result['debate_history'].get('bull_arguments', []),
-                "bear_argument": debate_result['debate_history'].get('bear_arguments', []),
+                # 修复：使用正确的键名 bull_history/bear_history，并转为列表格式
+                # 按换行符分割字符串，过滤空行
+                "bull_argument": [arg.strip() for arg in debate_result['debate_history'].get('bull_history', '').split('\n') if arg.strip()],
+                "bear_argument": [arg.strip() for arg in debate_result['debate_history'].get('bear_history', '').split('\n') if arg.strip()],
                 "consensus_level": float(debate_result.get('consensus_level', 0.0)),
                 "total_rounds": int(debate_result.get('total_rounds', 0)),
                 "duration_seconds": float(debate_result.get('duration_seconds', 0.0))
