@@ -346,7 +346,7 @@ class AITradingOrchestratorV2:
         # 立即执行第一次情报收集
         logger.info("🚀 执行首次情报收集...")
         try:
-            await self.intelligence_engine.collect_intelligence()
+            await self.intelligence_coordinator.collect_intelligence()
         except Exception as e:
             logger.error(f"首次情报收集失败: {e}", exc_info=True)
         
