@@ -582,11 +582,17 @@ class AITradingOrchestratorV2:
             from app.services.exchange.exchange_factory import ExchangeFactory
             from decimal import Decimal
             
-            action = decision.get("action")
+            action = decision.get("action", "").upper()  # 统一转大写
             symbol = decision.get("symbol")
             size_usd = decision.get("size_usd", 0)
             
-            if action == "hold":
+            # 如果没有指定size_usd，使用账户余额的10%
+            if size_usd == 0:
+                account_balance = decision.get("account_balance", 188.19)  # 默认使用当前余额
+                size_usd = account_balance * 0.10  # 使用10%的余额
+                logger.info(f"💰 自动计算仓位: ${size_usd:.2f} (账户余额的10%)")
+            
+            if action in ["HOLD", "hold"]:
                 return {"success": True, "message": "持有，无操作"}
             
             elif action == "close_all":
@@ -595,7 +601,7 @@ class AITradingOrchestratorV2:
                 # TODO: 实现强制平仓逻辑
                 return {"success": True, "message": "强制平仓已执行"}
             
-            elif action in ["open_long", "open_short"]:
+            elif action in ["BUY", "SELL", "open_long", "open_short"]:
                 # 获取当前激活的交易所和市场类型
                 adapter = await ExchangeFactory.get_active_exchange()
                 if not adapter:
@@ -604,9 +610,15 @@ class AITradingOrchestratorV2:
                 exchange_info = ExchangeFactory.get_active_exchange_info()
                 market_type = exchange_info.get('market_type', 'spot')
                 
-                # 开仓
-                side = "buy" if action == "open_long" else "sell"  # 标准化为 buy/sell
-                logger.info(f"📈 开仓: {side} {symbol} ${size_usd} ({adapter.name} {market_type})")
+                # 开仓 - 统一处理 BUY/SELL 和 open_long/open_short
+                if action in ["BUY", "open_long"]:
+                    side = "buy"
+                elif action in ["SELL", "open_short"]:
+                    side = "sell"
+                else:
+                    return {"success": False, "message": f"未知操作: {action}"}
+                
+                logger.info(f"📈 开仓: {side} {symbol} ${size_usd:.2f} ({adapter.name} {market_type})")
                 
                 # 调用统一适配器下单
                 result = await adapter.place_order(
