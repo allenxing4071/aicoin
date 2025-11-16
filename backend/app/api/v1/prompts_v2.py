@@ -808,6 +808,48 @@ async def get_risk_metrics(
 
 # ===== A/B测试 API =====
 
+@router.get("/ab-tests")
+async def list_ab_tests(
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _: Dict = Depends(verify_admin_token)
+):
+    """获取A/B测试列表"""
+    try:
+        query = select(PromptABTest).order_by(desc(PromptABTest.start_time))
+        
+        if status:
+            query = query.where(PromptABTest.status == status)
+        
+        result = await db.execute(query)
+        tests = result.scalars().all()
+        
+        return [{
+            "id": test.id,
+            "test_name": test.test_name,
+            "status": test.status,
+            "prompt_a_id": test.prompt_a_id,
+            "prompt_b_id": test.prompt_b_id,
+            "a_stats": {
+                "total_decisions": test.a_total_decisions,
+                "win_rate": float(test.a_win_rate) if test.a_win_rate else 0.0,
+                "total_pnl": float(test.a_total_pnl) if test.a_total_pnl else 0.0
+            },
+            "b_stats": {
+                "total_decisions": test.b_total_decisions,
+                "win_rate": float(test.b_win_rate) if test.b_win_rate else 0.0,
+                "total_pnl": float(test.b_total_pnl) if test.b_total_pnl else 0.0
+            },
+            "p_value": float(test.p_value) if test.p_value else None,
+            "is_significant": test.is_significant,
+            "winner": test.winner
+        } for test in tests]
+    
+    except Exception as e:
+        logger.error(f"获取A/B测试列表失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/ab-tests", status_code=201)
 async def create_ab_test(
     data: ABTestCreate,
