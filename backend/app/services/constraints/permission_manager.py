@@ -73,7 +73,7 @@ class PermissionManager:
             name="稳定级",
             max_position_pct=0.15,
             max_leverage=3,
-            confidence_threshold=0.70,
+            confidence_threshold=0.50,  # 降低阈值以增加交易机会
             max_daily_trades=4
         ),
         "L4": PermissionLevel(
@@ -299,7 +299,7 @@ class PermissionManager:
         Returns:
             (is_valid, reason)
         """
-        permission = self.get_permission(level)
+        permission = self.get_permission_sync(level)
         
         # 1. 检查仓位大小
         position_pct = float(position_size / account_balance)
