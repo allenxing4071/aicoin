@@ -96,15 +96,19 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       parentKeys.push('ai-decision-group');
     }
     if (pathname.startsWith('/admin/trades') || pathname.startsWith('/admin/accounts') || 
-        pathname.startsWith('/admin/risk-events') || pathname.startsWith('/admin/market-data')) {
+        pathname.startsWith('/admin/market-data')) {
       parentKeys.push('data-management-group');
     }
-    if (pathname.startsWith('/admin/rbac') || pathname.startsWith('/admin/users')) {
+    // RBAC权限管理是系统控制下的二级菜单
+    if (pathname.startsWith('/admin/rbac')) {
+      parentKeys.push('system-management-group');
       parentKeys.push('rbac-group');
     }
+    // 系统控制菜单下的其他页面
     if (pathname === '/admin/backup' || pathname === '/admin/logs' || 
         pathname === '/admin/database' || pathname === '/admin/api-docs' ||
-        pathname.startsWith('/admin/permissions') || pathname.startsWith('/admin/prompts')) {
+        pathname.startsWith('/admin/permissions') || pathname.startsWith('/admin/prompts') ||
+        pathname === '/admin/users' || pathname.startsWith('/admin/risk-events')) {
       parentKeys.push('system-management-group');
     }
     
