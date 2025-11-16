@@ -337,9 +337,9 @@ function ABTestsSection() {
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="">请选择模板</option>
-                  {templates.map((template) => (
+                  {templates.map((template: any) => (
                     <option key={template.id} value={template.id}>
-                      {template.name} (v{template.current_version})
+                      {template.name} (v{template.version})
                     </option>
                   ))}
                 </select>
@@ -353,9 +353,9 @@ function ABTestsSection() {
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="">请选择模板</option>
-                  {templates.map((template) => (
+                  {templates.map((template: any) => (
                     <option key={template.id} value={template.id}>
-                      {template.name} (v{template.current_version})
+                      {template.name} (v{template.version})
                     </option>
                   ))}
                 </select>
