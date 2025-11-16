@@ -228,20 +228,20 @@ class AITradingOrchestratorV2:
                     logger.info(f"✅ 决策通过: {decision.get('action')} {decision.get('symbol')}")
                     self.approved_decisions += 1
                     
-                execution_result = await self._execute_decision(decision)
-                
-                # 记录到决策历史
-                decision_record = {
-                    'timestamp': datetime.now().isoformat(),
-                    'model': 'deepseek-chat-v3.1',
-                    'action': decision.get('action'),
-                    'symbol': decision.get('symbol'),
-                    'success': execution_result.get("success")
-                }
-                self.decision_history.append(decision_record)
-                if len(self.decision_history) > 100:  # 保留最近100条
-                    self.decision_history = self.decision_history[-100:]
-                
+                    execution_result = await self._execute_decision(decision)
+                    
+                    # 记录到决策历史
+                    decision_record = {
+                        'timestamp': datetime.now().isoformat(),
+                        'model': 'deepseek-chat-v3.1',
+                        'action': decision.get('action'),
+                        'symbol': decision.get('symbol'),
+                        'success': execution_result.get("success")
+                    }
+                    self.decision_history.append(decision_record)
+                    if len(self.decision_history) > 100:  # 保留最近100条
+                        self.decision_history = self.decision_history[-100:]
+                    
                     # 统计交易
                     if decision.get('action') not in ['hold', 'close_all']:
                         self.total_trades += 1
