@@ -1,10 +1,9 @@
 """Intelligence Learning Tasks - Qwen情报系统持续学习定时任务"""
 
-from celery import Celery
-from celery.schedules import crontab
 import logging
 from datetime import datetime, timedelta
 
+from app.core.celery_app import celery_app  # 使用统一的celery_app
 from app.core.redis_client import redis_client
 from app.core.database import get_db
 from app.services.intelligence.storage_layers import (
@@ -16,11 +15,10 @@ from app.services.intelligence.source_weight_optimizer import SourceWeightOptimi
 
 logger = logging.getLogger(__name__)
 
-# Celery app配置
-celery_app = Celery("intelligence_learning")
-
-# 定时任务调度配置
-celery_app.conf.beat_schedule = {
+# 定时任务调度配置已移至 app/core/celery_app.py
+# 以下保留用于文档说明，实际调度在celery_app.py中配置
+"""
+beat_schedule = {
     # 每小时更新信息源权重
     'optimize-source-weights-hourly': {
         'task': 'app.tasks.intelligence_learning.optimize_source_weights',
@@ -63,6 +61,7 @@ celery_app.conf.beat_schedule = {
         'schedule': crontab(minute=0, hour='*/4'),  # 每4小时
     },
 }
+"""
 
 
 @celery_app.task(name='app.tasks.intelligence_learning.optimize_source_weights')

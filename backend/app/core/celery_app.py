@@ -9,7 +9,12 @@ celery_app = Celery(
     'aicoin',
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=['app.tasks.trading_loop', 'app.tasks.data_collector', 'app.tasks.metrics_calculator']
+    include=[
+        'app.tasks.trading_loop',
+        'app.tasks.data_collector',
+        'app.tasks.metrics_calculator',
+        'app.tasks.intelligence_learning'  # 新增：情报学习和辩论任务
+    ]
 )
 
 # Celery configuration
@@ -54,6 +59,13 @@ celery_app.conf.beat_schedule = {
         'task': 'app.tasks.metrics_calculator.calculate_performance_metrics',
         'schedule': 3600.0,  # 1 hour
         'options': {'expires': 600},
+    },
+    
+    # Auto-generate debate report - every 4 hours
+    'auto-generate-debate-report': {
+        'task': 'app.tasks.intelligence_learning.auto_generate_debate_report',
+        'schedule': crontab(minute=0, hour='*/4'),  # Every 4 hours
+        'options': {'expires': 3600},  # Expire after 1 hour
     },
 }
 
