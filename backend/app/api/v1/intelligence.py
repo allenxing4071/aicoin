@@ -521,15 +521,42 @@ async def _execute_debate_and_cache(db: AsyncSession):
             }
         }
         
-        # 3. 准备情报字典
+        # 3. 准备情报字典（确保所有对象都可序列化）
+        def serialize_news_item(item):
+            """将 NewsItem 对象转换为字典"""
+            if isinstance(item, dict):
+                return item
+            return {
+                "title": getattr(item, 'title', ''),
+                "source": getattr(item, 'source', ''),
+                "url": getattr(item, 'url', ''),
+                "published_at": str(getattr(item, 'published_at', '')),
+                "content": getattr(item, 'content', ''),
+                "impact": getattr(item, 'impact', 'medium'),
+                "sentiment": getattr(item, 'sentiment', 'neutral')
+            }
+        
+        def serialize_whale_signal(item):
+            """将 WhaleSignal 对象转换为字典"""
+            if isinstance(item, dict):
+                return item
+            return {
+                "symbol": getattr(item, 'symbol', ''),
+                "action": getattr(item, 'action', ''),
+                "amount_usd": float(getattr(item, 'amount_usd', 0)),
+                "address": getattr(item, 'address', ''),
+                "timestamp": str(getattr(item, 'timestamp', '')),
+                "exchange": getattr(item, 'exchange', None)
+            }
+        
         intelligence_dict = {
             "market_sentiment": report.market_sentiment.value if hasattr(report.market_sentiment, 'value') else str(report.market_sentiment),
-            "confidence": report.confidence,
+            "confidence": float(report.confidence) if report.confidence else 0.0,
             "summary": report.qwen_analysis[:500] if report.qwen_analysis else "",
-            "key_news": report.key_news[:3] if report.key_news else [],
-            "whale_signals": report.whale_signals[:3] if report.whale_signals else [],
+            "key_news": [serialize_news_item(item) for item in (report.key_news[:3] if report.key_news else [])],
+            "whale_signals": [serialize_whale_signal(item) for item in (report.whale_signals[:3] if report.whale_signals else [])],
             "platform_contributions": getattr(report, 'platform_contributions', {}),
-            "platform_consensus": getattr(report, 'platform_consensus', 0.0),
+            "platform_consensus": float(getattr(report, 'platform_consensus', 0.0)),
         }
         
         # 4. 初始化辩论系统
@@ -558,7 +585,7 @@ async def _execute_debate_and_cache(db: AsyncSession):
         logger.info(f"✅ 辩论完成: 推荐={debate_result['final_decision'].get('recommendation')}, "
                    f"共识度={debate_result['consensus_level']:.2f}")
         
-        # 6. 构建结果数据
+        # 6. 构建结果数据（确保所有数值可序列化）
         result_data = {
             # 原始 Qwen 情报
             "original_intelligence": {
@@ -571,18 +598,18 @@ async def _execute_debate_and_cache(db: AsyncSession):
             },
             # 辩论结果
             "debate_result": {
-                "recommendation": debate_result['final_decision'].get('recommendation', 'HOLD'),
-                "confidence": debate_result['final_decision'].get('confidence', 0.5),
-                "reasoning": debate_result['final_decision'].get('reasoning', ''),
+                "recommendation": str(debate_result['final_decision'].get('recommendation', 'HOLD')),
+                "confidence": float(debate_result['final_decision'].get('confidence', 0.5)),
+                "reasoning": str(debate_result['final_decision'].get('reasoning', '')),
                 "bull_argument": debate_result['debate_history'].get('bull_arguments', []),
                 "bear_argument": debate_result['debate_history'].get('bear_arguments', []),
-                "consensus_level": debate_result['consensus_level'],
-                "total_rounds": debate_result['total_rounds'],
-                "duration_seconds": debate_result['duration_seconds']
+                "consensus_level": float(debate_result.get('consensus_level', 0.0)),
+                "total_rounds": int(debate_result.get('total_rounds', 0)),
+                "duration_seconds": float(debate_result.get('duration_seconds', 0.0))
             },
             # 综合分析
-            "enhanced_sentiment": debate_result['final_decision'].get('recommendation', 'HOLD'),
-            "enhanced_confidence": debate_result['final_decision'].get('confidence', 0.5),
+            "enhanced_sentiment": str(debate_result['final_decision'].get('recommendation', 'HOLD')),
+            "enhanced_confidence": float(debate_result['final_decision'].get('confidence', 0.5)),
             "is_debated": True
         }
         
