@@ -220,14 +220,14 @@ export default function IntelligencePanel() {
               {sentimentEmoji} {sentimentText}
             </div>
             <div className="text-sm text-gray-500 mt-1">
-              分数: {report.sentiment_score > 0 ? '+' : ''}{report.sentiment_score.toFixed(2)}
+              分数: {report.sentiment_score !== undefined ? (report.sentiment_score > 0 ? '+' : '') + report.sentiment_score.toFixed(2) : 'N/A'}
             </div>
           </div>
 
           <div className="bg-white rounded-xl p-4 shadow">
             <div className="text-sm text-gray-600 mb-1">置信度</div>
             <div className="text-2xl font-bold text-blue-600">
-              {(report.confidence * 100).toFixed(0)}%
+              {report.confidence !== undefined ? (report.confidence * 100).toFixed(0) : '0'}%
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
               <div
@@ -344,11 +344,15 @@ export default function IntelligencePanel() {
             {report.on_chain_metrics.exchange_net_flow !== undefined && (
               <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="text-sm text-gray-600 mb-1">交易所净流入</div>
-                <div className={`text-2xl font-bold ${report.on_chain_metrics.exchange_net_flow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {report.on_chain_metrics.exchange_net_flow >= 0 ? '+' : ''}{(report.on_chain_metrics.exchange_net_flow / 1000000).toFixed(2)}M
+                <div className={`text-2xl font-bold ${(report.on_chain_metrics.exchange_net_flow ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {report.on_chain_metrics.exchange_net_flow !== undefined ? (
+                    <>
+                      {report.on_chain_metrics.exchange_net_flow >= 0 ? '+' : ''}{(report.on_chain_metrics.exchange_net_flow / 1000000).toFixed(2)}M
+                    </>
+                  ) : 'N/A'}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {report.on_chain_metrics.exchange_net_flow >= 0 ? '资金流入' : '资金流出'}
+                  {(report.on_chain_metrics.exchange_net_flow ?? 0) >= 0 ? '资金流入' : '资金流出'}
                 </div>
               </div>
             )}
@@ -357,7 +361,7 @@ export default function IntelligencePanel() {
               <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="text-sm text-gray-600 mb-1">活跃地址数</div>
                 <div className="text-2xl font-bold text-blue-600">
-                  {(report.on_chain_metrics.active_addresses / 1000).toFixed(1)}K
+                  {report.on_chain_metrics.active_addresses !== undefined ? (report.on_chain_metrics.active_addresses / 1000).toFixed(1) : '0'}K
                 </div>
                 <div className="text-xs text-gray-500 mt-1">24小时</div>
               </div>
@@ -367,7 +371,7 @@ export default function IntelligencePanel() {
               <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="text-sm text-gray-600 mb-1">Gas价格</div>
                 <div className="text-2xl font-bold text-purple-600">
-                  {report.on_chain_metrics.gas_price.toFixed(0)}
+                  {report.on_chain_metrics.gas_price !== undefined ? report.on_chain_metrics.gas_price.toFixed(0) : '0'}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">Gwei</div>
               </div>
@@ -377,7 +381,7 @@ export default function IntelligencePanel() {
               <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="text-sm text-gray-600 mb-1">交易量</div>
                 <div className="text-2xl font-bold text-orange-600">
-                  ${(report.on_chain_metrics.transaction_volume / 1000000000).toFixed(2)}B
+                  ${report.on_chain_metrics.transaction_volume !== undefined ? (report.on_chain_metrics.transaction_volume / 1000000000).toFixed(2) : '0'}B
                 </div>
                 <div className="text-xs text-gray-500 mt-1">24小时</div>
               </div>
@@ -474,7 +478,7 @@ export default function IntelligencePanel() {
                   ></div>
                 </div>
                 <span className="text-lg font-bold text-gray-900">
-                  {(debatedReport.debate_result.confidence * 100).toFixed(0)}%
+                  {debatedReport.debate_result.confidence !== undefined ? (debatedReport.debate_result.confidence * 100).toFixed(0) : '0'}%
                 </span>
               </div>
             </div>
