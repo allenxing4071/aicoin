@@ -487,7 +487,22 @@ class AITradingOrchestratorV2:
                 }
             
             # 从适配器获取账户信息
-            account_info = await adapter.get_account_info()
+            # 注意：不同适配器方法名不同
+            if hasattr(adapter, 'get_account_info'):
+                # Hyperliquid 使用 get_account_info
+                account_info = await adapter.get_account_info()
+            else:
+                # Binance 使用 get_account_balance
+                balance_data = await adapter.get_account_balance(market_type='perpetual')
+                # 转换为统一格式
+                account_info = {
+                    "balance": balance_data.get("total_balance", 0),
+                    "equity": balance_data.get("total_balance", 0),
+                    "total_pnl": balance_data.get("total_pnl", 0),
+                    "unrealized_pnl": balance_data.get("unrealized_pnl", 0),
+                    "positions": balance_data.get("positions", []),
+                    "margin_ratio": balance_data.get("margin_ratio", 1.0)
+                }
             
             logger.debug(f"🔍 原始账户信息: {account_info}")
             
